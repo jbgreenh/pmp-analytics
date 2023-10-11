@@ -1,6 +1,6 @@
 import toml
 
-with open('secrets_test.toml', 'r') as f:
+with open('../secrets_test.toml', 'r') as f:
     secrets = toml.load(f)
 
 print(secrets['secret']['one'])

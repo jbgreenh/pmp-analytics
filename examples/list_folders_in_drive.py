@@ -6,7 +6,7 @@ from utils.auth import *
 
 def main():
     creds = auth()
-    with open('secrets.toml', 'r') as f:
+    with open('../secrets.toml', 'r') as f:
         secrets = toml.load(f)
     try:
         service = build('drive', 'v3', credentials=creds)

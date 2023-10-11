@@ -9,14 +9,14 @@ from utils.auth import *
 
 def main():
     creds = auth()
-    with open('secrets.toml', 'r') as f:
+    with open('../secrets.toml', 'r') as f:
         secrets = toml.load(f)
     try:
         service = build('drive', 'v3', credentials=creds)
 
-        file_id = secrets['files']['todo']
+        file_id = secrets['files']['awarxe']
         service = build('drive', 'v3', credentials=creds)
-        request = service.files().export_media(fileId=file_id, mimeType='text/csv')
+        request = service.files().get_media(fileId=file_id)
         file = io.BytesIO()
         downloader = MediaIoBaseDownload(file, request)
         done = False
@@ -28,9 +28,8 @@ def main():
         print(f'An error occurred: {error}')
         file = None
 
-    print(file)
     file.seek(0) # after writing, pointer is at the end of the stream
-    print(pl.read_csv(file, infer_schema_length=100000).drop_nulls(subset='task'))
+    print(pl.read_csv(file, separator='|', infer_schema_length=100000))
 
 if __name__ == '__main__':
     main()
