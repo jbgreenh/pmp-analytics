@@ -1,0 +1,10 @@
+**/*.xlsx
+**/*.xls
+**/*.csv
+**/*.txt
+**/*.json
+**/*.toml
+**/__pycache__
+build
+dist
+utils.egg-info
