@@ -6,7 +6,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 
 def auth():
     # If modifying these scopes, delete the file token.json. scopes here: https://developers.google.com/identity/protocols/oauth2/scopes#drive
-    SCOPES = ['https://www.googleapis.com/auth/drive']
+    SCOPES = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/documents']
 
     creds = None
     # The file token.json stores the user's access and refresh tokens, and is
