@@ -73,8 +73,13 @@ def pharm_clean():
         )
     )
 
-    print('closed pharmacies, update in manage pharmacies in awarxe:')
-    print(ddr.filter(pl.col('Status').str.contains('CLOSE')).collect())
+    closed = ddr.filter(pl.col('Status').str.contains('CLOSE')).collect()
+    if closed.shape[0] > 0:
+        print('closed pharmacies, update in manage pharmacies in awarxe:')
+        print(closed)
+    else:
+        print('no closed pharmacies')
+        
     fname = f'{today}.csv'
     ddr.collect().write_csv(fname)
     return today, fname
