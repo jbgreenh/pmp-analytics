@@ -79,7 +79,7 @@ def pharm_clean():
         print(closed)
     else:
         print('no closed pharmacies')
-        
+
     fname = f'{today}.csv'
     ddr.collect().write_csv(fname)
     return today, fname
@@ -106,8 +106,8 @@ def main():
         file = service.files().create(body=file_metadata,
                                       media_body=media,
                                       supportsAllDrives=True,
-                                      fields='id').execute()
-        print (f'file ID: {file.get("id")}')
+                                      fields='id').execute() # 'webViewLink' instead of 'id' maybe?
+        print (f'file ID: {file.get("id")}')    # then use the webViewLink here instead
         
     except HttpError as error:
         # TODO(developer) - Handle errors from drive API.
