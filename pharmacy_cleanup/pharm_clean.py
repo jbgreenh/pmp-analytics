@@ -73,7 +73,13 @@ def pharm_clean():
         )
     )
 
-    closed = ddr.filter(pl.col('Status').str.contains('CLOSE')).collect()
+    closed = (
+        ddr
+        .filter(pl.col('Status').str.contains('CLOSE'))
+        .select('Business Name', 'Pharmacy License Number', 'DEA', 'Status', 'Days Delinquent')
+        .collect()
+    )
+    
     if closed.shape[0] > 0:
         print('closed pharmacies, update in manage pharmacies in awarxe:')
         print(closed)
@@ -103,11 +109,14 @@ def main():
 
         media = MediaFileUpload(fname,
                                 mimetype='text/csv')
+        
+        print('uploading to google drive...')
+
         file = service.files().create(body=file_metadata,
                                       media_body=media,
                                       supportsAllDrives=True,
-                                      fields='id').execute() # 'webViewLink' instead of 'id' maybe?
-        print (f'file ID: {file.get("id")}')    # then use the webViewLink here instead
+                                      fields='webViewLink').execute()
+        print (f'uploaded to: {file.get("webViewLink")}')
         
     except HttpError as error:
         # TODO(developer) - Handle errors from drive API.
