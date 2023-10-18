@@ -15,7 +15,6 @@ def main():
         service = build('drive', 'v3', credentials=creds)
 
         file_id = secrets['files']['awarxe']
-        service = build('drive', 'v3', credentials=creds)
         request = service.files().get_media(fileId=file_id)
         file = io.BytesIO()
         downloader = MediaIoBaseDownload(file, request)
