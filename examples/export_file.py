@@ -13,9 +13,8 @@ def main():
         secrets = toml.load(f)
     try:
         service = build('drive', 'v3', credentials=creds)
-
+        
         file_id = secrets['files']['todo']
-        service = build('drive', 'v3', credentials=creds)
         request = service.files().export_media(fileId=file_id, mimeType='text/csv')
         file = io.BytesIO()
         downloader = MediaIoBaseDownload(file, request)
