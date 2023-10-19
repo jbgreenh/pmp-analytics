@@ -5,3 +5,4 @@ toml==0.10.2
 pytz==2023.3.post1
 paramiko==3.3.1
 ipykernel==6.25.2
+XlsxWriter==3.1.9
