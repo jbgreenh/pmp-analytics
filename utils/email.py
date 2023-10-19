@@ -5,10 +5,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
-from email.message import EmailMessage
 from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from googleapiclient.http import MediaIoBaseUpload
 from utils.auth import *
 
 def create_message_with_attachment(sender, to, subject, message_text, file_path):
