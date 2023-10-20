@@ -5,8 +5,8 @@ import toml
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseDownload
-from utils.auth import *
-from utils.awarxe import *
+from utils import auth
+from utils import drive
 
 with open('../secrets.toml', 'r') as f:
         secrets = toml.load(f)
@@ -16,7 +16,8 @@ last_month = today.replace(day=1) - datetime.timedelta(days=1)
 lm_yr = last_month.year
 lm_mo = str(last_month.month).zfill(2)
 
-creds = auth()
+creds = auth.auth()
+service = build('drive', 'v3', credentials=creds)
 
 def pull_files():
     '''
@@ -26,106 +27,12 @@ def pull_files():
     ob_file_name = f'AZ_Dispensations_{lm_yr}{lm_mo}_opioid_benzo.csv'
 
     folder_id = secrets['folders']['dispensations_47']
-
-    service = build('drive', 'v3', credentials=creds)
-
-    try:
-        results = service.files().list(q=f"name = '{file_name}' and '{folder_id}' in parents",
-                                    supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
-        files = results.get('files', [])
-        file_id = None
-        if files:
-            file_id = files[0]['id']
-            try:
-                request = service.files().get_media(fileId=file_id)
-            except HttpError as error:
-                print(f'error checking google drive: {error}')
-        else:
-            print('no file found')
-
-        file = io.BytesIO()
-        downloader = MediaIoBaseDownload(file, request)
-        
-        done = False
-        print(f'pulling {file_name} from google drive...')
-        while done is False:
-            status, done = downloader.next_chunk()
-    except HttpError as error:
-        print(f'google drive error: {error}')
-        file = None
-
-    file.seek(0) # after writing, pointer is at the end of the stream
-    disp = pl.read_csv(file, separator='|', infer_schema_length=100000).lazy()
-
-    try:
-        results = service.files().list(q=f"name = '{ob_file_name}' and '{folder_id}' in parents",
-                                    supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
-        files = results.get('files', [])
-        file_id = None
-        if files:
-            file_id = files[0]['id']
-            try:
-                request = service.files().get_media(fileId=file_id)
-            except HttpError as error:
-                print(f'error checking google drive: {error}')
-        else:
-            print('no file found')
-
-        file = io.BytesIO()
-        downloader = MediaIoBaseDownload(file, request)
-        
-        done = False
-        print(f'pulling {ob_file_name} from google drive...')
-        while done is False:
-            status, done = downloader.next_chunk()
-    except HttpError as error:
-        print(f'google drive error: {error}')
-        file = None
-
-    file.seek(0) # after writing, pointer is at the end of the stream
-    ob_disp = pl.read_csv(file, separator='|', infer_schema_length=100000).lazy()
+    disp = drive.lazyframe_from_file_name_csv(service=service, file_name=file_name, folder_id=folder_id, sep='|')
+    ob_disp = drive.lazyframe_from_file_name_csv(service=service, file_name=ob_file_name, folder_id=folder_id, sep='|')
 
     requests_folder_id = secrets['folders']['patient_requests']
-
-    try:
-        results_folder = service.files().list(q=f"name = 'AZ_PtReqByProfile_{lm_yr}{lm_mo}' and '{requests_folder_id}' in parents",
-                                    supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
-        folders = results_folder.get('files', [])
-        if folders:
-            requests_folder_id = folders[0]['id']
-        else:
-            print('folder not found')
-            requests_folder_id = None
-    except HttpError as error:
-        print(f'error checking google drive: {error}')
-
-    try:
-        results = service.files().list(q=f"name = 'Prescriber.csv' and '{requests_folder_id}' in parents",
-                                    supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
-        files = results.get('files', [])
-        file_id = None
-        if files:
-            file_id = files[0]['id']
-            try:
-                request = service.files().get_media(fileId=file_id)
-            except HttpError as error:
-                print(f'error checking google drive: {error}')
-        else:
-            print('no file found')
-
-        file = io.BytesIO()
-        downloader = MediaIoBaseDownload(file, request)
-        
-        done = False
-        print(f'pulling {file_name} from google drive...')
-        while done is False:
-            status, done = downloader.next_chunk()
-    except HttpError as error:
-        print(f'google drive error: {error}')
-        file = None
-
-    file.seek(0) # after writing, pointer is at the end of the stream
-    requests = pl.read_csv(file, separator='|', infer_schema_length=100000).lazy()
+    requests_folder_id = drive.folder_id_from_name(service=service, folder_name=f'AZ_PtReqByProfile_{lm_yr}{lm_mo}', parent_id=requests_folder_id)
+    requests = drive.lazyframe_from_file_name_csv(service=service, file_name='Prescriber.csv', folder_id=requests_folder_id, sep='|')
 
     return disp, ob_disp, requests
 
@@ -200,7 +107,8 @@ def update_scorecard_sheet(new_row):
         body={'values': data}
     )
     response = request.execute()
-
+    sheet_link = f'https://docs.google.com/spreadsheets/d/{sheet_id}'
+    print(f'updated scorecard tracking: {sheet_link}')
 
 def main():
     new_row = scorecard_new_row()
