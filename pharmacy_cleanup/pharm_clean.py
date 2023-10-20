@@ -7,6 +7,7 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
 from utils.auth import *
+from utils.drive import *
 
 def pharm_clean():
     '''shape data for final report'''
@@ -88,39 +89,19 @@ def pharm_clean():
 
     fname = f'{today}.csv'
     ddr.collect().write_csv(fname)
-    return today, fname
+    return fname
 
 def main():
     creds = auth()
     with open('../secrets.toml', 'r') as f:
         secrets = toml.load(f)
-    try:
-        today, fname = pharm_clean()
 
-        service = build('drive', 'v3', credentials=creds)
+    fname = pharm_clean()
 
-        folder_id = secrets['folders']['pharm_clean']
-        
-        file_metadata = {
-            'name': today, 
-            'parents':[folder_id],
-            'mimeType': 'application/vnd.google-apps.spreadsheet'
-        }
+    service = build('drive', 'v3', credentials=creds)
+    folder_id = secrets['folders']['pharm_clean']
 
-        media = MediaFileUpload(fname,
-                                mimetype='text/csv')
-        
-        print('uploading to google drive...')
-
-        file = service.files().create(body=file_metadata,
-                                      media_body=media,
-                                      supportsAllDrives=True,
-                                      fields='webViewLink').execute()
-        print (f'uploaded to: {file.get("webViewLink")}')
-        
-    except HttpError as error:
-        # TODO(developer) - Handle errors from drive API.
-        print(f'An error occurred: {error}')
+    upload_csv_as_sheet(service=service, file_name=fname, folder_id=folder_id)
     
     os.remove(fname)
 
