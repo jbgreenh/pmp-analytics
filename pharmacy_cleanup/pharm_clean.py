@@ -4,10 +4,8 @@ import os
 import toml
 
 from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from googleapiclient.http import MediaFileUpload
-from utils.auth import *
-from utils.drive import *
+from utils import auth
+from utils import drive
 
 def pharm_clean():
     '''shape data for final report'''
@@ -92,7 +90,7 @@ def pharm_clean():
     return fname
 
 def main():
-    creds = auth()
+    creds = auth.auth()
     with open('../secrets.toml', 'r') as f:
         secrets = toml.load(f)
 
@@ -101,7 +99,7 @@ def main():
     service = build('drive', 'v3', credentials=creds)
     folder_id = secrets['folders']['pharm_clean']
 
-    upload_csv_as_sheet(service=service, file_name=fname, folder_id=folder_id)
+    drive.upload_csv_as_sheet(service=service, file_name=fname, folder_id=folder_id)
     
     os.remove(fname)
 
