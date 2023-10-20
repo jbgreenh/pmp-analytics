@@ -6,12 +6,6 @@ from googleapiclient.discovery import build
 from utils import auth
 from utils import drive
 
-with open('../secrets.toml', 'r') as f:
-        secrets = toml.load(f)
-
-creds = auth.auth()
-service = build('drive', 'v3', credentials=creds)
-
 def pull_inspection_list(file_name=None):
     '''
     pull the proper inspection list
@@ -156,10 +150,12 @@ def update_unreg_sheet():
 
     sheet_link = f'https://docs.google.com/spreadsheets/d/{sheet_id}'
     print(f'appended {len(data)} rows to {sheet_link}')
-
-
-def main():
-    update_unreg_sheet()
+     
 
 if __name__ == '__main__':
-    main()
+    with open('../secrets.toml', 'r') as f:
+        secrets = toml.load(f)
+
+    creds = auth.auth()
+    service = build('drive', 'v3', credentials=creds)
+    update_unreg_sheet()
