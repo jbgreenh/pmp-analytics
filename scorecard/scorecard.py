@@ -8,17 +8,6 @@ from googleapiclient.http import MediaIoBaseDownload
 from utils import auth
 from utils import drive
 
-with open('../secrets.toml', 'r') as f:
-        secrets = toml.load(f)
-
-today = datetime.datetime.now()
-last_month = today.replace(day=1) - datetime.timedelta(days=1)
-lm_yr = last_month.year
-lm_mo = str(last_month.month).zfill(2)
-
-creds = auth.auth()
-service = build('drive', 'v3', credentials=creds)
-
 def pull_files():
     '''
     pull the proper dispensations and request files
@@ -110,9 +99,17 @@ def update_scorecard_sheet(new_row):
     sheet_link = f'https://docs.google.com/spreadsheets/d/{sheet_id}'
     print(f'updated scorecard tracking: {sheet_link}')
 
-def main():
+if __name__ == '__main__':
+    with open('../secrets.toml', 'r') as f:
+        secrets = toml.load(f)
+
+    today = datetime.datetime.now()
+    last_month = today.replace(day=1) - datetime.timedelta(days=1)
+    lm_yr = last_month.year
+    lm_mo = str(last_month.month).zfill(2)
+
+    creds = auth.auth()
+    service = build('drive', 'v3', credentials=creds)
+    
     new_row = scorecard_new_row()
     update_scorecard_sheet(new_row)
-
-if __name__ == '__main__':
-    main()
