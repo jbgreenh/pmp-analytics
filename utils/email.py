@@ -5,8 +5,6 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
-from googleapiclient.discovery import build
-from utils.auth import *
 
 def create_message_with_attachment(sender, to, subject, message_text, file_path):
     message = MIMEMultipart()
@@ -31,10 +29,8 @@ def create_message_with_attachment(sender, to, subject, message_text, file_path)
 
     return {'raw': base64.urlsafe_b64encode(message.as_bytes()).decode()}
 
-def send_email(message):
+def send_email(service, message):
     try:
-        creds = auth()
-        service = build('gmail', 'v1', credentials=creds)
         message = service.users().messages().send(userId='me', body=message).execute()
         print('message sent, message id: %s' % message['id'])
         return message

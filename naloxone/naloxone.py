@@ -1,7 +1,9 @@
 import polars as pl
 import datetime
 import toml
-from utils.email import *
+from utils import auth
+from utils import email
+from googleapiclient.discovery import build
 
 def naloxone_file():
     naloxone = pl.read_csv('data/naloxone_data.csv')
@@ -37,8 +39,11 @@ def main():
     file_path, total_naloxone_str, tod = naloxone_file()
     
     message_txt = f'Good {tod} DHS Team-\n\nWe are now up to {total_naloxone_str} doses of naloxone dispensed.{signature}'
-    message = create_message_with_attachment(sender=sender, to=to, subject=subject, message_text=message_txt, file_path=file_path)
-    send_email(message=message)
+    message = email.create_message_with_attachment(sender=sender, to=to, subject=subject, message_text=message_txt, file_path=file_path)
+    
+    creds = auth.auth()
+    service = build('gmail', 'v1', credentials=creds)
+    email.send_email(service=service, message=message)
 
 if __name__ == '__main__':
     main()
