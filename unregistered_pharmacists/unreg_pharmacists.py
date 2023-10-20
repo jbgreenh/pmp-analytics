@@ -3,15 +3,14 @@ import datetime
 import toml
 
 from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from googleapiclient.http import MediaIoBaseDownload
-from utils.auth import *
-from utils.awarxe import *
+from utils import auth
+from utils import awarxe
+from utils import drive
 
 with open('../secrets.toml', 'r') as f:
         secrets = toml.load(f)
 
-creds = auth()
+creds = auth.auth()
 
 def pull_inspection_list(file_name=None):
     '''
@@ -32,49 +31,12 @@ def pull_inspection_list(file_name=None):
 
     service = build('drive', 'v3', credentials=creds)
 
-    try:
-        results_folder = service.files().list(q=f"name = '{lm_yr}' and '{folder_id}' in parents",
-                                    supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
-        folders = results_folder.get('files', [])
-        if folders:
-            folder_id = folders[0]['id']
-        else:
-            print('folder not found')
-            folder_id = None
-    except HttpError as error:
-        print(f'error checking google drive: {error}')
-
-    try:
-        results = service.files().list(q=f"name = '{file_name}' and '{folder_id}' in parents",
-                                    supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
-        files = results.get('files', [])
-        file_id = None
-        if files:
-            file_id = files[0]['id']
-            try:
-                request = service.files().export_media(fileId=file_id, mimeType='text/csv')
-            except HttpError as error:
-                print(f'error checking google drive: {error}')
-        else:
-            print('no file found')
-
-        file = io.BytesIO()
-        downloader = MediaIoBaseDownload(file, request)
-        
-        done = False
-        print(f'pulling {file_name} from google drive...')
-        while done is False:
-            status, done = downloader.next_chunk()
-    except HttpError as error:
-        print(f'google drive error: {error}')
-        file = None
-
-    file.seek(0) # after writing, pointer is at the end of the stream
-    return pl.read_csv(file, infer_schema_length=100000).lazy()
+    folder_id = drive.folder_id_from_name(service=service, folder_name=lm_yr, parent_id=folder_id)
+    return drive.lazyframe_from_filename_sheet(service=service, file_name=file_name, folder_id=folder_id)
 
 
 def registration():
-    aw = awarxe()
+    aw = awarxe.awarxe()
     aw = (
         aw
         .with_columns(
@@ -147,7 +109,7 @@ def registration():
 
 def update_unreg_sheet():
     sheet_id = secrets['files']['unreg_pharmacists']
-    range_name = 'pharmacists!A:A'
+    range_name = 'pharmacists!B:B'
     service = build('sheets', 'v4', credentials=creds)
     result = service.spreadsheets().values().get(spreadsheetId=sheet_id, range=range_name).execute()
     values = result.get('values', [])
@@ -159,6 +121,7 @@ def update_unreg_sheet():
     
     reg = registration()
     data = [list(row) for row in reg.collect().rows()]
+
     data_range = f'pharmacists!B{last_row + 1}:{chr(65 + len(data[0]))}{last_row + len(data) + 1}'
 
     request = service.spreadsheets().values().update(
