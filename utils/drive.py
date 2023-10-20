@@ -70,6 +70,7 @@ def lazyframe_from_filename_sheet(service, file_name, folder_id):
     file.seek(0) # after writing, pointer is at the end of the stream
     return pl.read_csv(file, infer_schema_length=100000).lazy()
 
+
 def awarxe(service, day=None):
     '''get yesterday's date and return the most recent awarxe file from the google drive as a lazyframe'''
     if day == None:
