@@ -4,13 +4,13 @@ import toml
 
 from googleapiclient.discovery import build
 from utils import auth
-from utils import awarxe
 from utils import drive
 
 with open('../secrets.toml', 'r') as f:
         secrets = toml.load(f)
 
 creds = auth.auth()
+service = build('drive', 'v3', credentials=creds)
 
 def pull_inspection_list(file_name=None):
     '''
@@ -29,14 +29,12 @@ def pull_inspection_list(file_name=None):
         
     folder_id = secrets['folders']['pharmacist_reg']
 
-    service = build('drive', 'v3', credentials=creds)
-
     folder_id = drive.folder_id_from_name(service=service, folder_name=lm_yr, parent_id=folder_id)
     return drive.lazyframe_from_filename_sheet(service=service, file_name=file_name, folder_id=folder_id)
 
 
 def registration():
-    aw = awarxe.awarxe()
+    aw = drive.awarxe(service=service)
     aw = (
         aw
         .with_columns(
