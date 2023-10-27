@@ -166,7 +166,7 @@ def upload_csv_as_sheet(service, file_name, folder_id):
         media = MediaFileUpload(file_name,
                                 mimetype='text/csv')
         
-        print('uploading to google drive...')
+        print(f'uploading {file_name} to google drive...')
 
         file = service.files().create(body=file_metadata,
                                       media_body=media,
