@@ -71,6 +71,23 @@ def lazyframe_from_filename_sheet(service, file_name:str, folder_id:str) -> pl.L
     return pl.read_csv(file, infer_schema_length=100000).lazy()
 
 
+def lazyframe_from_id_and_sheetname(service, file_id:str, sheet_name:str) -> pl.LazyFrame | None:
+    try:
+        request = service.files().export_media(fileId=file_id, mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    except HttpError as error:
+        print(f'error checking google drive: {error}')
+    file = io.BytesIO()
+    downloader = MediaIoBaseDownload(file, request)
+    
+    done = False
+    print(f'pulling {file_id} sheet {sheet_name} from google drive...')
+    while done is False:
+        status, done = downloader.next_chunk()
+    
+    file.seek(0) # after writing, pointer is at the end of the stream
+    return pl.read_excel(file, sheet_name='registration', read_csv_options={'infer_schema_length':100000}).lazy()
+
+
 def awarxe(service, day:str=None) -> pl.LazyFrame | None:
     '''
     return a lazy frame of the most recent awarxe file from the google drive, unless day is specified
