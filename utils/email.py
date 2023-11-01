@@ -5,8 +5,12 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
+from typing import Dict
 
-def create_message_with_attachment(sender, to, subject, message_text, file_path):
+def create_message_with_attachment(sender:str, to:str, subject:str, message_text:str, file_path:str) -> Dict[str, str]:
+    '''
+    returns an email message with the provided sender, to, subject, message_text, and attachment at the file_path
+    '''
     message = MIMEMultipart()
     message['to'] = to  # specify the recipients as a comma-separated string
     message['from'] = sender
@@ -29,7 +33,8 @@ def create_message_with_attachment(sender, to, subject, message_text, file_path)
 
     return {'raw': base64.urlsafe_b64encode(message.as_bytes()).decode()}
 
-def send_email(service, message):
+def send_email(service, message:Dict[str,str]) -> None:
+    '''sends an email from a message returned from create_message_with_attachment'''
     try:
         message = service.users().messages().send(userId='me', body=message).execute()
         print('message sent, message id: %s' % message['id'])

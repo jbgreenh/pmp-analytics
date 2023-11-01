@@ -1,6 +1,6 @@
 import polars as pl
 
-def deas(p):
+def deas(p:str) -> pl.LazyFrame:
     '''
     returns a lazyframe from the full dea fixed width file
     p:
