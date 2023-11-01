@@ -5,7 +5,7 @@ import toml
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
 
-def lazyframe_from_file_name_csv(service, file_name, folder_id, sep=','):
+def lazyframe_from_file_name_csv(service, file_name:str, folder_id:str, sep:str=',') -> pl.LazyFrame | None:
     '''
     return a lazyframe of the csv in the provided folder
     '''
@@ -38,7 +38,7 @@ def lazyframe_from_file_name_csv(service, file_name, folder_id, sep=','):
     return pl.read_csv(file, separator=sep, infer_schema_length=100000).lazy()
 
 
-def lazyframe_from_filename_sheet(service, file_name, folder_id):
+def lazyframe_from_filename_sheet(service, file_name:str, folder_id:str) -> pl.LazyFrame | None:
     '''
     return a lazyframe of the sheet in the provided folder
     '''
@@ -71,7 +71,7 @@ def lazyframe_from_filename_sheet(service, file_name, folder_id):
     return pl.read_csv(file, infer_schema_length=100000).lazy()
 
 
-def awarxe(service, day=None):
+def awarxe(service, day:str=None) -> pl.LazyFrame | None:
     '''
     return a lazy frame of the most recent awarxe file from the google drive, unless day is specified
     day should be a string in %Y%m%d format
@@ -132,7 +132,7 @@ def awarxe(service, day=None):
     return pl.read_csv(file, separator='|', infer_schema_length=100000).lazy()
 
 
-def folder_id_from_name(service, folder_name, parent_id):
+def folder_id_from_name(service, folder_name:str, parent_id:str) -> str | None:
     '''
     returns the folder id of the folder_name in the parent folder
     '''
@@ -151,7 +151,7 @@ def folder_id_from_name(service, folder_name, parent_id):
         print(f'error checking google drive: {error}')
 
 
-def upload_csv_as_sheet(service, file_name, folder_id):
+def upload_csv_as_sheet(service, file_name:str, folder_id:str) -> None:
     '''
     uploads a local csv file as a sheet to the specified folder, removes the extension for the name of the sheet
     eg. 'file.csv' -> 'file'
