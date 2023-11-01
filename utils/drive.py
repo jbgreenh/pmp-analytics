@@ -72,7 +72,10 @@ def lazyframe_from_filename_sheet(service, file_name, folder_id):
 
 
 def awarxe(service, day=None):
-    '''get yesterday's date and return the most recent awarxe file from the google drive as a lazyframe'''
+    '''
+    return a lazy frame of the most recent awarxe file from the google drive, unless day is specified
+    day should be a string in %Y%m%d format
+    '''
     if day == None:
         yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
         yesterday_year = yesterday.strftime('%Y')
