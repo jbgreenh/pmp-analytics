@@ -6,3 +6,5 @@ pytz==2023.3.post1
 paramiko==3.3.1
 ipykernel==6.25.2
 XlsxWriter==3.1.9
+pyarrow==14.0.0
+numpy==1.26.1
