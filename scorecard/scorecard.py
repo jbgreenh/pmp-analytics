@@ -36,7 +36,6 @@ def scorecard_new_row():
         disp
         .filter(pl.col('state') == 'AZ')
         .select('dea_number')
-        .select('dea_number')
         .join(lookups, on='dea_number', how='left')
         .group_by('dea_number')
         .sum()
@@ -52,7 +51,6 @@ def scorecard_new_row():
     ob_disps = (
         ob_disp
         .filter(pl.col('state') == 'AZ')
-        .select('dea_number')
         .select('dea_number')
         .join(lookups, on='dea_number', how='left')
         .group_by('dea_number')
