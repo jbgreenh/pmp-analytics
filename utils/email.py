@@ -33,7 +33,7 @@ def create_message_with_attachment(sender:str, to:str, subject:str, message_text
 
     return {'raw': base64.urlsafe_b64encode(message.as_bytes()).decode()}
 
-def send_email(service, message:Dict[str,str]) -> None:
+def send_email(service, message:Dict[str,str]):
     '''sends an email from a message returned from create_message_with_attachment'''
     try:
         message = service.users().messages().send(userId='me', body=message).execute()
