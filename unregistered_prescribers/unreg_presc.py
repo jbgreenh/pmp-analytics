@@ -26,7 +26,7 @@ az_presc_deas = (
 exclude_degs = (pl.scan_csv('data/exclude_degs.csv'))
 boards = (pl.scan_csv('data/deg_board.csv'))
 
-# drop ')' '(' and '.' from Name
+# pattern to drop ')' '(' and '.' from Name
 pattern = r'[().]'
 
 unreg_prescribers = (
@@ -44,14 +44,21 @@ unreg_prescribers_w_boards = (
     .with_columns(
         pl.when((pl.col('temp_deg').is_in(pl.col('deg_exclude')).not_()) & (pl.col('temp_deg').str.len_chars() > 1))
         .then(pl.col('temp_deg'))
+        .otherwise(None)
+        .alias('temp_deg_2')
+    )
+    .with_columns(
+        pl.when(pl.col('Degree').str.len_chars()==0)
+        .then(pl.col('temp_deg_2'))
         .otherwise(pl.col('Degree'))
         .alias('final_deg')
-    ).collect()
+    )
+    .collect()
     .join(
         boards.collect(), how='left', left_on='final_deg', right_on='degree'
     )
     .select(
-        'awarxe', 'DEA Number', 'Name', 'Additional Company Info', 'Address 1', 'Address 2', 'City', 'State', 'Zip Code', 'final_deg', 'State License Number', 'board'
+        'awarxe', 'DEA Number', 'Name', 'Additional Company Info', 'Address 1', 'Address 2', 'City', 'State', 'Zip Code', 'final_deg','State License Number', 'board'
     )
     .rename({'final_deg':'degree'})
     .with_columns(
@@ -83,18 +90,22 @@ total_unreg = board_counts.sum().fill_null('total')
 stats = pl.concat([board_counts, total_unreg])
 print(stats)
 
-# files for each of the boards
-dental = unreg_prescribers_w_boards.filter(pl.col('board').str.contains('Dental'))
-medical = unreg_prescribers_w_boards.filter(pl.col('board').str.contains('Medical'))
-naturopath = unreg_prescribers_w_boards.filter(pl.col('board').str.contains('Naturopathic'))
-nursing = unreg_prescribers_w_boards.filter(pl.col('board').str.contains('Nursing'))
-optometry = unreg_prescribers_w_boards.filter(pl.col('board').str.contains('Optometry'))
-osteopathic = unreg_prescribers_w_boards.filter(pl.col('board').str.contains('Osteopathic'))
-physician_assistants = unreg_prescribers_w_boards.filter(pl.col('board').str.contains('Physician Assistants'))
-podiatry = unreg_prescribers_w_boards.filter(pl.col('board').str.contains('Podiatry'))
 
 with open('../secrets.toml', 'r') as f:
     secrets = toml.load(f)
-    
+
 board_contacts = drive.lazyframe_from_id_and_sheetname(service=service, file_id=secrets['files']['board_contacts'], sheet_name='registration')
 
+
+board_list = ['Dental', 'Medical', 'Naturopathic', 'Nursing', 'Optometry', 'Osteopathic', 'Physician Assistant', 'Podiatry']
+board_dict = {}
+
+# board_df, board_name, board_email(s) for each board above
+for b in board_list:
+    board_df = unreg_prescribers_w_boards.filter(pl.col('board').str.contains(b))
+    board_info = board_contacts.filter(pl.col('Board').str.contains(b)).collect()
+    board_name = board_info.item(0,'Board Name')
+    board_email = board_info.item(0,'Email')
+    board_dict[b] = (board_df, board_name, board_email)
+
+# TODO make and send emails
