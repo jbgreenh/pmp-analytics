@@ -23,8 +23,11 @@ az_presc_deas = (
     )
 )
 
-exclude_degs = (pl.scan_csv('data/exclude_degs.csv'))
-boards = (pl.scan_csv('data/deg_board.csv'))
+with open('../secrets.toml', 'r') as f:
+    secrets = toml.load(f)
+
+exclude_degs = drive.lazyframe_from_id_and_sheetname(service=service, file_id=secrets['files']['exclude_degs'], sheet_name='exclude_degs')
+boards = drive.lazyframe_from_id_and_sheetname(service=service, file_id=secrets['files']['deg_board'], sheet_name='deg_board')
 
 # pattern to drop ')' '(' and '.' from Name
 pattern = r'[().]'
@@ -90,12 +93,7 @@ total_unreg = board_counts.sum().fill_null('total')
 stats = pl.concat([board_counts, total_unreg])
 print(stats)
 
-
-with open('../secrets.toml', 'r') as f:
-    secrets = toml.load(f)
-
 board_contacts = drive.lazyframe_from_id_and_sheetname(service=service, file_id=secrets['files']['board_contacts'], sheet_name='registration')
-
 
 board_list = ['Dental', 'Medical', 'Naturopathic', 'Nursing', 'Optometry', 'Osteopathic', 'Physician Assistant', 'Podiatry']
 board_dict = {}
