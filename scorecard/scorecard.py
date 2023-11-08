@@ -6,10 +6,12 @@ from googleapiclient.discovery import build
 from utils import auth
 from utils import drive
 
-def pull_files():
+def pull_files(service, last_month):
     '''
     pull the proper dispensations and request files
     '''
+    lm_yr = last_month.year
+    lm_mo = str(last_month.month).zfill(2)
     file_name = f'AZ_Dispensations_{lm_yr}{lm_mo}.csv'
     ob_file_name = f'AZ_Dispensations_{lm_yr}{lm_mo}_opioid_benzo.csv'
 
@@ -24,8 +26,8 @@ def pull_files():
     return disp, ob_disp, requests
 
 
-def scorecard_new_row():
-    disp, ob_disp, requests = pull_files()
+def scorecard_new_row(service, last_month):
+    disp, ob_disp, requests = pull_files(service, last_month)
 
     lookups = (
         requests
@@ -70,7 +72,7 @@ def scorecard_new_row():
     return combined
 
 
-def update_scorecard_sheet(new_row):
+def update_scorecard_sheet(creds, new_row):
     sheet_id = secrets['files']['scorecard']
     range_name = 'scorecard!A:A'
     service = build('sheets', 'v4', credentials=creds)
@@ -95,17 +97,16 @@ def update_scorecard_sheet(new_row):
     sheet_link = f'https://docs.google.com/spreadsheets/d/{sheet_id}'
     print(f'updated scorecard tracking: {sheet_link}')
 
+
 if __name__ == '__main__':
     with open('../secrets.toml', 'r') as f:
         secrets = toml.load(f)
 
     today = datetime.datetime.now()
     last_month = today.replace(day=1) - datetime.timedelta(days=1)
-    lm_yr = last_month.year
-    lm_mo = str(last_month.month).zfill(2)
 
     creds = auth.auth()
     service = build('drive', 'v3', credentials=creds)
     
-    new_row = scorecard_new_row()
-    update_scorecard_sheet(new_row)
+    new_row = scorecard_new_row(service, last_month)
+    update_scorecard_sheet(creds, new_row)
