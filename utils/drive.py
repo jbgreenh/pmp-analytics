@@ -38,7 +38,7 @@ def lazyframe_from_file_name_csv(service, file_name:str, folder_id:str, sep:str=
     return pl.read_csv(file, separator=sep, infer_schema_length=100000).lazy()
 
 
-def lazyframe_from_filename_sheet(service, file_name:str, folder_id:str) -> pl.LazyFrame | None:
+def lazyframe_from_file_name_sheet(service, file_name:str, folder_id:str) -> pl.LazyFrame | None:
     '''
     return a lazyframe of the sheet in the provided folder
     '''
@@ -85,7 +85,7 @@ def lazyframe_from_id_and_sheetname(service, file_id:str, sheet_name:str) -> pl.
         status, done = downloader.next_chunk()
     
     file.seek(0) # after writing, pointer is at the end of the stream
-    return pl.read_excel(file, sheet_name='registration', read_csv_options={'infer_schema_length':100000}).lazy()
+    return pl.read_excel(file, sheet_name=sheet_name, read_csv_options={'infer_schema_length':100000}).lazy()
 
 
 def awarxe(service, day:str=None) -> pl.LazyFrame | None:
@@ -170,9 +170,10 @@ def folder_id_from_name(service, folder_name:str, parent_id:str) -> str | None:
 
 def upload_csv_as_sheet(service, file_name:str, folder_id:str) -> None:
     '''
-    uploads a local csv file as a sheet to the specified folder, removes the extension for the name of the sheet
+    uploads a local csv file as a sheet to the specified folder, file_name is the path to the local csv
+    removes the extension for the name of the sheet
     eg. 'file.csv' -> 'file'
-    you may want to remove the csv after this upload for clealiness
+    you may want to remove the csv after this upload for cleanliness
     '''
     try:
         no_ext = file_name.split('.')[0]
@@ -189,6 +190,28 @@ def upload_csv_as_sheet(service, file_name:str, folder_id:str) -> None:
         print(f'uploading {no_ext} to google drive...')
 
         file = service.files().create(body=file_metadata,
+                                      media_body=media,
+                                      supportsAllDrives=True,
+                                      fields='webViewLink').execute()
+        print (f'uploaded to: {file.get("webViewLink")}')
+        
+    except HttpError as error:
+        print(f'an error occurred: {error}')
+
+
+def update_sheet(service, file_name:str, file_id:str) -> None:
+    '''
+    uses the contents of a local csv file to update the sheet at the specified file_id
+    file_name is the path to the local csv
+    you may want to remove the csv after this upload for cleanliness
+    '''
+    try:        
+        media = MediaFileUpload(file_name,
+                                mimetype='text/csv')
+        
+        print(f'updating {file_id} with {file_name}...')
+
+        file = service.files().update(fileId=file_id,
                                       media_body=media,
                                       supportsAllDrives=True,
                                       fields='webViewLink').execute()
