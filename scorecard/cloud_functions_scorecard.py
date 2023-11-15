@@ -113,8 +113,8 @@ def update_scorecard_sheet(creds, new_row):
 
 
 def scorecard():
-    today = datetime.datetime.now()
-    last_month = today.replace(day=1) - datetime.timedelta(days=1)
+    today = datetime.now()
+    last_month = today.replace(day=1) - timedelta(days=1)
 
     creds, _proj_id = google.auth.default()
     service = build('drive', 'v3', credentials=creds)
