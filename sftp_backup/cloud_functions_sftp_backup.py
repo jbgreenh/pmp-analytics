@@ -1,54 +1,58 @@
 import base64
 import paramiko
 import os
-import datetime, pytz
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseUpload
 import google.auth
 
 def upload_file(service, sftp, remote_file_path, drive_folder_id):
-    # check if the file exists in the google drive folder
+    # check if the file exists in the google drive folder if the file was updated in the last 25 hrs
     file_exists = False
     drive_file_id = None
     remote_file = os.path.basename(remote_file_path)  # extract the filename from the path
-    try:
-        results = service.files().list(q=f"name = '{remote_file}' and '{drive_folder_id}' in parents",
-                                       supportsAllDrives=True, 
-                                       includeItemsFromAllDrives=True,
-                                       fields='files(id, modifiedTime)').execute()
-        files = results.get('files', [])
-        if files:
-            file_exists = True
-            drive_file_id = files[0]['id']
-            drive_file_modified_time = datetime.datetime.fromisoformat(files[0]['modifiedTime']).replace(tzinfo=pytz.UTC)
-    except HttpError as error:
-        print(f'error checking google drive: {error}')
 
-    remote_file_mtime = datetime.datetime.fromtimestamp(sftp.lstat(remote_file_path).st_mtime).replace(tzinfo=pytz.UTC)
+    remote_file_mtime = datetime.fromtimestamp(sftp.lstat(remote_file_path).st_mtime).replace(tzinfo=ZoneInfo('America/Phoenix')).astimezone(timezone.utc)
+    current_utc_datetime = datetime.now(timezone.utc)
+    time_dif = current_utc_datetime - remote_file_mtime
+    if time_dif <= timedelta(hours=25):
+        try:
+            results = service.files().list(q=f"name = '{remote_file}' and '{drive_folder_id}' in parents",
+                                        supportsAllDrives=True, 
+                                        includeItemsFromAllDrives=True,
+                                        fields='files(id, modifiedTime)').execute()
+            files = results.get('files', [])
+            if files:
+                file_exists = True
+                drive_file_id = files[0]['id']
+                drive_file_modified_time = datetime.datetime.fromisoformat(files[0]['modifiedTime']).replace(tzinfo=pytz.UTC)
+        except HttpError as error:
+            print(f'error checking google drive: {error}')
 
-    if not file_exists:
-        print(f'uploading {remote_file} to google drive...')
-        # sftp -> google drive
-        with sftp.file(remote_file_path, 'rb') as remote_file_content:
-            remote_file_content.prefetch()
-            media = MediaIoBaseUpload(remote_file_content, mimetype='application/octet-stream', chunksize=1024*1024, resumable=True)
-            file_metadata = {
-                'name': remote_file,
-                'parents': [drive_folder_id],
-            }
-            service.files().create(supportsAllDrives=True, media_body=media, body=file_metadata).execute()
-            print(f'{remote_file} uploaded to google drive.')
-    else:
-        # check if the sftp file is newer
-        if remote_file_mtime > drive_file_modified_time:
-            print(f'updating {remote_file} on google drive...')
+        if not file_exists:
+            print(f'uploading {remote_file} to google drive...')
             # sftp -> google drive
             with sftp.file(remote_file_path, 'rb') as remote_file_content:
                 remote_file_content.prefetch()
                 media = MediaIoBaseUpload(remote_file_content, mimetype='application/octet-stream', chunksize=1024*1024, resumable=True)
-                service.files().update(fileId=drive_file_id, media_body=media, supportsAllDrives=True).execute()
-                print(f'{remote_file} updated on google drive.')
+                file_metadata = {
+                    'name': remote_file,
+                    'parents': [drive_folder_id],
+                }
+                service.files().create(supportsAllDrives=True, media_body=media, body=file_metadata).execute()
+                print(f'{remote_file} uploaded to google drive.')
+        else:
+            # check if the sftp file is newer
+            if remote_file_mtime > drive_file_modified_time:
+                print(f'updating {remote_file} on google drive...')
+                # sftp -> google drive
+                with sftp.file(remote_file_path, 'rb') as remote_file_content:
+                    remote_file_content.prefetch()
+                    media = MediaIoBaseUpload(remote_file_content, mimetype='application/octet-stream', chunksize=1024*1024, resumable=True)
+                    service.files().update(fileId=drive_file_id, media_body=media, supportsAllDrives=True).execute()
+                    print(f'{remote_file} updated on google drive.')
 
 
 def upload_directory(service, sftp, remote_path, drive_folder_id):
