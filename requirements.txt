@@ -2,7 +2,6 @@ google_api_python_client==2.103.0
 google_auth_oauthlib==1.1.0
 polars==0.19.8
 toml==0.10.2
-pytz==2023.3.post1
 paramiko==3.3.1
 ipykernel==6.25.2
 XlsxWriter==3.1.9
