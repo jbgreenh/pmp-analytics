@@ -1,12 +1,23 @@
 import base64
 import paramiko
-import os
+import os, logging
+from io import StringIO
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseUpload
 import google.auth
+from google.cloud import pubsub_v1
+
+
+# global log stream; log_stream.getvalue() will have the results
+log_stream = StringIO()
+logging.basicConfig(stream=log_stream, level=logging.INFO)
+today = datetime.now().astimezone(ZoneInfo('America/Phoenix'))
+today_str = today.strftime('%m/%d/%Y, %H:%M:%S')
+logging.info(f'daily sftp backup begun {today_str}')
+
 
 def upload_file(service, sftp, remote_file_path, drive_folder_id):
     # check if the file exists in the google drive folder if the file was updated in the last 25 hrs
@@ -29,10 +40,10 @@ def upload_file(service, sftp, remote_file_path, drive_folder_id):
                 drive_file_id = files[0]['id']
                 drive_file_modified_time = datetime.datetime.fromisoformat(files[0]['modifiedTime'])
         except HttpError as error:
-            print(f'error checking google drive: {error}')
+            logging.error(f'error checking google drive: {error}')
 
         if not file_exists:
-            print(f'uploading {remote_file} to google drive...')
+            logging.info(f'uploading {remote_file} to google drive...')
             # sftp -> google drive
             with sftp.file(remote_file_path, 'rb') as remote_file_content:
                 remote_file_content.prefetch()
@@ -42,7 +53,7 @@ def upload_file(service, sftp, remote_file_path, drive_folder_id):
                     'parents': [drive_folder_id],
                 }
                 service.files().create(supportsAllDrives=True, media_body=media, body=file_metadata).execute()
-                print(f'{remote_file} uploaded to google drive.')
+                logging.info(f'{remote_file} uploaded to google drive.')
         else:
             # check if the sftp file is newer
             if remote_file_mtime > drive_file_modified_time:
@@ -52,7 +63,7 @@ def upload_file(service, sftp, remote_file_path, drive_folder_id):
                     remote_file_content.prefetch()
                     media = MediaIoBaseUpload(remote_file_content, mimetype='application/octet-stream', chunksize=1024*1024, resumable=True)
                     service.files().update(fileId=drive_file_id, media_body=media, supportsAllDrives=True).execute()
-                    print(f'{remote_file} updated on google drive.')
+                    logging.info(f'{remote_file} updated on google drive.')
 
 
 def upload_directory(service, sftp, remote_path, drive_folder_id):
@@ -66,6 +77,7 @@ def upload_directory(service, sftp, remote_path, drive_folder_id):
             subfolder_drive_folder_id = find_or_create_folder(service, subfolder_name, drive_folder_id)
             upload_directory(service, sftp, remote_item_path + '/', subfolder_drive_folder_id)
 
+
 def find_or_create_folder(service, name, parent_folder_id):
     # check if the folder already exists in google drive
     folder_exists = False
@@ -78,7 +90,7 @@ def find_or_create_folder(service, name, parent_folder_id):
             folder_exists = True
             folder_id = files[0]['id']
     except HttpError as error:
-        print(f'error checking google drive: {error}')
+        logging.error(f'error checking google drive: {error}')
 
     if not folder_exists:
         # if the folder doesn't exist, create it
@@ -120,6 +132,7 @@ def backup_sftp():
     sftp.close()
     ssh.close()
 
+
 def hello_pubsub(event, context):
     """Triggered from a message on a Cloud Pub/Sub topic.
     Args:
@@ -128,4 +141,18 @@ def hello_pubsub(event, context):
     """
     pubsub_message = base64.b64decode(event['data']).decode('utf-8')
     print(pubsub_message)
+    
     backup_sftp()
+
+    today = datetime.now().astimezone(ZoneInfo('America/Phoenix'))
+    today_str = today.strftime('%m/%d/%Y, %H:%M:%S')
+    logging.info(f'daily sftp backup complete {today_str}')
+    
+    project_id = os.environ.get('project_id', 'environment variable is not set')
+    topic_id = os.environ.get('topic_id', 'environment variable is not set')
+    publisher = pubsub_v1.PublisherClient()
+    topic_path = publisher.topic_path(project_id, topic_id)
+    data = log_stream.getvalue().encode('utf-8')
+    future = publisher.publish(topic_path, data)
+    print(future.result())
+    print('published message')

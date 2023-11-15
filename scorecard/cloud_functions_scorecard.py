@@ -1,11 +1,24 @@
 import base64
 import polars as pl
-import datetime
-import os
+import os, logging
+from io import StringIO
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from googleapiclient.discovery import build
 import google.auth
+from google.cloud import pubsub_v1
+
 import drive
+
+
+# global log stream; log_stream.getvalue() will have the results
+log_stream = StringIO()
+logging.basicConfig(stream=log_stream, level=logging.INFO)
+today = datetime.now().astimezone(ZoneInfo('America/Phoenix'))
+today_str = today.strftime('%m/%d/%Y, %H:%M:%S')
+logging.info(f'scorecard begun {today_str}')
+
 
 def pull_files(service, last_month):
     '''
@@ -96,7 +109,8 @@ def update_scorecard_sheet(creds, new_row):
     )
     response = request.execute()
     sheet_link = f'https://docs.google.com/spreadsheets/d/{sheet_id}'
-    print(f'updated scorecard tracking: {sheet_link}')
+    logging.info(f'updated scorecard tracking: {sheet_link}')
+
 
 def scorecard():
     today = datetime.datetime.now()
@@ -108,6 +122,7 @@ def scorecard():
     new_row = scorecard_new_row(service, last_month)
     update_scorecard_sheet(creds, new_row)
 
+
 def hello_pubsub(event, context):
     """Triggered from a message on a Cloud Pub/Sub topic.
     Args:
@@ -116,4 +131,18 @@ def hello_pubsub(event, context):
     """
     pubsub_message = base64.b64decode(event['data']).decode('utf-8')
     print(pubsub_message)
+    
     scorecard()
+
+    today = datetime.now().astimezone(ZoneInfo('America/Phoenix'))
+    today_str = today.strftime('%m/%d/%Y, %H:%M:%S')
+    logging.info(f'scorecard complete {today_str}')
+    
+    project_id = os.environ.get('project_id', 'environment variable is not set')
+    topic_id = os.environ.get('topic_id', 'environment variable is not set')
+    publisher = pubsub_v1.PublisherClient()
+    topic_path = publisher.topic_path(project_id, topic_id)
+    data = log_stream.getvalue().encode('utf-8')
+    future = publisher.publish(topic_path, data)
+    print(future.result())
+    print('published message')
