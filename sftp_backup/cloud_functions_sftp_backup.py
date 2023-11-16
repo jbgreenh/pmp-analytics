@@ -38,7 +38,7 @@ def upload_file(service, sftp, remote_file_path, drive_folder_id):
             if files:
                 file_exists = True
                 drive_file_id = files[0]['id']
-                drive_file_modified_time = datetime.datetime.fromisoformat(files[0]['modifiedTime'])
+                drive_file_modified_time = datetime.fromisoformat(files[0]['modifiedTime'])
         except HttpError as error:
             logging.error(f'error checking google drive: {error}')
 
