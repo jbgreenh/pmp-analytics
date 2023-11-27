@@ -20,7 +20,7 @@ logging.info(f'daily sftp backup begun {today_str}')
 
 
 def upload_file(service, sftp, remote_file_path, drive_folder_id):
-    # check if the file exists in the google drive folder if the file was updated in the last 25 hrs
+    # check if the file exists in the google drive folder if the file was updated in the last 24 hrs
     file_exists = False
     drive_file_id = None
     remote_file = os.path.basename(remote_file_path)  # extract the filename from the path
@@ -28,7 +28,7 @@ def upload_file(service, sftp, remote_file_path, drive_folder_id):
     remote_file_mtime = datetime.fromtimestamp(sftp.lstat(remote_file_path).st_mtime).replace(tzinfo=ZoneInfo('America/Phoenix')).astimezone(timezone.utc)
     current_utc_datetime = datetime.now(timezone.utc)
     time_dif = current_utc_datetime - remote_file_mtime
-    if time_dif <= timedelta(hours=25):
+    if time_dif <= timedelta(hours=24):
         try:
             results = service.files().list(q=f"name = '{remote_file}' and '{drive_folder_id}' in parents",
                                         supportsAllDrives=True, 
