@@ -25,7 +25,7 @@ def upload_file(service, sftp, remote_file_path, drive_folder_id):
     drive_file_id = None
     remote_file = os.path.basename(remote_file_path)  # extract the filename from the path
 
-    remote_file_mtime = datetime.fromtimestamp(sftp.lstat(remote_file_path).st_mtime).replace(tzinfo=ZoneInfo('America/Phoenix')).astimezone(timezone.utc)
+    remote_file_mtime = datetime.fromtimestamp(sftp.lstat(remote_file_path).st_mtime).astimezone(timezone.utc)
     current_utc_datetime = datetime.now(timezone.utc)
     time_dif = current_utc_datetime - remote_file_mtime
     if time_dif <= timedelta(hours=24):
