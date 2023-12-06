@@ -165,13 +165,14 @@ def send_emails(board_dict, creds, service):
         board_name = stuff[1]
         board_email = stuff[2]
         subj = f'CSPMP Unregistered Prescribers {board_name}'
-        body = f'The CSPMP sends biannual compliance reports to Arizona regulatory licensing boards regarding prescribers who have been identified as non-compliant in registering for the CSPMP, pursuant to A.R.S § 36-2606 (A). This list is generated every six months.\n\nAttached you will find the list of licensed providers with the (Board Name) that are not registered with the Arizona CSPMP, as well as detailed information pertaining to the registration requirements.\n\nIf you have any questions please feel free to contact us.{signature}'
+        body = f'The CSPMP sends biannual compliance reports to Arizona regulatory licensing boards regarding prescribers who have been identified as non-compliant in registering for the CSPMP, pursuant to A.R.S § 36-2606 (A). This list is generated every six months.\n\nAttached you will find the list of licensed providers with the {board_name} that are not registered with the Arizona CSPMP, as well as detailed information pertaining to the registration requirements.\n\nIf you have any questions please feel free to contact us.{signature}'
 
         report_file = f'{board}_unregistered_prescribers_{today_str}.csv'
         board_df.write_csv(report_file)
 
         message = email.create_message_with_attachments(sender=sender, to=board_email, subject=subj, message_text=body, file_paths=[report_file, 'data/RegistrationRequirementsNotice.pdf'])
         email.send_email(service=email_service, message=message)
+        os.remove(report_file)
 
 
 
