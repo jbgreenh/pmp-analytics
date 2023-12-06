@@ -78,8 +78,8 @@ def get_board_dict(service):
         print(unmatched)   # cleanup
         unmatched.write_csv('data/unmatched.csv')
         print('data/unmatched.csv updated')
-        # os.remove('temp.csv')    TODO uncomment
-        # return    TODO uncomment
+        os.remove('temp.csv')
+        return
 
     os.remove('temp.csv')   # cleanup
     board_counts = (
@@ -98,7 +98,7 @@ def get_board_dict(service):
     stats = pl.concat([board_counts, total_unreg])
     print(stats)
 
-    board_contacts = drive.lazyframe_from_id_and_sheetname(service=service, file_id=secrets['files']['board_contacts'], sheet_name='testing')   # TODO change sheet_name to 'registration'
+    board_contacts = drive.lazyframe_from_id_and_sheetname(service=service, file_id=secrets['files']['board_contacts'], sheet_name='registration')
 
     board_list = ['Dental', 'Medical', 'Naturopathic', 'Nursing', 'Optometry', 'Osteopathic', 'Physician Assistant', 'Podiatry']
     board_dict = {}
