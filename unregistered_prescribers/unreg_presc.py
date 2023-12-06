@@ -170,7 +170,7 @@ def send_emails(board_dict, creds, service):
         report_file = f'{board}_unregistered_prescribers_{today_str}.csv'
         board_df.write_csv(report_file)
 
-        message = email.create_message_with_attachments(sender=sender, to=board_email, subject=subj, message_text=body, file_paths=[report_file, 'data/RegistrationRequirementsNotice.pdf'])
+        message = email.create_message_with_attachments(sender=sender, to=board_email, subject=subj, message_text=body, file_paths=[report_file, 'data/RegistrationRequirementsNotice.pdf'], bcc=[sender])
         email.send_email(service=email_service, message=message)
         os.remove(report_file)
 
