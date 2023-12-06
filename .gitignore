@@ -4,6 +4,7 @@
 **/*.txt
 **/*.json
 **/*.toml
+**/*.pdf
 **/__pycache__
 test
 build
