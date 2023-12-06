@@ -5,9 +5,9 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
-from typing import Dict, List
+from typing import Dict, List, Optional
 
-def create_message_with_attachments(sender: str, to: str, subject: str, message_text: str, file_paths: List[str]) -> Dict[str, str]:
+def create_message_with_attachments(sender: str, to: str, subject: str, message_text: str, file_paths: List[str], bcc: Optional[List[str]] = None) -> Dict[str, str]:
     '''
     returns an email message with the provided sender, to, subject, message_text, and attachments at the file_paths
     '''
@@ -15,6 +15,9 @@ def create_message_with_attachments(sender: str, to: str, subject: str, message_
     message['to'] = to  # specify the recipients as a comma-separated string
     message['from'] = sender
     message['subject'] = subject
+
+    if bcc:
+        message['bcc'] = ', '.join(bcc)
 
     msg = MIMEText(message_text)
     message.attach(msg)
