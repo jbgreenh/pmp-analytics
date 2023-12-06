@@ -39,7 +39,7 @@ def main():
     file_paths, total_naloxone_str, tod = naloxone_file()
     
     message_txt = f'Good {tod} DHS Team-\n\nWe are now up to {total_naloxone_str} doses of naloxone dispensed.{signature}'
-    message = email.create_message_with_attachment(sender=sender, to=to, subject=subject, message_text=message_txt, file_paths=file_paths)
+    message = email.create_message_with_attachments(sender=sender, to=to, subject=subject, message_text=message_txt, file_paths=file_paths)
     
     creds = auth.auth()
     service = build('gmail', 'v1', credentials=creds)
