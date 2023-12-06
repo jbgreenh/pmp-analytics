@@ -14,18 +14,18 @@ def naloxone_file():
     today = datetime.datetime.now().strftime('%m%d%Y')
     tod = 'Morning' if datetime.datetime.now().hour < 12 else 'Afternoon'
 
-    file_path = f'data/naloxone_{today}.xlsx'
+    file_paths = [f'data/naloxone_{today}.xlsx']
     naloxone.write_excel(
-        file_path, 
+        file_paths[0], 
         worksheet='naloxone', 
         column_totals=['Prescription Count'], 
         autofit=True, 
         freeze_panes=((1,0,0,0)), 
         dtype_formats={pl.INTEGER_DTYPES:'0'}
     )
-    print(f'naloxone data exported to {file_path}')
+    print(f'naloxone data exported to {file_paths[0]}')
     print(f'total naloxone: {total_naloxone_str}')
-    return file_path, total_naloxone_str, tod
+    return file_paths, total_naloxone_str, tod
 
 
 def main():
@@ -36,10 +36,10 @@ def main():
     to = secrets['email']['naloxone']
     signature = secrets['email']['sig'].replace(r'\n', '\n')
     subject = 'Weekly Naloxone Report'
-    file_path, total_naloxone_str, tod = naloxone_file()
+    file_paths, total_naloxone_str, tod = naloxone_file()
     
     message_txt = f'Good {tod} DHS Team-\n\nWe are now up to {total_naloxone_str} doses of naloxone dispensed.{signature}'
-    message = email.create_message_with_attachment(sender=sender, to=to, subject=subject, message_text=message_txt, file_path=file_path)
+    message = email.create_message_with_attachment(sender=sender, to=to, subject=subject, message_text=message_txt, file_paths=file_paths)
     
     creds = auth.auth()
     service = build('gmail', 'v1', credentials=creds)
