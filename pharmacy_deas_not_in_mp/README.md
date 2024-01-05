@@ -1,0 +1,2 @@
+# pharmacy deas not in manage pharmacies
+this script checks for pharmacy dea numbers that are active with the dea but not in manage pharmacies in awarxe and writes the results to `data/pharmacy_deas_not_in_mp.csv`
