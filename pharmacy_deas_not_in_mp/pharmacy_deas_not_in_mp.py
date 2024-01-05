@@ -21,5 +21,5 @@ dea = (
     )
 )
 
-dea.collect().write_csv('pharmacy_deas_not_in_mp.csv')
+dea.collect().write_csv('data/pharmacy_deas_not_in_mp.csv')
 print('data/pharmacy_deas_not_in_mp.csv updated')
