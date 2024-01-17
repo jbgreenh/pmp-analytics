@@ -82,6 +82,7 @@ def mm1(service):
         .with_columns(
             pl.lit('').alias('note')
         )
+        .drop('last name', 'professional license number')
     )
 
     mm_matches_combined = pl.concat([mm_old_match, mm_code_match])

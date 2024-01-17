@@ -43,7 +43,6 @@ def mm2(service):
     )
     mm_manual = (
         pl.scan_csv('data/mm_manual.csv', infer_schema_length=10000)
-        .drop('last name', 'professional license number')
     )
 
     mm_combined = pl.concat([mm_matches, mm_manual])
