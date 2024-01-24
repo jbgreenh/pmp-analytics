@@ -24,7 +24,7 @@ def pull_inspection_list(file_name=None):
     folder_id = secrets['folders']['pharmacist_reg']
 
     folder_id = drive.folder_id_from_name(service=service, folder_name=lm_yr, parent_id=folder_id)
-    return drive.lazyframe_from_filename_sheet(service=service, file_name=file_name, folder_id=folder_id)
+    return drive.lazyframe_from_file_name_sheet(service=service, file_name=file_name, folder_id=folder_id)
 
 
 def registration():
