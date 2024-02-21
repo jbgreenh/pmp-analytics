@@ -32,9 +32,9 @@ def main():
     with open('../secrets.toml', 'r') as f:
         secrets = toml.load(f)
 
-    sender = secrets['email']['email']
+    sender = secrets['email']['data']
     to = secrets['email']['naloxone']
-    signature = secrets['email']['sig'].replace(r'\n', '\n')
+    signature = secrets['email']['data_sig'].replace(r'\n', '\n')
     subject = 'Weekly Naloxone Report'
     file_paths, total_naloxone_str, tod = naloxone_file()
     
