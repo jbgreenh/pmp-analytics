@@ -4,8 +4,7 @@ import os
 import toml
 
 from googleapiclient.discovery import build
-from utils import auth
-from utils import drive
+from utils import auth, drive, email
 
 def pharm_clean():
     '''shape data for final report'''
@@ -102,6 +101,19 @@ def main():
     drive.upload_csv_as_sheet(service=service, file_name=fname, folder_id=folder_id)
     
     os.remove(fname)
+
+    # email notification
+    sender = secrets['email']['data']
+    to = secrets['email']['compliance']
+    subject = 'delinquent submitters cleanup complete'
+    # leaving links out as requested
+    message_txt = 'hello, the weekly delinquent data submitters cleanup is complete\n\nthank you,\n\ndata team'
+
+    message = email.create_message_with_attachments(sender=sender, to=to, subject=subject, message_text=message_txt)
+    
+    creds = auth.auth()
+    email_service = build('gmail', 'v1', credentials=creds)
+    email.send_email(service=email_service, message=message)
 
 if __name__ == '__main__':
     main()
