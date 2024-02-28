@@ -111,7 +111,6 @@ def main():
 
     message = email.create_message_with_attachments(sender=sender, to=to, subject=subject, message_text=message_txt)
     
-    creds = auth.auth()
     email_service = build('gmail', 'v1', credentials=creds)
     email.send_email(service=email_service, message=message)
 
