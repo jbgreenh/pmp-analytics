@@ -85,7 +85,7 @@ def get_board_dict(service):
     board_counts = (
         unreg_prescribers_w_boards['board']
         .value_counts()
-        .rename({'counts':'unregistered_prescribers'})
+        .rename({'count':'unregistered_prescribers'})
         .filter(
             pl.col('board').is_in(['Veterinary','Military','Homeopathic']).not_()
         )
