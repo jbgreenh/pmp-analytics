@@ -33,9 +33,9 @@ def get_board_dict(service):
     pattern = r'[().]'
 
     unreg_prescribers = (
-        az_presc_deas.lazy().with_context(awarxe.select(pl.all().suffix('_awarxe')))
+        az_presc_deas.lazy().with_context(awarxe.select(pl.all().name.suffix('_awarxe')))
         .with_columns(
-            pl.col('DEA Number').is_in(pl.col('dea number_awarxe')).map_dict({True:'YES', False:'NO'}).alias('awarxe'),
+            pl.col('DEA Number').is_in(pl.col('dea number_awarxe')).replace({True:'YES', False:'NO'}).alias('awarxe'),
             pl.col('Name').str.replace_all(pattern=pattern, value='').str.split(' ').list.get(-1).alias('temp_deg')  # drop ')' '(' and '.' from Name
         )
         .filter(pl.col('awarxe').str.contains('NO'))
@@ -43,7 +43,7 @@ def get_board_dict(service):
     unreg_prescribers.collect().write_csv('temp.csv')   # write and remove to get rid of the first context 🤢
 
     unreg_prescribers_w_boards = (
-        pl.scan_csv('temp.csv', infer_schema_length=10000).with_context(exclude_degs.select(pl.all().suffix('_exclude')))
+        pl.scan_csv('temp.csv', infer_schema_length=10000).with_context(exclude_degs.select(pl.all().name.suffix('_exclude')))
         .with_columns(
             pl.when((pl.col('temp_deg').is_in(pl.col('deg_exclude')).not_()) & (pl.col('temp_deg').str.len_chars() > 1))
             .then(pl.col('temp_deg'))
