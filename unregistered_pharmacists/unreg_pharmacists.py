@@ -77,7 +77,7 @@ def registration():
     final_sheet = (
         inspection_list.with_context(aw)
         .with_columns(
-            pl.col('License #').is_in(pl.col('professional license number')).map_dict({True:'YES', False:'NO'}).alias('awarxe')
+            pl.col('License #').is_in(pl.col('professional license number')).replace({True:'YES', False:'NO'}).alias('awarxe')
         )
         .filter(pl.col('awarxe').str.contains('NO'))
         .join(
