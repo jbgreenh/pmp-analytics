@@ -64,12 +64,36 @@ def registration():
     )
 
     pharmacists = (
-        pl.scan_csv('data/igov_pharmacist.csv')
+        pl.scan_csv('data/igov_pharmacist.csv', infer_schema_length=10000)
         .with_columns(
-                pl.col('License/Permit #').str.to_uppercase().str.strip_chars()
+                pl.col('License/Permit #').str.to_uppercase().str.strip_chars(),
+                pl.concat_str(
+                    [
+                        pl.col('Street Address'),
+                        pl.col('Apt/Suite #')
+                    ],
+                    separator=' '
+                ).alias('Address'),
+                pl.concat_str(
+                    [
+                        pl.col('City'),
+                        pl.lit(',')
+                    ]
+                ).alias('City,')
+        )
+        .with_columns(
+            pl.concat_str(
+                [
+                    pl.col('City,'),
+                    pl.col('State'),
+                    pl.col('Zip')
+                ],
+                separator=' '
+            ).alias('CSZ')
         )
         .select(
-            'License/Permit #', 'First Name', 'Middle Name', 'Last Name', 'Status', 'Phone', 'Email'
+            'License/Permit #', 'First Name', 'Middle Name', 'Last Name', 'Status', 'Phone', 'Email', 
+            'Address', 'CSZ'
         )
     )
 
@@ -90,9 +114,8 @@ def registration():
             manage_pharmacies, left_on='Permit #', right_on='Pharmacy License Number', how='left'
         )
         .select(
-            'awarxe', 'SubType', 'Business Name', 'Permit #', 'License #', 
-            'Last Insp', 'Notes', 'PharmacyDEA', 'First Name', 'Middle Name',
-            'Last Name', 'Status', 'Phone', 'Email'
+            'awarxe', 'License #', 'Last Insp', 'Notes', 'First Name', 'Middle Name', 'Last Name', 
+            'Status', 'Phone', 'Email', 'Address', 'CSZ', 'Business Name', 'SubType', 'Permit #', 'PharmacyDEA'
         )
     )
 
