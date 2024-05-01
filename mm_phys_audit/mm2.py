@@ -18,8 +18,7 @@ def mm2(service):
     
     lookups = pl.LazyFrame()
     for n in range(start, end+1):
-        if n < 10: 
-            n = f'0{n}'
+        n = str(n).zfill(2)
         print(f'{year}{n}:')
         requests_folder_id = secrets['folders']['patient_requests']
         requests_folder_id = drive.folder_id_from_name(service=service, folder_name=f'AZ_PtReqByProfile_{year}{n}', parent_id=requests_folder_id)
