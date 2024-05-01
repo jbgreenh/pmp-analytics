@@ -90,9 +90,13 @@ def mm1(service):
     mm_match_neither.collect().write_csv('data/mm_manual.csv')
     print('generated data/mm_matches_combined.csv')
     print('generated data/mm_manual.csv')
-    print('please manually check all prescribers in mm_manual \nwith 20+ application count for DEA numbers')
-    print('and save to data/mm_manual.csv, then run mm2.py')
-
+    print('''
+        --------------------------------------------------
+        please manually check all prescribers in mm_manual
+        with 20+ application count for DEA numbers
+        and save to data/mm_manual.csv, then run mm2.py
+        --------------------------------------------------
+    ''')
 
 if __name__ == '__main__':
     creds = auth.auth()
