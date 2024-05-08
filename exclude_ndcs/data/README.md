@@ -1,3 +1,4 @@
 ## required files
-`excluded_ndcs.csv`  
-`opiate_antagonists_data.csv`
+|   file              | description                                     |
+|---------------------|-------------------------------------------------|
+|`excluded_ndcs.csv`  | provided list of previously excluded ndc numbers|

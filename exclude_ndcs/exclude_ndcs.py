@@ -1,13 +1,17 @@
 import polars as pl
+from utils import tableau
 
 excluded_ndcs = pl.scan_csv('data/excluded_ndcs.csv', infer_schema_length=0) # infer_schema_length=0 forces all types to utf-8 and maintains the leading 0s in NDCs
+
+luid = tableau.find_view_luid('opiate_antagonists', 'opiate antagonists')
 antagonists = (
-    pl.scan_csv('data/opiate_antagonists_data.csv', infer_schema_length=0)
+    tableau.lazyframe_from_view_id(luid, infer_schema_length=0)
     .join(excluded_ndcs, on='NDC', how='anti')
     .rename(
         {'Generic Name':'drug'}
     )
 )
+
 new_ndcs = antagonists.collect()
 
 if new_ndcs.shape[0] == 0:
