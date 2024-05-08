@@ -1,13 +1,25 @@
 import polars as pl
 import datetime
 import toml
-from utils import auth
-from utils import email
+from utils import auth, email, tableau
 from googleapiclient.discovery import build
 
 def naloxone_file():
-    naloxone = pl.read_csv('data/naloxone_data.csv')
+    luid = tableau.find_view_luid('naloxone', 'Naloxone (2017-Present)')
+    ys = []
+    for y in range(2017, datetime.date.today().year+1):
+        ys.append(str(y))
+    years = ','.join(ys)
+    filters = {'Year':years}
+    naloxone = (
+        tableau.lazyframe_from_view_id(luid, filters)
+        .with_columns(
+            pl.col('Prescription Count').str.replace_all(',','').cast(pl.Int32)
+        )
+        .collect()
+    )
     total_naloxone = naloxone['Prescription Count'].sum()
+    print(total_naloxone)
 
     total_naloxone_str = '{:,}'.format(total_naloxone)
 
@@ -16,7 +28,7 @@ def naloxone_file():
 
     file_paths = [f'data/naloxone_{today}.xlsx']
     naloxone.write_excel(
-        file_paths[0], 
+        workbook=file_paths[0], 
         worksheet='naloxone', 
         column_totals=['Prescription Count'], 
         autofit=True, 
