@@ -5,7 +5,7 @@ from io import BytesIO
 from typing import Optional
 
 
-def lazyframe_from_view_id(view_id:str, filters:Optional[dict]=None, infer_schema_length=10000) -> pl.LazyFrame: 
+def lazyframe_from_view_id(view_id:str, filters:Optional[dict]=None, **kwargs) -> pl.LazyFrame: 
     with open('../secrets.toml', 'r') as f:
         secrets = toml.load(f)
 
@@ -29,7 +29,7 @@ def lazyframe_from_view_id(view_id:str, filters:Optional[dict]=None, infer_schem
         buffer = BytesIO()
         buffer.write(b''.join(view.csv))
         buffer.seek(0)
-        return pl.read_csv(buffer, infer_schema_length=infer_schema_length).lazy()
+        return pl.read_csv(buffer, **kwargs).lazy()
 
 def find_view_luid(view_name:str, workbook_name:str) -> str:
     with open('../secrets.toml', 'r') as f:
