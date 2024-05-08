@@ -66,12 +66,17 @@ def mm2(service):
     mm_combined.collect().write_excel(
         file_path,
         worksheet='mm phys audit',
-        conditional_formats={('test'):{
+        conditional_formats={('test'):[{
             'type':'cell',
             'criteria':'equal to',
             'value':'TRUE',
             'format': {'bg_color':'#fcaca7'}
-        },},
+        },{
+            'type':'cell',
+            'criteria':'equal to',
+            'value':'FALSE',
+            'format': {'bg_color':'#aafca7'}
+        }],}, 
         autofit=True,
         freeze_panes='A2'
     )
