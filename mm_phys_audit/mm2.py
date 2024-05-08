@@ -73,7 +73,7 @@ def mm2(service):
             'format': {'bg_color':'#fcaca7'}
         },},
         autofit=True,
-        freeze_panes=((1,0,0,0))
+        freeze_panes='A2'
     )
     print(f'{file_path} saved')
 
