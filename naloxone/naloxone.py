@@ -9,14 +9,13 @@ def naloxone_file():
     years = ','.join(str(y) for y in range(2017, datetime.date.today().year+1))
     filters = {'Year':years}
     naloxone = (
-        tableau.lazyframe_from_view_id(luid, filters)
+        tableau.lazyframe_from_view_id(luid, filters, infer_schema_length=10000)
         .with_columns(
             pl.col('Prescription Count').str.replace_all(',','').cast(pl.Int32)
         )
         .collect()
     )
     total_naloxone = naloxone['Prescription Count'].sum()
-    print(total_naloxone)
 
     total_naloxone_str = '{:,}'.format(total_naloxone)
 
