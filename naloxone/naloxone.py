@@ -6,10 +6,7 @@ from googleapiclient.discovery import build
 
 def naloxone_file():
     luid = tableau.find_view_luid('naloxone', 'Naloxone (2017-Present)')
-    ys = []
-    for y in range(2017, datetime.date.today().year+1):
-        ys.append(str(y))
-    years = ','.join(ys)
+    years = ','.join(str(y) for y in range(2017, datetime.date.today().year+1))
     filters = {'Year':years}
     naloxone = (
         tableau.lazyframe_from_view_id(luid, filters)
