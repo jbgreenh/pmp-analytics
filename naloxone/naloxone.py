@@ -32,7 +32,7 @@ def naloxone_file():
         worksheet='naloxone', 
         column_totals=['Prescription Count'], 
         autofit=True, 
-        freeze_panes=((1,0,0,0)), 
+        freeze_panes='A2', 
         dtype_formats={pl.INTEGER_DTYPES:'0'}
     )
     print(f'naloxone data exported to {file_paths[0]}')
