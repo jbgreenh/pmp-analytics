@@ -18,7 +18,6 @@ def lazyframe_from_view_id(view_id:str, filters:Optional[dict]=None) -> pl.LazyF
     tableau_server = TSC.Server(server, use_server_version=True, http_options={'verify':False})
 
     with tableau_server.auth.sign_in(tableau_auth):
-        print('connected')
         if filters:
             options = TSC.CSVRequestOptions()
             for k,v in filters.items():
@@ -45,7 +44,6 @@ def find_view_luid(view_name:str, workbook_name:str) -> str:
     tableau_server = TSC.Server(server, use_server_version=True, http_options={'verify':False})
     
     with tableau_server.auth.sign_in(tableau_auth):
-        print('connected')
         all_workbooks = list(TSC.Pager(tableau_server.workbooks))
         searched_workbook = [workbook for workbook in all_workbooks if workbook.name==workbook_name][0]
         tableau_server.workbooks.populate_views(searched_workbook)
