@@ -70,12 +70,12 @@ def mm2(service):
             'type':'cell',
             'criteria':'equal to',
             'value':'TRUE',
-            'format': {'bg_color':'#fcaca7'}
+            'format': {'bg_color':'#F4CCCC'}
         },{
             'type':'cell',
             'criteria':'equal to',
             'value':'FALSE',
-            'format': {'bg_color':'#aafca7'}
+            'format': {'bg_color':'#D9EAD3'}
         }],}, 
         autofit=True,
         freeze_panes='A2'
