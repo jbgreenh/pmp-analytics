@@ -66,7 +66,7 @@ def mm2(service):
     mm_combined.collect().write_excel(
         file_path,
         worksheet='mm phys audit',
-        conditional_formats={('test'):[{
+        conditional_formats={('>=20','<80% Lookups','test'):[{
             'type':'cell',
             'criteria':'equal to',
             'value':'TRUE',
