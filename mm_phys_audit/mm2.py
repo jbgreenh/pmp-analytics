@@ -66,15 +66,15 @@ def mm2(service):
     mm_combined.collect().write_excel(
         file_path,
         worksheet='mm phys audit',
-        conditional_formats={('>=20','<80% Lookups','test'):[{
+        conditional_formats={'J:L':[{
             'type':'cell',
             'criteria':'equal to',
-            'value':'"TRUE"',
+            'value':'TRUE',
             'format': {'bg_color':'#F4CCCC'}
         },{
             'type':'cell',
             'criteria':'equal to',
-            'value':'"FALSE"',
+            'value':'FALSE',
             'format': {'bg_color':'#D9EAD3'}
         }],}, 
         autofit=True,
