@@ -66,17 +66,41 @@ def mm2(service):
     mm_combined.collect().write_excel(
         file_path,
         worksheet='mm phys audit',
-        conditional_formats={'J:L':[{
-            'type':'cell',
-            'criteria':'equal to',
-            'value':'TRUE',
-            'format': {'bg_color':'#F4CCCC'}
-        },{
-            'type':'cell',
-            'criteria':'equal to',
-            'value':'FALSE',
-            'format': {'bg_color':'#D9EAD3'}
-        }],}, 
+        conditional_formats={       # something is making giving the columns as a tuple act strange
+            '>=20':[{
+                'type':'cell',
+                'criteria':'equal to',
+                'value':'TRUE',
+                'format': {'bg_color':'#F4CCCC'}
+            },{
+                'type':'cell',
+                'criteria':'equal to',
+                'value':'FALSE',
+                'format': {'bg_color':'#D9EAD3'}
+            }],
+            '<80% Lookups':[{
+                'type':'cell',
+                'criteria':'equal to',
+                'value':'TRUE',
+                'format': {'bg_color':'#F4CCCC'}
+            },{
+                'type':'cell',
+                'criteria':'equal to',
+                'value':'FALSE',
+                'format': {'bg_color':'#D9EAD3'}
+            }],
+            'test':[{
+                'type':'cell',
+                'criteria':'equal to',
+                'value':'TRUE',
+                'format': {'bg_color':'#F4CCCC'}
+            },{
+                'type':'cell',
+                'criteria':'equal to',
+                'value':'FALSE',
+                'format': {'bg_color':'#D9EAD3'}
+            }],
+        }, 
         autofit=True,
         freeze_panes='A2'
     )
