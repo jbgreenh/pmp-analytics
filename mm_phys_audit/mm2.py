@@ -69,12 +69,12 @@ def mm2(service):
         conditional_formats={('>=20','<80% Lookups','test'):[{
             'type':'cell',
             'criteria':'equal to',
-            'value':'TRUE',
+            'value':'"TRUE"',
             'format': {'bg_color':'#F4CCCC'}
         },{
             'type':'cell',
             'criteria':'equal to',
-            'value':'FALSE',
+            'value':'"FALSE"',
             'format': {'bg_color':'#D9EAD3'}
         }],}, 
         autofit=True,
