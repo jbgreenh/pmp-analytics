@@ -6,29 +6,34 @@ from googleapiclient.discovery import build
 from utils import auth
 from utils import drive
 
-def pull_inspection_list(file_name=None):
+def pull_inspection_list(file_name:str=''):
     '''
     pull the proper inspection list
     file_name: a string with the exact name of the file; '09/2023 Unregistered Pharmacists Report'
     '''
-    if not file_name:
+    if file_name != '':
         today = datetime.datetime.now()
         last_month = today.replace(day=1) - datetime.timedelta(days=1)
-        lm_yr = last_month.year
+        lm_yr = str(last_month.year)
         lm_mo = str(last_month.month).zfill(2)
 
         file_name = f'{lm_mo}/{lm_yr} Unregistered Pharmacists Report'
     else:
         lm_yr = file_name.split(' ')[0].split('/')[1]
-        
+
     folder_id = secrets['folders']['pharmacist_reg']
 
     folder_id = drive.folder_id_from_name(service=service, folder_name=lm_yr, parent_id=folder_id)
-    return drive.lazyframe_from_file_name_sheet(service=service, file_name=file_name, folder_id=folder_id)
+    if not folder_id:
+        return
+    return drive.lazyframe_from_file_name_sheet(service=service, file_name=file_name, folder_id=folder_id, infer_schema_length=10000)
 
 
 def registration():
     aw = drive.awarxe(service=service)
+    if aw is None:
+        print('no awarxe file')
+        return
     aw = (
         aw
         .with_columns(
@@ -92,12 +97,15 @@ def registration():
             ).alias('CSZ')
         )
         .select(
-            'License/Permit #', 'First Name', 'Middle Name', 'Last Name', 'Status', 'Phone', 'Email', 
+            'License/Permit #', 'First Name', 'Middle Name', 'Last Name', 'Status', 'Phone', 'Email',
             'Address', 'CSZ'
         )
     )
 
     inspection_list = pull_inspection_list()
+    if inspection_list is None:
+        print('no inspection list')
+        return
     final_sheet = (
         inspection_list.with_context(aw)
         .with_columns(
@@ -114,7 +122,7 @@ def registration():
             manage_pharmacies, left_on='Permit #', right_on='Pharmacy License Number', how='left'
         )
         .select(
-            'awarxe', 'License #', 'Last Insp', 'Notes', 'First Name', 'Middle Name', 'Last Name', 
+            'awarxe', 'License #', 'Last Insp', 'Notes', 'First Name', 'Middle Name', 'Last Name',
             'Status', 'Phone', 'Email', 'Address', 'CSZ', 'Business Name', 'SubType', 'Permit #', 'PharmacyDEA'
         )
     )
@@ -133,8 +141,11 @@ def update_unreg_sheet():
         last_row = len(values)
     else:
         last_row = 1
-    
+
     reg = registration()
+    if reg is None:
+        print('no registration file')
+        return
     data = [list(row) for row in reg.collect().rows()]
 
     data_range = f'pharmacists!B{last_row + 1}:{chr(65 + len(data[0]))}{last_row + len(data) + 1}'
@@ -145,7 +156,7 @@ def update_unreg_sheet():
         valueInputOption='RAW',
         body={'values': data}
     )
-    response = request.execute()
+    _response = request.execute()
 
     # add checkboxes
     checkbox_request = {
@@ -173,7 +184,7 @@ def update_unreg_sheet():
 
     sheet_link = f'https://docs.google.com/spreadsheets/d/{sheet_id}'
     print(f'appended {len(data)} rows to {sheet_link}')
-     
+
 
 if __name__ == '__main__':
     with open('../secrets.toml', 'r') as f:

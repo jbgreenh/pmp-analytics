@@ -26,8 +26,8 @@ def get_board_dict(service):
     with open('../secrets.toml', 'r') as f:
         secrets = toml.load(f)
 
-    exclude_degs = drive.lazyframe_from_id_and_sheetname(service=service, file_id=secrets['files']['exclude_degs'], sheet_name='exclude_degs')
-    boards = drive.lazyframe_from_id_and_sheetname(service=service, file_id=secrets['files']['deg_board'], sheet_name='deg_board')
+    exclude_degs = drive.lazyframe_from_id_and_sheetname(service=service, file_id=secrets['files']['exclude_degs'], sheet_name='exclude_degs', infer_schema_length=100)
+    boards = drive.lazyframe_from_id_and_sheetname(service=service, file_id=secrets['files']['deg_board'], sheet_name='deg_board', infer_schema_length=100)
 
     # pattern to drop ')' '(' and '.' from Name
     pattern = r'[().]'
@@ -98,7 +98,7 @@ def get_board_dict(service):
     stats = pl.concat([board_counts, total_unreg])
     print(stats)
 
-    board_contacts = drive.lazyframe_from_id_and_sheetname(service=service, file_id=secrets['files']['board_contacts'], sheet_name='registration')
+    board_contacts = drive.lazyframe_from_id_and_sheetname(service=service, file_id=secrets['files']['board_contacts'], sheet_name='registration', infer_schema_length=100)
 
     board_list = ['Dental', 'Medical', 'Naturopathic', 'Nursing', 'Optometry', 'Osteopathic', 'Physician Assistant', 'Podiatry']
     board_dict = {}
@@ -110,7 +110,7 @@ def get_board_dict(service):
         board_name = board_info.item(0,'Board Name')
         board_email = board_info.item(0,'Email')
         board_dict[b] = (board_df, board_name, board_email)
-    
+
     return board_dict
 
 
@@ -158,7 +158,7 @@ def send_emails(board_dict, creds, service):
     email_service = build('gmail', 'v1', credentials=creds)
     sender = secrets['email']['compliance']
     signature = secrets['email']['comp_sig'].replace(r'\n', '\n')
-    
+
     # board_dict['board'] = (board_df, board_name, board_email)
     for board, stuff in board_dict.items():
         board_df = stuff[0]

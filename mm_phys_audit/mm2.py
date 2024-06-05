@@ -15,14 +15,15 @@ def mm2(service):
         start, end = 7, 12
     else:
         start, end = 1, 6
-    
+
     lookups = pl.LazyFrame()
     for n in range(start, end+1):
         n = str(n).zfill(2)
         print(f'{year}{n}:')
         requests_folder_id = secrets['folders']['patient_requests']
         requests_folder_id = drive.folder_id_from_name(service=service, folder_name=f'AZ_PtReqByProfile_{year}{n}', parent_id=requests_folder_id)
-        requests = drive.lazyframe_from_file_name_csv(service=service, file_name='Prescriber.csv', folder_id=requests_folder_id, sep='|')
+        if requests_folder_id:
+            requests = drive.lazyframe_from_file_name_csv(service=service, file_name='Prescriber.csv', folder_id=requests_folder_id, separator='|', infer_schema_length=10000)
 
         lookups = pl.concat([lookups, requests])
 
@@ -54,7 +55,7 @@ def mm2(service):
         .with_columns(  # extra with_columns to force fill_null(0) first
             (pl.col('totallookups') / pl.col('Application Count')).alias('Lookups/Count'),
             (pl.col('Application Count') >= 20).alias('>=20'),
-            ((pl.col('totallookups') / pl.col('Application Count')) < 0.8).alias('<80% Lookups')            
+            ((pl.col('totallookups') / pl.col('Application Count')) < 0.8).alias('<80% Lookups')
         )
         .with_columns(  # extra with_columns to force >=20 and <80% Lookups to be created first
             (pl.col('>=20') & pl.col('<80% Lookups')).alias('test')
@@ -100,7 +101,7 @@ def mm2(service):
                 'value':'FALSE',
                 'format': {'bg_color':'#D9EAD3'}
             }],
-        }, 
+        },
         autofit=True,
         freeze_panes='A2'
     )
