@@ -15,12 +15,15 @@ def pull_files(service, last_month):
     ob_file_name = f'AZ_Dispensations_{lm_yr}{lm_mo}_opioid_benzo.csv'
 
     folder_id = secrets['folders']['dispensations_47']
-    disp = drive.lazyframe_from_file_name_csv(service=service, file_name=file_name, folder_id=folder_id, sep='|')
-    ob_disp = drive.lazyframe_from_file_name_csv(service=service, file_name=ob_file_name, folder_id=folder_id, sep='|')
+    disp = drive.lazyframe_from_file_name_csv(service=service, file_name=file_name, folder_id=folder_id, separator='|', infer_schema_length=10000)
+    ob_disp = drive.lazyframe_from_file_name_csv(service=service, file_name=ob_file_name, folder_id=folder_id, separator='|', infer_schema_length=10000)
 
     requests_folder_id = secrets['folders']['patient_requests']
     requests_folder_id = drive.folder_id_from_name(service=service, folder_name=f'AZ_PtReqByProfile_{lm_yr}{lm_mo}', parent_id=requests_folder_id)
-    requests = drive.lazyframe_from_file_name_csv(service=service, file_name='Prescriber.csv', folder_id=requests_folder_id, sep='|')
+    if requests_folder_id:
+        requests = drive.lazyframe_from_file_name_csv(service=service, file_name='Prescriber.csv', folder_id=requests_folder_id, separator='|', infer_schema_length=10000)
+    else:
+        return
 
     return disp, ob_disp, requests
 
@@ -48,7 +51,7 @@ def scorecard_new_row(service, last_month):
     n_lookups_per = (n_lookups / n) * 100
     n_lookups_str = f'{round(n_lookups_per, 2)}'
     df_lookups = pl.DataFrame({'n_prescribers': [n], 'n_lookups': [n_lookups], '%': [float(n_lookups_str)]})
-    
+
     ob_disps = (
         ob_disp
         .filter(pl.col('state') == 'AZ')
@@ -82,7 +85,7 @@ def update_scorecard_sheet(creds, new_row):
         last_row = len(values)
     else:
         last_row = 1
-    
+
     data = [list(row) for row in new_row.rows()]
     data_range = f'scorecard!A{last_row + 1}:{chr(65 + len(data[0]))}{last_row + len(data) + 1}'
 
@@ -106,6 +109,6 @@ if __name__ == '__main__':
 
     creds = auth.auth()
     service = build('drive', 'v3', credentials=creds)
-    
+
     new_row = scorecard_new_row(service, last_month)
     update_scorecard_sheet(creds, new_row)

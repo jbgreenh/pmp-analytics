@@ -5,7 +5,7 @@ import toml
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
 
-def lazyframe_from_file_name_csv(service, file_name:str, folder_id:str, sep:str=',') -> pl.LazyFrame | None:
+def lazyframe_from_file_name_csv(service, file_name:str, folder_id:str, **kwargs) -> pl.LazyFrame | None:
     '''
     return a lazyframe of the csv in the provided folder
     '''
@@ -20,25 +20,27 @@ def lazyframe_from_file_name_csv(service, file_name:str, folder_id:str, sep:str=
                 request = service.files().get_media(fileId=file_id)
             except HttpError as error:
                 print(f'error checking google drive: {error}')
+                return
         else:
             print('no file found')
+            return
 
         file = io.BytesIO()
         downloader = MediaIoBaseDownload(file, request)
-        
+
         done = False
         print(f'pulling {file_name} from google drive...')
         while done is False:
-            status, done = downloader.next_chunk()
+            _status, done = downloader.next_chunk()
     except HttpError as error:
         print(f'google drive error: {error}')
-        file = None
+        return
 
     file.seek(0) # after writing, pointer is at the end of the stream
-    return pl.read_csv(file, separator=sep, infer_schema_length=100000).lazy()
+    return pl.read_csv(file, **kwargs).lazy()
 
 
-def lazyframe_from_file_name_sheet(service, file_name:str, folder_id:str) -> pl.LazyFrame | None:
+def lazyframe_from_file_name_sheet(service, file_name:str, folder_id:str, **kwargs) -> pl.LazyFrame | None:
     '''
     return a lazyframe of the sheet in the provided folder
     '''
@@ -53,57 +55,60 @@ def lazyframe_from_file_name_sheet(service, file_name:str, folder_id:str) -> pl.
                 request = service.files().export_media(fileId=file_id, mimeType='text/csv')
             except HttpError as error:
                 print(f'error checking google drive: {error}')
+                return
         else:
             print('no file found')
+            return
 
         file = io.BytesIO()
         downloader = MediaIoBaseDownload(file, request)
-        
+
         done = False
         print(f'pulling {file_name} from google drive...')
         while done is False:
-            status, done = downloader.next_chunk()
+            _status, done = downloader.next_chunk()
     except HttpError as error:
         print(f'google drive error: {error}')
-        file = None
+        return
 
     file.seek(0) # after writing, pointer is at the end of the stream
-    return pl.read_csv(file, infer_schema_length=100000).lazy()
+    return pl.read_csv(file, **kwargs).lazy()
 
 
-def lazyframe_from_id_and_sheetname(service, file_id:str, sheet_name:str) -> pl.LazyFrame | None:
+def lazyframe_from_id_and_sheetname(service, file_id:str, sheet_name:str, **kwargs) -> pl.LazyFrame | None:
     try:
         request = service.files().export_media(fileId=file_id, mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     except HttpError as error:
         print(f'error checking google drive: {error}')
+        return
     file = io.BytesIO()
     downloader = MediaIoBaseDownload(file, request)
-    
+
     done = False
     print(f'pulling {file_id} sheet {sheet_name} from google drive...')
     while done is False:
-        status, done = downloader.next_chunk()
-    
+        _status, done = downloader.next_chunk()
+
     file.seek(0) # after writing, pointer is at the end of the stream
-    return pl.read_excel(file, sheet_name=sheet_name, read_csv_options={'infer_schema_length':100000}).lazy()
+    return pl.read_excel(file, sheet_name=sheet_name, **kwargs).lazy()
 
 
-def awarxe(service, day:str=None) -> pl.LazyFrame | None:
+def awarxe(service, day:str='') -> pl.LazyFrame | None:
     '''
     return a lazy frame of the most recent awarxe file from the google drive, unless day is specified
     day should be a string in %Y%m%d format
     '''
-    if day == None:
+    if day == '':
         yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
         yesterday_year = yesterday.strftime('%Y')
         yesterday = yesterday.strftime('%Y%m%d')
     else:
         yesterday = day
         yesterday_year = day[0:4]
-    
+
     with open('../secrets.toml', 'r') as f:
         secrets = toml.load(f)
-    
+
     folder_id = secrets['folders']['awarxe']
     file_name = f'AZ_UserEx_{yesterday}.csv'
 
@@ -130,20 +135,22 @@ def awarxe(service, day:str=None) -> pl.LazyFrame | None:
                 request = service.files().get_media(fileId=file_id)
             except HttpError as error:
                 print(f'error checking google drive: {error}')
+                return
         else:
             print('no file found')
+            return
 
-        
+
         file = io.BytesIO()
         downloader = MediaIoBaseDownload(file, request)
-        
+
         done = False
         print(f'pulling {file_name} from google drive...')
         while done is False:
-            status, done = downloader.next_chunk()
+            _status, done = downloader.next_chunk()
     except HttpError as error:
         print(f'google drive error: {error}')
-        file = None
+        return
 
     file.seek(0) # after writing, pointer is at the end of the stream
     return pl.read_csv(file, separator='|', infer_schema_length=100000).lazy()
@@ -177,16 +184,16 @@ def upload_csv_as_sheet(service, file_name:str, folder_id:str) -> None:
     '''
     try:
         no_ext = file_name.split('.')[0]
-        
+
         file_metadata = {
-            'name': no_ext, 
+            'name': no_ext,
             'parents':[folder_id],
             'mimeType': 'application/vnd.google-apps.spreadsheet'
         }
 
         media = MediaFileUpload(file_name,
                                 mimetype='text/csv')
-        
+
         print(f'uploading {no_ext} to google drive...')
 
         file = service.files().create(body=file_metadata,
@@ -194,7 +201,7 @@ def upload_csv_as_sheet(service, file_name:str, folder_id:str) -> None:
                                       supportsAllDrives=True,
                                       fields='webViewLink').execute()
         print (f'uploaded to: {file.get("webViewLink")}')
-        
+
     except HttpError as error:
         print(f'an error occurred: {error}')
 
@@ -205,10 +212,10 @@ def update_sheet(service, file_name:str, file_id:str) -> None:
     file_name is the path to the local csv
     you may want to remove the csv after this upload for cleanliness
     '''
-    try:        
+    try:
         media = MediaFileUpload(file_name,
                                 mimetype='text/csv')
-        
+
         print(f'updating {file_id} with {file_name}...')
 
         file = service.files().update(fileId=file_id,
@@ -216,6 +223,6 @@ def update_sheet(service, file_name:str, file_id:str) -> None:
                                       supportsAllDrives=True,
                                       fields='webViewLink').execute()
         print (f'uploaded to: {file.get("webViewLink")}')
-        
+
     except HttpError as error:
         print(f'an error occurred: {error}')
