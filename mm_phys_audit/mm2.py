@@ -48,7 +48,7 @@ def mm2(service):
     mm_combined = pl.concat([mm_matches, mm_manual])
     mm_combined = (
         mm_combined
-        .join(lookups, left_on='DEA Number', right_on='dea_number', how='left')
+        .join(lookups, left_on='DEA Number', right_on='dea_number', how='left', coalesce=True)
         .with_columns(
             pl.col('totallookups').fill_null(0)
         )

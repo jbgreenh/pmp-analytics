@@ -113,13 +113,13 @@ def registration():
         )
         .filter(pl.col('awarxe').str.contains('NO'))
         .join(
-            pharmacies, left_on='Permit #', right_on='License/Permit #', how='left'
+            pharmacies, left_on='Permit #', right_on='License/Permit #', how='left', coalesce=True
         )
         .join(
-            pharmacists, left_on='License #', right_on='License/Permit #', how='left'
+            pharmacists, left_on='License #', right_on='License/Permit #', how='left', coalesce=True
         )
         .join(
-            manage_pharmacies, left_on='Permit #', right_on='Pharmacy License Number', how='left'
+            manage_pharmacies, left_on='Permit #', right_on='Pharmacy License Number', how='left', coalesce=True
         )
         .select(
             'awarxe', 'License #', 'Last Insp', 'Notes', 'First Name', 'Middle Name', 'Last Name',
