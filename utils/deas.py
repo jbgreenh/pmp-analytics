@@ -12,7 +12,7 @@ def deas(p:str) -> pl.LazyFrame:
     # widths and names according to the file format specifications provided by the DEA
     dea_widths = [9, 1, 16, 8, 40, 40, 40, 40, 33, 2, 5, 2, 1, 8, 10, 20, 20]
     dea_names = [
-        'DEA Number', 'Business Activity Code', 'Drug Schedules', 'Expiration Date', 'Name', 
+        'DEA Number', 'Business Activity Code', 'Drug Schedules', 'Expiration Date', 'Name',
         'Additional Company Info', 'Address 1', 'Address 2', 'City', 'State', 'Zip Code', 'Business Activity Sub Code',
         'Payment Indicator', 'Activity', 'Degree', 'State License Number', 'State CS License Number'
         ]
@@ -23,7 +23,7 @@ def deas(p:str) -> pl.LazyFrame:
         slice_tuples.append((offset, w))
         offset += w
 
-    # using unit seperator '\x1F' to trick pyarrow into only making one col, unlikely to make it's way into this latin-1 file
+    # using unit separator '\x1F' to trick pyarrow into only making one col, unlikely to make it's way into this latin-1 file
     deas = pl.read_csv('../dea_file/cs_active.txt', encoding='latin-1', has_header=False, new_columns=['full_str'], use_pyarrow=True, separator='\x1F')
 
     deas = (
