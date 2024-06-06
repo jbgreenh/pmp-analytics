@@ -28,7 +28,7 @@ def pharm_clean():
             {'License/Permit #':'Pharmacy License Number'}
         )
         .select(
-            'Pharmacy License Number', 'Status', 'Business Name', 'Street Address', 'Apt/Suite #', 
+            'Pharmacy License Number', 'Status', 'Business Name', 'Street Address', 'Apt/Suite #',
             'City', 'State', 'Zip', 'Email', 'Phone'
         )
     )
@@ -39,11 +39,11 @@ def pharm_clean():
         .with_columns(
             pl.col('DEA').str.strip_chars().str.to_uppercase()
         )
-        .join(mp, on='DEA', how='left')
+        .join(mp, on='DEA', how='left', coalesce=True)
         .with_columns(
             pl.col('Pharmacy License Number').str.strip_chars().str.to_uppercase()
         )
-        .join(igov, on='Pharmacy License Number', how='left')
+        .join(igov, on='Pharmacy License Number', how='left', coalesce=True)
         .sort(by=['Status', 'Pharmacy License Number', 'Days Delinquent'], descending=True)
         .with_columns(
             pl.concat_str(
@@ -60,13 +60,13 @@ def pharm_clean():
         )
         .rename(
             {
-                'Primary Email': 'awarxe_email', 'Email': 'igov_email', 
+                'Primary Email': 'awarxe_email', 'Email': 'igov_email',
                 'Primary Phone': 'awarxe_phone', 'Phone': 'igov_phone'
             }
         )
         .select(
-            'Business Name', 'Street Address', 'City', 'State', 'Zip', 'Pharmacy License Number', 'DEA', 
-            'Status', 'Days Delinquent', 'Last Compliant', 'Date List Pulled', 'awarxe_email', 'igov_email', 
+            'Business Name', 'Street Address', 'City', 'State', 'Zip', 'Pharmacy License Number', 'DEA',
+            'Status', 'Days Delinquent', 'Last Compliant', 'Date List Pulled', 'awarxe_email', 'igov_email',
             'awarxe_phone', 'igov_phone'
         )
     )
@@ -77,7 +77,7 @@ def pharm_clean():
         .select('Business Name', 'Pharmacy License Number', 'DEA', 'Status', 'Days Delinquent')
         .collect()
     )
-    
+
     if closed.shape[0] > 0:
         print('closed pharmacies, update in manage pharmacies in awarxe:')
         print(closed)
@@ -99,7 +99,7 @@ def main():
     folder_id = secrets['folders']['pharm_clean']
 
     drive.upload_csv_as_sheet(service=service, file_name=fname, folder_id=folder_id)
-    
+
     os.remove(fname)
 
     # email notification
@@ -110,10 +110,10 @@ def main():
     message_txt = 'hello, the weekly delinquent data submitters cleanup is complete\n\nthank you,\n\ndata team'
 
     message = email.create_message_with_attachments(sender=sender, to=to, subject=subject, message_text=message_txt)
-    
+
     email_service = build('gmail', 'v1', credentials=creds)
     email.send_email(service=email_service, message=message)
 
 if __name__ == '__main__':
     main()
-    
+

@@ -3,7 +3,7 @@ from googleapiclient.discovery import build
 
 from utils import auth, drive
 
-def mm1(service): 
+def mm1(service):
     awarxe = (
         drive.awarxe(service=service)
         .filter(
@@ -13,7 +13,7 @@ def mm1(service):
             pl.col('last name').str.to_uppercase().str.strip_chars()
         )
         .with_columns(      # extra with_columns to force uppercase before code creation
-            (pl.col('last name').str.slice(-3) + pl.col('professional license number').str.slice(-4)).alias('awarxe_code') 
+            (pl.col('last name').str.slice(-3) + pl.col('professional license number').str.slice(-4)).alias('awarxe_code')
         )
         .select('last name', 'professional license number', 'dea number', 'awarxe_code')
     )
@@ -31,7 +31,7 @@ def mm1(service):
         .select('Physician Id', 'DEA Number')
         .lazy()
     )
-        
+
     deg_for_trimming = [' DO', ' MD', ' PA', ' NP', ' ND']   # add degrees with a leading space to be trimmed as needed
 
     for deg in deg_for_trimming:
@@ -55,7 +55,7 @@ def mm1(service):
             )
         )
 
-    mm_merged = (mm.join(old, on='Physician Id', how='left'))
+    mm_merged = (mm.join(old, on='Physician Id', how='left', coalesce=True))
     mm_old_match = (
         mm_merged
         .filter(pl.col('DEA Number').is_not_null())
@@ -66,7 +66,7 @@ def mm1(service):
         .with_columns(
             (pl.col('Physician Name').str.slice(-3) + pl.col('License Number').str.slice(-4)).alias('mm_code')
         )
-        .join(awarxe, left_on='mm_code', right_on='awarxe_code', how='left')
+        .join(awarxe, left_on='mm_code', right_on='awarxe_code', how='left', coalesce=True)
         .drop('mm_code', 'DEA Number')
         .rename({'dea number':'DEA Number'})
     )

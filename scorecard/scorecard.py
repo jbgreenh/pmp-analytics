@@ -40,7 +40,7 @@ def scorecard_new_row(service, last_month):
         disp
         .filter(pl.col('state') == 'AZ')
         .select('dea_number')
-        .join(lookups, on='dea_number', how='left')
+        .join(lookups, on='dea_number', how='left', coalesce=True)
         .group_by('dea_number')
         .sum()
         .collect()
@@ -56,7 +56,7 @@ def scorecard_new_row(service, last_month):
         ob_disp
         .filter(pl.col('state') == 'AZ')
         .select('dea_number')
-        .join(lookups, on='dea_number', how='left')
+        .join(lookups, on='dea_number', how='left', coalesce=True)
         .group_by('dea_number')
         .sum()
         .collect()
