@@ -53,7 +53,7 @@ def deas(p:str) -> pl.LazyFrame:
             )
         )
         print(deas_presc.head())
-        return deas_presc
+        return deas_presc.lazy()
     elif p == 'az':
         deas_az = (
             deas
@@ -62,7 +62,7 @@ def deas(p:str) -> pl.LazyFrame:
             )
         )
         print(deas_az.head())
-        return deas_az
+        return deas_az.lazy()
     elif p == 'all':
         print(deas.head())
-        return deas
+        return deas.lazy()
