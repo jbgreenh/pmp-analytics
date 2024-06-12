@@ -50,6 +50,7 @@ def lazyframe_from_view_id(view_id:str, filters:dict|None=None, **kwargs:Any) ->
 def find_view_luid(view_name:str, workbook_name:str) -> str:
     """
     gets the luid from the `view_name` in `workbook_name`
+
     args:
         view_name: string name of the target view
         workbook_name: string name of the workbook the view is in
