@@ -13,12 +13,12 @@ def lazyframe_from_view_id(view_id:str, filters:dict|None=None, **kwargs:Any) ->
     """
     pulls a lazyframe from the specified view in tableau    
 
-    Args:
+    args:
         view_id: a string, luid of the target view, can be found with `find_luid()`
         filters: optional filters to apply before pulling the lazyframe
         kwargs:  optional kwargs to pass to polars `read_csv()`
 
-    Returns:
+    returns:
         a LazyFrame containing the data from the specified view, filtered if 
         filters are specified 
     """
@@ -48,6 +48,15 @@ def lazyframe_from_view_id(view_id:str, filters:dict|None=None, **kwargs:Any) ->
         return pl.read_csv(buffer, **kwargs).lazy()
 
 def find_view_luid(view_name:str, workbook_name:str) -> str:
+    """
+    gets the luid from the `view_name` in `workbook_name`
+    args:
+        view_name: string name of the target view
+        workbook_name: string name of the workbook the view is in
+
+    returns:
+        string luid of the target view
+    """
     with open('../secrets.toml', 'r') as f:
         secrets = toml.load(f)
 
