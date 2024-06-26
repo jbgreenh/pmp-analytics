@@ -226,3 +226,42 @@ def update_sheet(service, file_name:str, file_id:str) -> None:
 
     except HttpError as error:
         print(f'an error occurred: {error}')
+
+def find_or_create_folder(service, folder_name:str, parent_folder_id:str) -> str:
+    """
+        goes into the google drive to find a folder with the pharmacy name, if it is not there it will create a new folder
+        function will also convert the top_pharmacy CSV into a google sheet and transfer it into the correct folder and provide a URL link for the folder
+    args:
+        service: an authorized google drive service
+        folder_name: the name of the new folder
+        parent_folder_id: the id of the folder where the new folder should go
+    returns:
+        folder ID: a string that will contain the ID of the folder created
+    """
+    folder_exists = False
+    folder_id = None
+    try:
+        print(f'searching for folder: {folder_name}...')
+        results = service.files().list(q=f"name = '{folder_name}' and '{parent_folder_id}' in parents", supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
+        files = results.get('files', [])
+        if files:
+            folder_exists = True
+            folder_id = files[0]['id']
+    except HttpError as error:
+        print(f'error checking google drive: {error}')
+        return ''
+    if not folder_exists:
+        # if the folder doesn't exist, create it
+        file_metadata = {
+            'name': folder_name,
+            'parents': [parent_folder_id],
+            'mimeType': 'application/vnd.google-apps.folder',
+        }
+        folder = service.files().create(supportsAllDrives=True, body=file_metadata).execute()
+        folder_url = f"https://drive.google.com/drive/folders/{folder['id']}"
+        print(f'folder created at {folder_url}')
+        return folder['id']
+    else:
+        folder_url = f"https://drive.google.com/drive/folders/{folder_id}"
+        print(f'folder exists at {folder_url}')
+        return folder_id
