@@ -6,12 +6,16 @@ from googleapiclient.discovery import build
 from utils import auth
 from utils import drive
 
-def pull_inspection_list(file_name:str=''):
-    '''
+def pull_inspection_list(file_name:str|None=None) -> pl.LazyFrame:
+    """
     pull the proper inspection list
-    file_name: a string with the exact name of the file; '09/2023 Unregistered Pharmacists Report'
-    '''
-    if file_name != '':
+    args:
+        file_name: a string with the exact name of the file; '09/2023 Unregistered Pharmacists Report'
+        
+    returns:
+        inspection_list: a LazyFrame with the inspection list to be checked for registration
+    """
+    if not file_name:
         today = datetime.datetime.now()
         last_month = today.replace(day=1) - datetime.timedelta(days=1)
         lm_yr = str(last_month.year)
@@ -24,12 +28,18 @@ def pull_inspection_list(file_name:str=''):
     folder_id = secrets['folders']['pharmacist_reg']
 
     folder_id = drive.folder_id_from_name(service=service, folder_name=lm_yr, parent_id=folder_id)
-    if not folder_id:
-        return
     return drive.lazyframe_from_file_name_sheet(service=service, file_name=file_name, folder_id=folder_id, infer_schema_length=10000)
 
 
-def registration():
+def registration(inspection_list:pl.LazyFrame):
+    """
+
+    args:
+        inspection_list: a LazyFrame with the inspection list for to check for registration
+
+    returns:
+       final_list: the `inspection_list` checked for registration 
+    """
     aw = drive.awarxe(service=service)
     if aw is None:
         print('no awarxe file')
@@ -102,10 +112,6 @@ def registration():
         )
     )
 
-    inspection_list = pull_inspection_list()
-    if inspection_list is None:
-        print('no inspection list')
-        return
     final_sheet = (
         inspection_list.with_context(aw)
         .with_columns(
@@ -130,7 +136,7 @@ def registration():
     return final_sheet
 
 
-def update_unreg_sheet():
+def update_unreg_sheet(registration:pl.LazyFrame):
     sheet_id = secrets['files']['unreg_pharmacists']
     range_name = 'pharmacists!B:B'
     service = build('sheets', 'v4', credentials=creds)
@@ -142,11 +148,7 @@ def update_unreg_sheet():
     else:
         last_row = 1
 
-    reg = registration()
-    if reg is None:
-        print('no registration file')
-        return
-    data = [list(row) for row in reg.collect().rows()]
+    data = [list(row) for row in registration.collect().rows()]
 
     data_range = f'pharmacists!B{last_row + 1}:{chr(65 + len(data[0]))}{last_row + len(data) + 1}'
 
@@ -192,4 +194,6 @@ if __name__ == '__main__':
 
     creds = auth.auth()
     service = build('drive', 'v3', credentials=creds)
-    update_unreg_sheet()
+    inspection_list = pull_inspection_list()
+    registration = registration(inspection_list)
+    update_unreg_sheet(registration)
