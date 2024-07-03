@@ -9,6 +9,7 @@ from utils import drive
 def pull_inspection_list(file_name:str|None=None) -> pl.LazyFrame:
     """
     pull the proper inspection list
+
     args:
         file_name: a string with the exact name of the file; '09/2023 Unregistered Pharmacists Report'
         
@@ -33,6 +34,7 @@ def pull_inspection_list(file_name:str|None=None) -> pl.LazyFrame:
 
 def registration(inspection_list:pl.LazyFrame):
     """
+    check the `inspection list` for registration in awarxe
 
     args:
         inspection_list: a LazyFrame with the inspection list for to check for registration
@@ -137,6 +139,12 @@ def registration(inspection_list:pl.LazyFrame):
 
 
 def update_unreg_sheet(registration:pl.LazyFrame):
+    """
+    update the unregistered pharmacists sheet with the `registration` list
+
+    args:
+        registration: a LazyFrame with the registration status of this month's `inspection list`
+    """
     sheet_id = secrets['files']['unreg_pharmacists']
     range_name = 'pharmacists!B:B'
     service = build('sheets', 'v4', credentials=creds)
