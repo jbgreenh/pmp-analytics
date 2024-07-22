@@ -8,10 +8,19 @@ from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 
 
-def lazyframe_from_file_name_csv(service, file_name:str, folder_id:str, **kwargs) -> pl.LazyFrame | None:
-    '''
-    return a lazyframe of the csv in the provided folder
-    '''
+def lazyframe_from_file_name_csv(service, file_name:str, folder_id:str, **kwargs) -> pl.LazyFrame:
+    """
+        return a lazyframe of the csv in the provided folder
+
+    args:
+        service: an authorized google drive service
+        file_name: the file name of the csv
+        folder_id: the id of the parent folder of the csv
+        **kwargs: kwargs for `pl.read_csv()`
+
+    returns:
+        
+    """
     try:
         results = service.files().list(q=f"name = '{file_name}' and '{folder_id}' in parents",
                                     supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
@@ -40,10 +49,19 @@ def lazyframe_from_file_name_csv(service, file_name:str, folder_id:str, **kwargs
     return pl.read_csv(file, **kwargs).lazy()
 
 
-def lazyframe_from_file_name_sheet(service, file_name:str, folder_id:str, **kwargs) -> pl.LazyFrame | None:
-    '''
-    return a lazyframe of the sheet in the provided folder
-    '''
+def lazyframe_from_file_name_sheet(service, file_name:str, folder_id:str, **kwargs) -> pl.LazyFrame:
+    """
+        return a lazyframe of the sheet in the provided folder
+
+    args:
+        service: an authorized google service
+        file_name: the file name of the google sheet
+        folder_id: the parent folder id
+        **kwargs: kwargs for `pl.read_csv()`
+
+    returns:
+       a pl.LazyFrame with the contents of the sheet
+    """
     try:
         results = service.files().list(q=f"name = '{file_name}' and '{folder_id}' in parents",
                                     supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
@@ -72,7 +90,19 @@ def lazyframe_from_file_name_sheet(service, file_name:str, folder_id:str, **kwar
     return pl.read_csv(file, **kwargs).lazy()
 
 
-def lazyframe_from_id_and_sheetname(service, file_id:str, sheet_name:str, **kwargs) -> pl.LazyFrame | None:
+def lazyframe_from_id_and_sheetname(service, file_id:str, sheet_name:str, **kwargs) -> pl.LazyFrame:
+    """
+        return a lazyframe given a `file_id` and `sheet_name`
+
+    args:
+        service: an authorized google drive service
+        file_id: this id of the file
+        sheet_name: the sheet name from within the file
+        **kwargs: kwargs for `pl.read_excel()`
+
+    returns:
+        a pl.LazyFrame with the contents of the sheet
+    """
     try:
         request = service.files().export_media(fileId=file_id, mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     except HttpError as error:
@@ -90,10 +120,16 @@ def lazyframe_from_id_and_sheetname(service, file_id:str, sheet_name:str, **kwar
 
 
 def awarxe(service, day:str='') -> pl.LazyFrame | None:
-    '''
-    return a lazy frame of the most recent awarxe file from the google drive, unless day is specified
-    day should be a string in %Y%m%d format
-    '''
+    """
+        return a lazy frame of the most recent awarxe file from the google drive, unless day is specified
+        
+    args:
+        service: an authorized google drive service
+        day: the day for the awarxe file in %Y%m%d format
+
+    returns:
+       awarxe: a lazyframe with all active awarxe registrants as of `day` if specified or yesterday if `day` is not specified
+    """
     if day == '':
         yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
         yesterday_year = yesterday.strftime('%Y')
@@ -150,9 +186,17 @@ def awarxe(service, day:str='') -> pl.LazyFrame | None:
 
 
 def folder_id_from_name(service, folder_name:str, parent_id:str) -> str | None:
-    '''
-    returns the folder id of the folder_name in the parent folder
-    '''
+    """
+        returns the `folder_id` of the `folder_name` in the parent folder
+
+    args:
+        service: an authorized google drive service
+        folder_name: the name of the folder
+        parent_id: the id of the parent folder
+
+    returns:
+       folder_id: the id of the folder with `folder_name`
+    """
     try:
         results_folder = service.files().list(q=f"name = '{folder_name}' and '{parent_id}' in parents",
                                     supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
@@ -169,12 +213,17 @@ def folder_id_from_name(service, folder_name:str, parent_id:str) -> str | None:
 
 
 def upload_csv_as_sheet(service, file_name:str, folder_id:str) -> None:
-    '''
-    uploads a local csv file as a sheet to the specified folder, file_name is the path to the local csv
-    removes the extension for the name of the sheet
-    eg. 'file.csv' -> 'file'
-    you may want to remove the csv after this upload for cleanliness
-    '''
+    """
+        uploads a local csv file as a sheet to the specified folder, `file_name` is the path to the local csv
+        removes the extension for the name of the sheet
+        eg. 'file.csv' -> 'file'
+        you may want to remove the csv after this upload for cleanliness
+
+    args:
+        service: an authorized google drive service
+        file_name: the path to the local csv for uploading
+        folder_id: the id of the folder to upload to
+    """
     try:
         no_ext = file_name.split('.')[0]
 
@@ -200,11 +249,15 @@ def upload_csv_as_sheet(service, file_name:str, folder_id:str) -> None:
 
 
 def update_sheet(service, file_name:str, file_id:str) -> None:
-    '''
-    uses the contents of a local csv file to update the sheet at the specified file_id
-    file_name is the path to the local csv
-    you may want to remove the csv after this upload for cleanliness
-    '''
+    """
+        uses the contents of a local csv file to update the sheet at the specified `file_id`
+        you may want to remove the csv after this upload for cleanliness
+
+    args:
+        service: an authorized google drive service
+        file_name: the path to the local csv file to use for updating
+        file_id: the id of the file to be updated
+    """
     try:
         media = MediaFileUpload(file_name,
                                 mimetype='text/csv')
@@ -225,10 +278,12 @@ def find_or_create_folder(service, folder_name:str, parent_folder_id:str) -> str
     """
         goes into the google drive to find a folder with the pharmacy name, if it is not there it will create a new folder
         function will also convert the top_pharmacy csv into a google sheet and transfer it into the correct folder and provide a url link for the folder
+
     args:
         service: an authorized google drive service
         folder_name: the name of the new folder
         parent_folder_id: the id of the folder where the new folder should go
+
     returns:
         folder_id: a string that will contain the id of the folder created
     """
