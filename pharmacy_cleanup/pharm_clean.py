@@ -8,7 +8,6 @@ from utils import auth, drive, email
 
 def pharm_clean():
     '''shape data for final report'''
-    # get today's date as a string
     today = date.today().strftime("%m-%d-%Y")
 
     mp = (
