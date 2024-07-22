@@ -119,7 +119,7 @@ def lazyframe_from_id_and_sheetname(service, file_id:str, sheet_name:str, **kwar
     return pl.read_excel(file, sheet_name=sheet_name, **kwargs).lazy()
 
 
-def awarxe(service, day:str='') -> pl.LazyFrame | None:
+def awarxe(service, day:str='') -> pl.LazyFrame:
     """
         return a lazy frame of the most recent awarxe file from the google drive, unless day is specified
         
