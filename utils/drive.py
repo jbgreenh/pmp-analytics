@@ -19,6 +19,7 @@ def lazyframe_from_file_name_csv(service, file_name:str, folder_id:str, **kwargs
         **kwargs: kwargs for `pl.read_csv()`
 
     returns:
+        a pl.LazyFrame with the contents of the csv
         
     """
     try:
