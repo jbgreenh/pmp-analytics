@@ -32,7 +32,7 @@ def pull_inspection_list(file_name:str|None=None) -> pl.LazyFrame:
     return drive.lazyframe_from_file_name_sheet(service=service, file_name=file_name, folder_id=folder_id, infer_schema_length=10000)
 
 
-def registration(inspection_list:pl.LazyFrame):
+def registration(inspection_list:pl.LazyFrame) -> pl.LazyFrame:
     """
     check the `inspection list` for registration in awarxe
 
@@ -42,12 +42,8 @@ def registration(inspection_list:pl.LazyFrame):
     returns:
        final_list: the `inspection_list` checked for registration 
     """
-    aw = drive.awarxe(service=service)
-    if aw is None:
-        print('no awarxe file')
-        return
     aw = (
-        aw
+        drive.awarxe(service=service)
         .with_columns(
             pl.col('professional license number').str.to_uppercase().str.strip_chars()
         )
@@ -203,5 +199,5 @@ if __name__ == '__main__':
     creds = auth.auth()
     service = build('drive', 'v3', credentials=creds)
     inspection_list = pull_inspection_list()
-    registration = registration(inspection_list)
-    update_unreg_sheet(registration)
+    reg = registration(inspection_list)
+    update_unreg_sheet(reg)
