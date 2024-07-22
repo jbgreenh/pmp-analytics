@@ -18,12 +18,9 @@ def pull_files(service, last_month):
     disp = drive.lazyframe_from_file_name_csv(service=service, file_name=file_name, folder_id=folder_id, separator='|', infer_schema_length=10000)
     ob_disp = drive.lazyframe_from_file_name_csv(service=service, file_name=ob_file_name, folder_id=folder_id, separator='|', infer_schema_length=10000)
 
-    requests_folder_id = secrets['folders']['patient_requests']
-    requests_folder_id = drive.folder_id_from_name(service=service, folder_name=f'AZ_PtReqByProfile_{lm_yr}{lm_mo}', parent_id=requests_folder_id)
-    if requests_folder_id:
-        requests = drive.lazyframe_from_file_name_csv(service=service, file_name='Prescriber.csv', folder_id=requests_folder_id, separator='|', infer_schema_length=10000)
-    else:
-        return
+    patient_req_id = secrets['folders']['patient_requests']
+    requests_folder_id = drive.folder_id_from_name(service=service, folder_name=f'AZ_PtReqByProfile_{lm_yr}{lm_mo}', parent_id=patient_req_id)
+    requests = drive.lazyframe_from_file_name_csv(service=service, file_name='Prescriber.csv', folder_id=requests_folder_id, separator='|', infer_schema_length=10000)
 
     return disp, ob_disp, requests
 
@@ -95,7 +92,7 @@ def update_scorecard_sheet(creds, new_row):
         valueInputOption='RAW',
         body={'values': data}
     )
-    response = request.execute()
+    _response = request.execute()
     sheet_link = f'https://docs.google.com/spreadsheets/d/{sheet_id}'
     print(f'updated scorecard tracking: {sheet_link}')
 
