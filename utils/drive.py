@@ -204,8 +204,7 @@ def folder_id_from_name(service, folder_name:str, parent_id:str) -> str | None:
         if folders:
             folder_id = folders[0]['id']
         else:
-            print('folder not found')
-            folder_id = None
+            sys.exit('folder not found')
 
         return folder_id
     except HttpError as error:
