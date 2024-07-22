@@ -185,7 +185,7 @@ def awarxe(service, day:str='') -> pl.LazyFrame:
     return pl.read_csv(file, separator='|', infer_schema_length=100000).lazy()
 
 
-def folder_id_from_name(service, folder_name:str, parent_id:str) -> str | None:
+def folder_id_from_name(service, folder_name:str, parent_id:str) -> str:
     """
         returns the `folder_id` of the `folder_name` in the parent folder
 
@@ -208,7 +208,7 @@ def folder_id_from_name(service, folder_name:str, parent_id:str) -> str | None:
 
         return folder_id
     except HttpError as error:
-        print(f'error checking google drive: {error}')
+        sys.exit(f'error checking google drive: {error}')
 
 
 def upload_csv_as_sheet(service, file_name:str, folder_id:str) -> None:
