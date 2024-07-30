@@ -10,6 +10,7 @@ antagonists = (
     .rename(
         {'Generic Name':'drug'}
     )
+    .select('NDC', 'drug')
 )
 
 new_ndcs = antagonists.collect()
@@ -20,7 +21,6 @@ else:
     print('please input exclusion list in awarxe')
     print(new_ndcs)
 
-    # update the list
-    new_file = pl.concat([excluded_ndcs.collect(), new_ndcs], how='vertical')
+    new_file = pl.concat([excluded_ndcs.collect(), new_ndcs])
     new_file.write_csv('data/excluded_ndcs.csv')
     print('data/excluded_ndcs.csv updated')
