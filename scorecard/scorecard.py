@@ -43,8 +43,8 @@ def scorecard_new_row(service, last_month):
         .collect()
     )
 
-    n = disps.shape[0]
-    n_lookups = disps.filter(pl.col('totallookups') > 0).shape[0]
+    n = disps.height
+    n_lookups = disps.filter(pl.col('totallookups') > 0).height
     n_lookups_per = (n_lookups / n) * 100
     n_lookups_str = f'{round(n_lookups_per, 2)}'
     df_lookups = pl.DataFrame({'n_prescribers': [n], 'n_lookups': [n_lookups], '%': [float(n_lookups_str)]})
@@ -59,8 +59,8 @@ def scorecard_new_row(service, last_month):
         .collect()
     )
 
-    ob_n = ob_disps.shape[0]
-    ob_n_lookups = ob_disps.filter(pl.col('totallookups') > 0).shape[0]
+    ob_n = ob_disps.height
+    ob_n_lookups = ob_disps.filter(pl.col('totallookups') > 0).height
     ob_n_lookups_per = (ob_n_lookups / ob_n) * 100
     ob_n_lookups_str = f'{round(ob_n_lookups_per, 2)}'
     ob_df_lookups = pl.DataFrame({'ob_n_prescribers': [ob_n], 'ob_n_lookups': [ob_n_lookups], 'ob_%': [float(ob_n_lookups_str)]})
