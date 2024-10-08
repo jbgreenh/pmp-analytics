@@ -76,7 +76,7 @@ def get_board_dict(service):
         .drop_nulls(subset='degree')
     )
     unmatched = unreg_prescribers_w_boards.filter(pl.col('board').is_null()).select('degree')
-    if unmatched.shape[0]>0:
+    if not unmatched.is_empty():
         print('unmatched degrees, either add to exclude_degs or deg_board')
         print(unmatched)   # cleanup
         unmatched.write_csv('data/unmatched.csv')

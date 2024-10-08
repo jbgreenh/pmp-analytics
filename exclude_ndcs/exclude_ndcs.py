@@ -15,7 +15,7 @@ antagonists = (
 
 new_ndcs = antagonists.collect()
 
-if new_ndcs.shape[0] == 0:
+if new_ndcs.is_empty():
     print('no new ndcs found')
 else:
     print('please input exclusion list in awarxe')
