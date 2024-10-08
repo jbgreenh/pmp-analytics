@@ -17,7 +17,7 @@ dea = (
     .join(igov, how='left', left_on='State License Number', right_on='License/Permit #', coalesce=True)
     .select(
         'DEA Number', 'Name', 'State License Number','Additional Company Info', 'Address 1',
-        'Address 2', 'City', 'State', 'Zip Code', 'Status', 'Email'
+        'Address 2', 'City', 'State', 'Zip Code', 'Email', 'Status'
     )
 )
 
