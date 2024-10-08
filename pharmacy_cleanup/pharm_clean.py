@@ -77,7 +77,7 @@ def pharm_clean():
         .collect()
     )
 
-    if closed.shape[0] > 0:
+    if not closed.is_empty():
         print('closed pharmacies, update in manage pharmacies in awarxe:')
         print(closed)
     else:
