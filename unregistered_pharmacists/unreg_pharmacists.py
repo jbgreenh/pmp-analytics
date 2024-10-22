@@ -50,6 +50,7 @@ def registration(inspection_list:pl.LazyFrame) -> pl.LazyFrame:
         .select(
             'professional license number'
         )
+        .collect()
     )
 
     manage_pharmacies = (
@@ -111,11 +112,11 @@ def registration(inspection_list:pl.LazyFrame) -> pl.LazyFrame:
     )
 
     final_sheet = (
-        inspection_list.with_context(aw)
+        inspection_list
         .with_columns(
-            pl.col('License #').is_in(pl.col('professional license number')).replace({True:'YES', False:'NO'}).alias('awarxe')
+            pl.col('License #').is_in(aw['professional license number']).replace({True:'YES', False:'NO'}).alias('awarxe')
         )
-        .filter(pl.col('awarxe').str.contains('NO'))
+        .filter(pl.col('awarxe') == 'NO')
         .join(
             pharmacies, left_on='Permit #', right_on='License/Permit #', how='left', coalesce=True
         )
