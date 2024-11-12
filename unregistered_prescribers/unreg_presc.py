@@ -1,12 +1,38 @@
 import polars as pl
 import toml
 import os
-from datetime import date
+import sys
+from datetime import date, timedelta
+from dataclasses import dataclass
 
 from googleapiclient.discovery import build
 from utils import auth, drive, email, deas
 
-def get_board_dict(service):
+@dataclass
+class BoardInfo:
+    """
+    a class with the info needed to email the boards
+
+    args:
+        `board_df`: a `pl.DataFrame` with all unregistered prescribers from the relevant board
+        `board_name`: a `str` with the name of the board, eg: 'Optometry'
+        `board_emails`: a `str` with a comma seperated list of the contact email(s) for the board
+    """
+    board_df: pl.DataFrame
+    board_name: str
+    board_emails: str
+
+def get_board_dict(service) -> dict[str, BoardInfo]:
+    """
+    checks the dea list for prescriber registration in awarxe
+
+    args:
+        `service`: a google drive service
+
+    returns:
+        `board_dict`: a dictionary with the board name as the key and
+        board_df:pl.Dataframe, board_name:str, board_email(s):str as values
+    """
     awarxe = (
         drive.awarxe(service=service)
         .with_columns(
@@ -77,11 +103,76 @@ def get_board_dict(service):
     )
     unmatched = unreg_prescribers_w_boards.filter(pl.col('board').is_null()).select('degree')
     if not unmatched.is_empty():
-        print('unmatched degrees, either add to exclude_degs or deg_board')
         print(unmatched)   # cleanup
         unmatched.write_csv('data/unmatched.csv')
         print('data/unmatched.csv updated')
-        return
+        sys.exit('unmatched degrees, either add to exclude_degs or deg_board')
+
+    opto_folder = secrets['folders']['optometry_uploads']
+
+    yesterday = date.today() - timedelta(days=1)
+    yesterday = date(year=2024, month=10, day=28) # TODO -- remove when ready for production
+    yesterday_str = yesterday.strftime('%Y%m%d')
+
+    opto = (
+        drive.lazyframe_from_file_name_sheet(service, file_name=f'Optometry Pharmacy Report_{yesterday_str}', folder_id=opto_folder, skip_rows=3)
+        .filter(
+            pl.col('First Name').str.to_lowercase().str.contains('totals').not_()
+        )
+        .collect()
+    )
+
+    unreg_opto = (
+        unreg_prescribers_w_boards.filter(pl.col('board') == "Optometry")
+    )
+
+    unreg_opto_ez = (
+        unreg_opto
+        .join(opto, how='inner', left_on='State License Number', right_on='License Number')
+        .drop('First Name', 'Last Name', 'Date of Birth')
+    )
+
+    unreg_opto_no_ez = (
+        unreg_opto
+        .join(opto, how='anti', left_on='State License Number', right_on='License Number')
+        .with_columns(
+            (pl.lit('OPT-') + pl.col('State License Number').str.replace_all('[^0-9]', '').str.zfill(6)).alias('cleaned_lino')
+        )
+    )
+
+    unreg_no_ez_cleaned = (
+        unreg_opto_no_ez
+        .join(opto, how='inner', left_on='cleaned_lino', right_on='License Number')
+    )
+
+    unreg_opto_cleaned_matches_good_names = (
+        unreg_no_ez_cleaned
+        .filter(
+            pl.col('Name').str.contains(pl.col('First Name').str.to_uppercase())
+        )
+        .with_columns(
+            pl.col('cleaned_lino').alias('State License Number')
+        )
+        .drop('cleaned_lino', 'First Name', 'Last Name', 'Date of Birth')
+    )
+
+    opto_matches = pl.concat([unreg_opto_ez, unreg_opto_cleaned_matches_good_names]).sort(by='Status')
+
+    # opto_no_match = (
+    #     unreg_opto
+    #     .filter(
+    #         pl.col('DEA Number').is_in(opto_matches['DEA Number']).not_()
+    #     )
+    # )
+    # opto_matches.write_csv('data/opto/deas/opto_matches.csv')
+    # opto_no_match.write_csv('data/opto/deas/opto_no_match.csv')
+
+    unreg_prescribers_w_boards = (
+        unreg_prescribers_w_boards
+        .filter(pl.col('board') != 'Optometry')
+    )
+
+    unreg_prescribers_w_boards = pl.concat([unreg_prescribers_w_boards, opto_matches], how='diagonal')
 
     board_counts = (
         unreg_prescribers_w_boards['board']
@@ -110,12 +201,20 @@ def get_board_dict(service):
         board_info = board_contacts.filter(pl.col('Board').str.contains(b)).collect()
         board_name = board_info.item(0,'Board Name')
         board_email = board_info.item(0,'Email')
-        board_dict[b] = (board_df, board_name, board_email)
+        board_dict[b] = BoardInfo(board_df, board_name, board_email)
 
     return board_dict
 
 
-def send_emails(board_dict, creds, service):
+def send_emails(board_dict:dict[str, BoardInfo], creds, service):
+    """
+    sends emails to each board with their unregistered prescribers
+
+    args:
+        `board_dict`: the `board_dict` returned by `get_board_dict()`
+        `creds`: google api credentials
+        `service`: a google drive service
+    """
     with open('../secrets.toml', 'r') as f:
         secrets = toml.load(f)
 
@@ -127,11 +226,9 @@ def send_emails(board_dict, creds, service):
     today = date.today()
     today_str = today.strftime('%B %d, %Y')
 
-    # copy the doc
     copy_response = drive_service.files().copy(fileId=reg_req_notice, body={'name': 'copy'}, supportsAllDrives=True).execute()
     copy_doc_id = copy_response['id']
 
-    # replace text
     requests = [
         {
             'replaceAllText': {
@@ -146,13 +243,11 @@ def send_emails(board_dict, creds, service):
 
     docs_service.documents().batchUpdate(documentId=copy_doc_id, body={'requests': requests}).execute()
 
-    # export as pdf with support for shared drives
     export_response = drive_service.files().export(fileId=copy_doc_id, mimeType='application/pdf').execute()
 
     with open('data/RegistrationRequirementsNotice.pdf', 'wb') as f:
         f.write(export_response)
 
-    # delete the copied doc from drive
     drive_service.files().delete(fileId=copy_doc_id, supportsAllDrives=True).execute()
     print('data/RegistrationRequirementsNotice.pdf updated')
 
@@ -161,17 +256,14 @@ def send_emails(board_dict, creds, service):
     signature = secrets['email']['comp_sig'].replace(r'\n', '\n')
 
     # board_dict['board'] = (board_df, board_name, board_email)
-    for board, stuff in board_dict.items():
-        board_df = stuff[0]
-        board_name = stuff[1]
-        board_email = stuff[2]
-        subj = f'CSPMP Unregistered Prescribers {board_name}'
-        body = f'The CSPMP sends biannual compliance reports to Arizona regulatory licensing boards regarding prescribers who have been identified as non-compliant in registering for the CSPMP, pursuant to A.R.S § 36-2606 (A). This list is generated every six months.\n\nAttached you will find the list of licensed providers with the {board_name} that are not registered with the Arizona CSPMP, as well as detailed information pertaining to the registration requirements.\n\nIf you have any questions please feel free to contact us.{signature}'
+    for board, info in board_dict.items():
+        subj = f'CSPMP Unregistered Prescribers {info.board_name}'
+        body = f'The CSPMP sends biannual compliance reports to Arizona regulatory licensing boards regarding prescribers who have been identified as non-compliant in registering for the CSPMP, pursuant to A.R.S § 36-2606 (A). This list is generated every six months.\n\nAttached you will find the list of licensed providers with the {info.board_name} that are not registered with the Arizona CSPMP, as well as detailed information pertaining to the registration requirements.\n\nIf you have any questions please feel free to contact us.{signature}'
 
         report_file = f'{board}_unregistered_prescribers_{today_str}.csv'
-        board_df.write_csv(report_file)
+        info.board_df.write_csv(report_file)
 
-        message = email.create_message_with_attachments(sender=sender, to=board_email, subject=subj, message_text=body, file_paths=[report_file, 'data/RegistrationRequirementsNotice.pdf'], bcc=[sender])
+        message = email.create_message_with_attachments(sender=sender, to=info.board_emails, subject=subj, message_text=body, file_paths=[report_file, 'data/RegistrationRequirementsNotice.pdf'], bcc=[sender])
         email.send_email(service=email_service, message=message)
         os.remove(report_file)
 
@@ -181,5 +273,10 @@ if __name__ == '__main__':
     creds = auth.auth()
     service = build('drive', 'v3', credentials=creds)
     board_dict = get_board_dict(service=service)
-    if board_dict:
-        send_emails(board_dict=board_dict, creds=creds, service=service)
+
+    # delete this loop and uncomment the email send when ready
+    for board, info in board_dict.items():
+        print(info.board_name)
+        print(info.board_emails)
+        info.board_df.write_csv(f'data/{board}.csv')
+    # send_emails(board_dict=board_dict, creds=creds, service=service)
