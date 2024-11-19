@@ -42,7 +42,7 @@ else:
     service = build('sheets', 'v4', credentials=creds)
     service.spreadsheets().values().clear(spreadsheetId=sheet_id,range=range_name).execute()
     data = [list(row) for row in new_file.rows()]
-    data.insert(0, ['final_id', 'appearance_date'])
+    data.insert(0, ['NCD', 'drug'])
     body = {
         'values': data
     }
