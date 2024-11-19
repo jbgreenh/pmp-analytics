@@ -10,7 +10,7 @@ service = build('drive', 'v3', credentials=creds)
 with open('../secrets.toml', 'r') as f:
     secrets = toml.load(f)
 
-sheet_id = secrets['file']['excluded_ndcs']
+sheet_id = secrets['files']['excluded_ndcs']
 
 excluded_ndcs = drive.lazyframe_from_id_and_sheetname(service, sheet_id, 'excluded', infer_schema_length=0)
 
@@ -31,6 +31,10 @@ if new_ndcs.is_empty():
 else:
     print('please input exclusion list in awarxe')
     print(new_ndcs)
+    new_fn = 'new_ndcs.csv'
+    new_ndcs.write_csv(new_fn)
+    print(f'{new_fn} written')
+
 
     new_file = pl.concat([excluded_ndcs.collect(), new_ndcs])
 
