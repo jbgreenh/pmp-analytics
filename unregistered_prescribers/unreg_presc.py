@@ -252,8 +252,8 @@ def send_emails(board_dict:dict[str, BoardInfo], creds, service):
         pdf_writer = PdfWriter()
         second_page = pdf_reader.pages[1]
         pdf_writer.add_page(second_page)
-        with open('data/RegistrationRequirementsNotice.pdf', 'wb') as f:
-            f.write(second_page)
+        with open('data/RegistrationRequirementsNotice.pdf', 'wb') as rrn:
+            pdf_writer.write(rrn)
     else:
         with open('data/RegistrationRequirementsNotice.pdf', 'wb') as f:
             f.write(export_response)
@@ -271,8 +271,8 @@ def send_emails(board_dict:dict[str, BoardInfo], creds, service):
         pdf_writer = PdfWriter()
         second_page = pdf_reader.pages[1]
         pdf_writer.add_page(second_page)
-        with open('data/UnregisteredPrescriberFlyer.pdf', 'wb') as f:
-            f.write(second_page)
+        with open('data/UnregisteredPrescriberFlyer.pdf', 'wb') as flyer:
+            pdf_writer.write(flyer)
     else:
         with open('data/UnregisteredPrescriberFlyer.pdf', 'wb') as f:
             f.write(flyer_export)
