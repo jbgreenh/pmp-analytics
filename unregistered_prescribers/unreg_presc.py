@@ -279,4 +279,5 @@ if __name__ == '__main__':
         print(info.board_name)
         print(info.board_emails)
         info.board_df.write_csv(f'data/{board}.csv')
+
     # send_emails(board_dict=board_dict, creds=creds, service=service)
