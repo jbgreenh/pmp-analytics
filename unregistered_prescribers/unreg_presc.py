@@ -253,7 +253,9 @@ def send_emails(board_dict:dict[str, BoardInfo], creds, service):
 
     print('pulling unregistered prescriber folder...')
     reg_flyer = secrets['files']['unreg_presc_flyer']
-    flyer_export = drive_service.files().export(fileId=reg_flyer, mimeType='application/pdf').execute()
+    copy_reg_flyer = drive_service.files().copy(fileId=reg_flyer, body={'name': 'copy'}, supportsAllDrives=True).execute()
+    copy_reg_flyer_id = copy_reg_flyer['id']
+    flyer_export = drive_service.files().export(fileId=copy_reg_flyer_id, mimeType='application/pdf').execute()
 
     with open('data/UnregisteredPrescriberFlyer.pdf', 'wb') as f2:
         f2.write(flyer_export)
