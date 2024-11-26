@@ -1,12 +1,14 @@
 import polars as pl
 import toml
 import os
+import io
 import sys
 from datetime import date
 from dataclasses import dataclass
 
 from googleapiclient.discovery import build
 from utils import auth, drive, email, deas
+from PyPDF2 import PdfReader, PdfWriter
 
 @dataclass
 class BoardInfo:
@@ -245,20 +247,35 @@ def send_emails(board_dict:dict[str, BoardInfo], creds, service):
 
     export_response = drive_service.files().export(fileId=copy_doc_id, mimeType='application/pdf').execute()
 
-    with open('data/RegistrationRequirementsNotice.pdf', 'wb') as f:
-        f.write(export_response)
+    pdf_reader = PdfReader(io.BytesIO(export_response))
+    if len(pdf_reader.pages) > 1:
+        pdf_writer = PdfWriter()
+        second_page = pdf_reader.pages[1]
+        pdf_writer.add_page(second_page)
+        with open('data/RegistrationRequirementsNotice.pdf', 'wb') as f:
+            f.write(second_page)
+    else:
+        with open('data/RegistrationRequirementsNotice.pdf', 'wb') as f:
+            f.write(export_response)
+
 
     drive_service.files().delete(fileId=copy_doc_id, supportsAllDrives=True).execute()
     print('data/RegistrationRequirementsNotice.pdf updated')
 
     print('pulling unregistered prescriber folder...')
     reg_flyer = secrets['files']['unreg_presc_flyer']
-    copy_reg_flyer = drive_service.files().copy(fileId=reg_flyer, body={'name': 'copy'}, supportsAllDrives=True).execute()
-    copy_reg_flyer_id = copy_reg_flyer['id']
-    flyer_export = drive_service.files().export(fileId=copy_reg_flyer_id, mimeType='application/pdf').execute()
+    flyer_export = drive_service.files().export(fileId=reg_flyer, mimeType='application/pdf').execute()
 
-    with open('data/UnregisteredPrescriberFlyer.pdf', 'wb') as f2:
-        f2.write(flyer_export)
+    pdf_reader = PdfReader(io.BytesIO(flyer_export))
+    if len(pdf_reader.pages) > 1:
+        pdf_writer = PdfWriter()
+        second_page = pdf_reader.pages[1]
+        pdf_writer.add_page(second_page)
+        with open('data/UnregisteredPrescriberFlyer.pdf', 'wb') as f:
+            f.write(second_page)
+    else:
+        with open('data/UnregisteredPrescriberFlyer.pdf', 'wb') as f:
+            f.write(flyer_export)
 
     print('data/UnregisteredPrescriberFlyer.pdf updated')
 
