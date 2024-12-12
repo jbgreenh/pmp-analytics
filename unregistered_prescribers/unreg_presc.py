@@ -1,12 +1,14 @@
 import polars as pl
 import toml
 import os
+import io
 import sys
-from datetime import date, timedelta
+from datetime import date
 from dataclasses import dataclass
 
 from googleapiclient.discovery import build
 from utils import auth, drive, email, deas
+from PyPDF2 import PdfReader, PdfWriter
 
 @dataclass
 class BoardInfo:
@@ -108,71 +110,71 @@ def get_board_dict(service) -> dict[str, BoardInfo]:
         print('data/unmatched.csv updated')
         sys.exit('unmatched degrees, either add to exclude_degs or deg_board')
 
-    opto_folder = secrets['folders']['optometry_uploads']
-
-    yesterday = date.today() - timedelta(days=1)
-    yesterday = date(year=2024, month=10, day=28) # TODO -- remove when ready for production
-    yesterday_str = yesterday.strftime('%Y%m%d')
-
-    opto = (
-        drive.lazyframe_from_file_name_sheet(service, file_name=f'Optometry Pharmacy Report_{yesterday_str}', folder_id=opto_folder, skip_rows=3)
-        .filter(
-            pl.col('First Name').str.to_lowercase().str.contains('totals').not_()
-        )
-        .collect()
-    )
-
-    unreg_opto = (
-        unreg_prescribers_w_boards.filter(pl.col('board') == "Optometry")
-    )
-
-    unreg_opto_ez = (
-        unreg_opto
-        .join(opto, how='inner', left_on='State License Number', right_on='License Number')
-        .drop('First Name', 'Last Name', 'Date of Birth')
-    )
-
-    unreg_opto_no_ez = (
-        unreg_opto
-        .join(opto, how='anti', left_on='State License Number', right_on='License Number')
-        .with_columns(
-            (pl.lit('OPT-') + pl.col('State License Number').str.replace_all('[^0-9]', '').str.zfill(6)).alias('cleaned_lino')
-        )
-    )
-
-    unreg_no_ez_cleaned = (
-        unreg_opto_no_ez
-        .join(opto, how='inner', left_on='cleaned_lino', right_on='License Number')
-    )
-
-    unreg_opto_cleaned_matches_good_names = (
-        unreg_no_ez_cleaned
-        .filter(
-            pl.col('Name').str.contains(pl.col('First Name').str.to_uppercase())
-        )
-        .with_columns(
-            pl.col('cleaned_lino').alias('State License Number')
-        )
-        .drop('cleaned_lino', 'First Name', 'Last Name', 'Date of Birth')
-    )
-
-    opto_matches = pl.concat([unreg_opto_ez, unreg_opto_cleaned_matches_good_names]).sort(by='Status')
-
-    # opto_no_match = (
-    #     unreg_opto
+    # opto_folder = secrets['folders']['optometry_uploads']
+    #
+    # yesterday = date.today() - timedelta(days=1)
+    # yesterday = date(year=2024, month=10, day=28) # for setting date manually, comment out if receiving the file daily
+    # yesterday_str = yesterday.strftime('%Y%m%d')
+    #
+    # opto = (
+    #     drive.lazyframe_from_file_name_sheet(service, file_name=f'Optometry Pharmacy Report_{yesterday_str}', folder_id=opto_folder, skip_rows=3)
     #     .filter(
-    #         pl.col('DEA Number').is_in(opto_matches['DEA Number']).not_()
+    #         pl.col('First Name').str.to_lowercase().str.contains('totals').not_()
+    #     )
+    #     .collect()
+    # )
+    #
+    # unreg_opto = (
+    #     unreg_prescribers_w_boards.filter(pl.col('board') == "Optometry")
+    # )
+    #
+    # unreg_opto_ez = (
+    #     unreg_opto
+    #     .join(opto, how='inner', left_on='State License Number', right_on='License Number')
+    #     .drop('First Name', 'Last Name', 'Date of Birth')
+    # )
+    #
+    # unreg_opto_no_ez = (
+    #     unreg_opto
+    #     .join(opto, how='anti', left_on='State License Number', right_on='License Number')
+    #     .with_columns(
+    #         (pl.lit('OPT-') + pl.col('State License Number').str.replace_all('[^0-9]', '').str.zfill(6)).alias('cleaned_lino')
     #     )
     # )
-    # opto_matches.write_csv('data/opto/deas/opto_matches.csv')
-    # opto_no_match.write_csv('data/opto/deas/opto_no_match.csv')
+    #
+    # unreg_no_ez_cleaned = (
+    #     unreg_opto_no_ez
+    #     .join(opto, how='inner', left_on='cleaned_lino', right_on='License Number')
+    # )
+    #
+    # unreg_opto_cleaned_matches_good_names = (
+    #     unreg_no_ez_cleaned
+    #     .filter(
+    #         pl.col('Name').str.contains(pl.col('First Name').str.to_uppercase())
+    #     )
+    #     .with_columns(
+    #         pl.col('cleaned_lino').alias('State License Number')
+    #     )
+    #     .drop('cleaned_lino', 'First Name', 'Last Name', 'Date of Birth')
+    # )
+    #
+    # opto_matches = pl.concat([unreg_opto_ez, unreg_opto_cleaned_matches_good_names]).sort(by='Status')
+    #
+    # # opto_no_match = (
+    # #     unreg_opto
+    # #     .filter(
+    # #         pl.col('DEA Number').is_in(opto_matches['DEA Number']).not_()
+    # #     )
+    # # )
+    # # opto_matches.write_csv('data/opto/deas/opto_matches.csv')
+    # # opto_no_match.write_csv('data/opto/deas/opto_no_match.csv')
 
     unreg_prescribers_w_boards = (
         unreg_prescribers_w_boards
-        .filter(pl.col('board') != 'Optometry')
+        # .filter(pl.col('board') != 'Optometry')
     )
 
-    unreg_prescribers_w_boards = pl.concat([unreg_prescribers_w_boards, opto_matches], how='diagonal')
+    # unreg_prescribers_w_boards = pl.concat([unreg_prescribers_w_boards, opto_matches], how='diagonal')
 
     board_counts = (
         unreg_prescribers_w_boards['board']
@@ -245,11 +247,37 @@ def send_emails(board_dict:dict[str, BoardInfo], creds, service):
 
     export_response = drive_service.files().export(fileId=copy_doc_id, mimeType='application/pdf').execute()
 
-    with open('data/RegistrationRequirementsNotice.pdf', 'wb') as f:
-        f.write(export_response)
+    pdf_reader = PdfReader(io.BytesIO(export_response))
+    if len(pdf_reader.pages) > 1:
+        pdf_writer = PdfWriter()
+        second_page = pdf_reader.pages[1]
+        pdf_writer.add_page(second_page)
+        with open('data/RegistrationRequirementsNotice.pdf', 'wb') as rrn:
+            pdf_writer.write(rrn)
+    else:
+        with open('data/RegistrationRequirementsNotice.pdf', 'wb') as f:
+            f.write(export_response)
+
 
     drive_service.files().delete(fileId=copy_doc_id, supportsAllDrives=True).execute()
     print('data/RegistrationRequirementsNotice.pdf updated')
+
+    print('pulling unregistered prescriber folder...')
+    reg_flyer = secrets['files']['unreg_presc_flyer']
+    flyer_export = drive_service.files().export(fileId=reg_flyer, mimeType='application/pdf').execute()
+
+    pdf_reader = PdfReader(io.BytesIO(flyer_export))
+    if len(pdf_reader.pages) > 1:
+        pdf_writer = PdfWriter()
+        second_page = pdf_reader.pages[1]
+        pdf_writer.add_page(second_page)
+        with open('data/UnregisteredPrescriberFlyer.pdf', 'wb') as flyer:
+            pdf_writer.write(flyer)
+    else:
+        with open('data/UnregisteredPrescriberFlyer.pdf', 'wb') as f:
+            f.write(flyer_export)
+
+    print('data/UnregisteredPrescriberFlyer.pdf updated')
 
     email_service = build('gmail', 'v1', credentials=creds)
     sender = secrets['email']['compliance']
@@ -263,7 +291,7 @@ def send_emails(board_dict:dict[str, BoardInfo], creds, service):
         report_file = f'{board}_unregistered_prescribers_{today_str}.csv'
         info.board_df.write_csv(report_file)
 
-        message = email.create_message_with_attachments(sender=sender, to=info.board_emails, subject=subj, message_text=body, file_paths=[report_file, 'data/RegistrationRequirementsNotice.pdf'], bcc=[sender])
+        message = email.create_message_with_attachments(sender=sender, to=info.board_emails, subject=subj, message_text=body, file_paths=[report_file, 'data/RegistrationRequirementsNotice.pdf', 'data/UnregisteredPrescriberFlyer.pdf'], bcc=[sender])
         email.send_email(service=email_service, message=message)
         os.remove(report_file)
 
@@ -279,4 +307,5 @@ if __name__ == '__main__':
         print(info.board_name)
         print(info.board_emails)
         info.board_df.write_csv(f'data/{board}.csv')
+
     # send_emails(board_dict=board_dict, creds=creds, service=service)
