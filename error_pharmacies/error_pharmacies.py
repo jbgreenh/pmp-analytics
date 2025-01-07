@@ -27,12 +27,10 @@ def pull_file() -> pl.LazyFrame:
         })
     )
 
-    # added .slice to get rid of western drug for now
     dea_count = (
         errors_by_pharmacy
         .group_by(['dea', 'pharmacy']).len()
         .sort(by='len', descending=True)
-        .slice(1, None)
     )
     print('top pharmacies:')
     print(dea_count.collect().head())
@@ -102,7 +100,7 @@ def row_for_sheet(top_pharmacy: pl.LazyFrame, folder_id:str) -> List[Any]:
 
     error_row = list(
         top_pharmacy
-        .join(igov, on='license', how='left', coalesce=True)
+        .join(igov, on='license', how='left')
         .with_columns(
             pl.col('submission_date').min().dt.to_string('%-m/%-d/%Y %-l:%-M:%-S %p').alias('error_start_date'),
             pl.col('submission_date').max().dt.to_string('%-m/%-d/%Y %-l:%-M:%-S %p').alias('error_end_date'),
@@ -126,12 +124,12 @@ def update_error_sheet(creds, row_for_updating:List[Any], file_id:str):
         file_id: the file id of the pharmacy error sheet 
     """
     print('getting error sheet from drive...')
-    range_name = 'errors!B:B'
+    range_name = 'errors!A:A'
     service = build('sheets', 'v4', credentials=creds)
     result = service.spreadsheets().values().get(spreadsheetId=error_sheet_id, range=range_name).execute()
     values = result.get('values', [])
     last_row = len(values) if values else 1
-    data_range = f'errors!B{last_row + 1}:L{last_row + 1}'
+    data_range = f'errors!A{last_row + 1}:K{last_row + 1}'
     request = service.spreadsheets().values().update(
         spreadsheetId=file_id,
         range=data_range,
