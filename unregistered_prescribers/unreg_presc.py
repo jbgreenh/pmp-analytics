@@ -77,15 +77,13 @@ def get_board_dict(service) -> dict[str, BoardInfo]:
         unreg_prescribers
         .with_columns(
             pl.when((pl.col('temp_deg').is_in(deg_exclude).not_()) & (pl.col('temp_deg').str.len_chars() > 1))
-            .then(pl.col('temp_deg'))
-            .otherwise(None)
-            .alias('temp_deg_2')
+                .then(pl.col('temp_deg'))
+                .otherwise(None).alias('temp_deg_2')
         )
         .with_columns(
             pl.when(pl.col('Degree').str.len_chars()==0)
-            .then(pl.col('temp_deg_2'))
-            .otherwise(pl.col('Degree'))
-            .alias('final_deg')
+                .then(pl.col('temp_deg_2'))
+                .otherwise(pl.col('Degree')).alias('final_deg')
         )
         .collect()
         .join(
@@ -97,9 +95,8 @@ def get_board_dict(service) -> dict[str, BoardInfo]:
         .rename({'final_deg':'degree'})
         .with_columns(
             pl.when(pl.col('degree').str.len_chars()==0)
-            .then(None)
-            .otherwise(pl.col('degree'))
-            .alias('degree')
+                .then(None)
+                .otherwise(pl.col('degree')).alias('degree')
         )
         .drop_nulls(subset='degree')
     )
