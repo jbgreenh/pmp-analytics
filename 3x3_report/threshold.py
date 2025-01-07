@@ -73,7 +73,7 @@ def update_sheet(creds, thresh:ThresholdInfo, file_id:str):
     args:
         creds: credentials from `auth.auth()`
         thresh: the `ThresholdInfo` returned by `threshold_report()`
-        file_id: the file id of the 3x3 threshold sheet
+        file_id: the google drive file id of the 3x3 threshold sheet
     """
     range_name = '3x3!A:A'
     service = build('sheets', 'v4', credentials=creds)
@@ -92,7 +92,8 @@ def update_sheet(creds, thresh:ThresholdInfo, file_id:str):
 
 def main():
     if len(sys.argv) != 2 or not (sys.argv[1].isdigit()):
-        sys.exit('please insert the number of patients from the threshold request in awarxe')
+        print('please insert the number of patients from the threshold request in awarxe')
+        sys.exit('eg: python threshold.py 678')
     else:
         with open('../secrets.toml', 'r') as f:
             secrets = toml.load(f)
