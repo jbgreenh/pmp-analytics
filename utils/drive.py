@@ -139,7 +139,7 @@ def awarxe(service, day:str='') -> pl.LazyFrame:
         yesterday = day
         yesterday_year = day[0:4]
 
-    with open('../secrets.toml', 'r') as f:
+    with open('secrets.toml', 'r') as f:
         secrets = toml.load(f)
 
     folder_id = secrets['folders']['awarxe']
