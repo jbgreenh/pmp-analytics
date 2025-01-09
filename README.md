@@ -6,7 +6,7 @@ updated version of [az-pmp-analytics](https://github.com/jbgreenh/AZ-PMP-analyti
 
 this project uses `uv` for package and project management
 
-```python
+```
 pip install uv
 uv python install 3.13
 uv sync
