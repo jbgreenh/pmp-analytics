@@ -12,7 +12,7 @@ uv python install 3.13
 uv sync
 ```
 
-scripts can then be run using `uv run script.py` make sure the `required files` for the script to be run are in the `data` folder
+scripts can then be run using `uv run {script_name}.py` make sure the `required files` for the script to be run are in the `data` folder
 
 ## 3x3 Threshold Report
 
