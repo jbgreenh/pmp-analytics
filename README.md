@@ -7,6 +7,9 @@ uses `uv` for package and project management
 pip install uv
 uv python install 3.13
 uv sync
+
+# and for now
+uv pip install .
 ```
 
-scripts can then be run the scripts using `uv run script.py`
+scripts can then be run using `uv run script.py`
