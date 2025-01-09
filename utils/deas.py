@@ -24,7 +24,7 @@ def deas(p:str) -> pl.LazyFrame:
         offset += w
 
     # using unit separator '\x1F' to trick pyarrow into only making one col, unlikely to make it's way into this latin-1 file
-    deas = pl.read_csv('../dea_file/cs_active.txt', encoding='latin-1', has_header=False, new_columns=['full_str'], use_pyarrow=True, separator='\x1F')
+    deas = pl.read_csv('data/cs_active.txt', encoding='latin-1', has_header=False, new_columns=['full_str'], use_pyarrow=True, separator='\x1F')
 
     deas = (
         deas
