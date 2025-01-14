@@ -34,9 +34,9 @@ this script finds the pharmacy with the most errors, uploads the file to the goo
 
 ### required files
 
-| file               | description                                                            |
-| ------------------ | ---------------------------------------------------------------------- |
-| `List Request.csv` | iGov>Reports>Snapshot Reports>List Request>Pharmacy>Generator>Download |
+| file               | description                                                   |
+| ------------------ | ------------------------------------------------------------- |
+| `List Request.csv` | iGov>Reports>Snapshot Reports>List Request>Generator>Download |
 
 ## exclude_ndcs
 
@@ -93,11 +93,11 @@ this script performs the weekly pharmacy cleanup and provides a link to the file
 
 ### required files
 
-| file                             | description                                                            |
-| -------------------------------- | ---------------------------------------------------------------------- |
-| `DelinquentDispenserRequest.csv` | AWARxE>Admin>Delinquent Pharmacies>Dowload CSV                         |
-| `List Request.csv`               | iGov>Reports>Snapshot Reports>List Request>Pharmacy>Generator>Download |
-| `pharmacies.csv`                 | AWARxE>Admin>Manage Pharmacies>Download CSV                            |
+| file                             | description                                                   |
+| -------------------------------- | ------------------------------------------------------------- |
+| `DelinquentDispenserRequest.csv` | AWARxE>Admin>Delinquent Pharmacies>Dowload CSV                |
+| `List Request.csv`               | iGov>Reports>Snapshot Reports>List Request>Generator>Download |
+| `pharmacies.csv`                 | AWARxE>Admin>Manage Pharmacies>Download CSV                   |
 
 ## pharmacy deas not in manage pharmacies
 
@@ -106,7 +106,7 @@ this script checks for pharmacy dea numbers that are active with the dea but not
 ### required files
 
 updated `data/cs_active.txt`  
-`List Request.csv` list request in igov for pharmacies  
+`List Request.csv` list request in igov
 `pharmacies.csv` compliance>manage pharmacies>download
 
 ## scorecard
@@ -134,11 +134,10 @@ this script checks the monthly inspection list for pharmacist registration, adds
 
 ### required files
 
-| file                  | description                                                              |
-| --------------------- | ------------------------------------------------------------------------ |
-| `igov_pharmacist.csv` | iGov>Reports>Snapshot Reports>List Request>Pharmacist>Generator>Download |
-| `igov_pharmacy.csv`   | iGov>Reports>Snapshot Reports>List Request>Pharmacy>Generator>Download   |
-| `pharmacies.csv`      | AWARxE>Admin>Manage Pharmacies>Download CSV                              |
+| file               | description                                                   |
+| ------------------ | ------------------------------------------------------------- |
+| `List Request.csv` | iGov>Reports>Snapshot Reports>List Request>Generator>Download |
+| `pharmacies.csv`   | AWARxE>Admin>Manage Pharmacies>Download CSV                   |
 
 ## unregistered_prescribers
 

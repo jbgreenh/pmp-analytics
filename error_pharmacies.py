@@ -64,7 +64,10 @@ def row_for_sheet(top_pharmacy: pl.LazyFrame, folder_id:str) -> List[Any]:
         returns the rows as a list in an organized fashion to match the columns on the google sheet
     """
     igov = (
-        pl.scan_csv('data/List Request.csv', infer_schema_length=10000)
+        pl.scan_csv('data/List Request.csv', infer_schema_length=0)
+        .filter(
+            pl.col('Type') == 'Pharmacy'
+        )
         .with_columns(
             pl.col('License/Permit #').str.to_uppercase().str.strip_chars().alias('license'),
             pl.concat_str(

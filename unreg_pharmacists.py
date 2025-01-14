@@ -67,8 +67,13 @@ def registration(inspection_list:pl.LazyFrame) -> pl.LazyFrame:
         )
     )
 
+    igov = pl.scan_csv('data/List Request.csv', infer_schema_length=0)
+
     pharmacies = (
-        pl.scan_csv('data/igov_pharmacy.csv')
+        igov
+        .filter(
+            pl.col('Type') == 'Pharmacy'
+        )
         .with_columns(
             pl.col('License/Permit #').str.to_uppercase().str.strip_chars()
         )
@@ -78,7 +83,10 @@ def registration(inspection_list:pl.LazyFrame) -> pl.LazyFrame:
     )
 
     pharmacists = (
-        pl.scan_csv('data/igov_pharmacist.csv', infer_schema_length=10000)
+        igov
+        .filter(
+            pl.col('Type') == 'Pharmacist'
+        )
         .with_columns(
                 pl.col('License/Permit #').str.to_uppercase().str.strip_chars(),
                 pl.concat_str(

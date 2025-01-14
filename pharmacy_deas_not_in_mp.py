@@ -7,7 +7,10 @@ mp = (
 ).collect()['DEA'].to_list()
 
 igov = (
-    pl.scan_csv('data/List Request.csv', infer_schema_length=10000)
+    pl.scan_csv('data/List Request.csv', infer_schema_length=0)
+    .filter(
+        pl.col('Type') == 'Pharmacy'
+    )
     .select('License/Permit #', 'Status', 'Email')
 )
 
