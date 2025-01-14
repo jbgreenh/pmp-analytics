@@ -29,7 +29,7 @@ def deas(p:str) -> pl.LazyFrame:
     deas = (
         deas
         .with_columns(
-            [pl.col('full_str').str.slice(slice_tuple[0], slice_tuple[1]).str.strip().alias(col) for slice_tuple, col in zip(slice_tuples, dea_names)]
+            [pl.col('full_str').str.slice(slice_tuple[0], slice_tuple[1]).str.strip_chars().alias(col) for slice_tuple, col in zip(slice_tuples, dea_names)]
         )
         .drop('full_str')
     )
