@@ -117,15 +117,15 @@ def process_mu(appearance_month:date, input_file:str):
     appear = (
         drive.lazyframe_from_id_and_sheetname(service=service, file_id=secrets['files']['appearances'], sheet_name='appearances')
         .filter(
-            pl.col('appearance_date').str.to_date('%Y-%-m%-d')
+            pl.col('appearance_date').str.to_date('%Y-%-m-%-d')
         )
     )
 
     appear_combine = (
         pl.concat([appear, new_appear])
-        .with_columns(
-            pl.col('appearance_date').cast(pl.String)
-        )
+        # .with_columns(
+        #     pl.col('appearance_date').cast(pl.String)
+        # )
     )
 
     # total appearance count, including current report
