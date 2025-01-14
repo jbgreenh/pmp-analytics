@@ -122,7 +122,7 @@ def registration(inspection_list:pl.LazyFrame) -> pl.LazyFrame:
     final_sheet = (
         inspection_list
         .with_columns(
-            pl.col('License #').is_in(aw['professional license number']).replace({True:'YES', False:'NO'}).alias('awarxe')
+            pl.col('License #').is_in(aw['professional license number']).replace_strict({True:'YES', False:'NO'}).alias('awarxe')
         )
         .filter(pl.col('awarxe') == 'NO')
         .join(

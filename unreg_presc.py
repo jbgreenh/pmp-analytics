@@ -65,7 +65,7 @@ def get_board_dict(service) -> dict[str, BoardInfo]:
     unreg_prescribers = (
         az_presc_deas
         .with_columns(
-            pl.col('DEA Number').is_in(awarxe_deas).replace({True:'YES', False:'NO'}).alias('awarxe'),
+            pl.col('DEA Number').is_in(awarxe_deas).replace_strict({True:'YES', False:'NO'}).alias('awarxe'),
             pl.col('Name').str.replace_all(pattern=pattern, value='').str.split(' ').list.get(-1).alias('temp_deg')  # drop ')' '(' and '.' from Name
         )
         .filter(pl.col('awarxe').str.contains('NO'))
