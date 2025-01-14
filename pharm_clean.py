@@ -21,7 +21,7 @@ def pharm_clean():
     igov = (
         pl.scan_csv('data/List Request.csv', infer_schema_length=0)
         .filter(
-            pl.col('Type') == 'Pharmacist'
+            pl.col('Type') == 'Pharmacy'
         )
         .with_columns(
             pl.col('License/Permit #').str.strip_chars().str.to_uppercase()
