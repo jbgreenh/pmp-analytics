@@ -16,18 +16,18 @@ def mm2(service):
     else:
         start, end = 1, 6
 
-    data = {
-        'last_name':'abc123',
-        'first_name':'abc123',
-        'dea_number':'abc123',
-        'npi':'abc123',
-        'prof_lic':'abc123',
-        'nooflookup':123,
-        'noofinterstatelookup':123,
-        'noofdelegateslookup':123,
-        'totallookups':123,
+    schema = {
+        'last_name': pl.String,
+        'first_name': pl.String,
+        'dea_number': pl.String,
+        'npi': pl.String,
+        'prof_lic': pl.String,
+        'nooflookup': pl.Int64,
+        'noofinterstatelookup': pl.Int64,
+        'noofdelegateslookup': pl.Int64,
+        'totallookups': pl.Int64,
     }
-    lookups = pl.LazyFrame(data).clear()
+    lookups = pl.LazyFrame(schema=schema)
     for n in range(start, end+1):
         n = str(n).zfill(2)
         print(f'{year}{n}:')
