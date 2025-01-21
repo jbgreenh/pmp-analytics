@@ -111,22 +111,18 @@ updated `data/cs_active.txt`
 
 ## scorecard
 
-these scripts update the scorecard tracking sheet on google drive with prescriber search rates for opioid and benzodiazepine prescriptions  
-`scorecard.py` is for running on a local machine as needed  
-`cloud_functions_scorecard.py` is a cloud function and scheduled to run `0 10 12 * *`
+this script updates the scorecard tracking sheet on google drive with prescriber search rates for opioid and benzodiazepine prescriptions  
+a counterpart for this script runs `0 10 12 * *` on google cloud  
+`scorecard.py` is for running on a local machine as needed
 
 ## sftp_backup
 
 these scripts backup the vendor and pmp sftps to the google drive daily  
+counterparts for this script run `30 8 * * *` on google cloud for both `vendor` and `pmp`  
 `sftp_backup.py` is for running on a local machine as needed and takes a command line argument:
 
 - `vendor` for backing up the vendor sftp
 - `pmp` for backing up the pmp sftp
-
-`cloud_functions_sftp_backup.py` is a cloud function and scheduled to run `30 8 * * *` and has two versions in the cloud project:
-
-- `sftp_backup` a version for the vendor sftp
-- `pmp_sftp_backup` a version for the pmp sftp
 
 ## unregistered_pharmacists
 
