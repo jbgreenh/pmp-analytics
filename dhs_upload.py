@@ -44,7 +44,7 @@ def upload_latest_dhs_file(service, sftp:paramiko.SFTPClient, folder:str):
     last_sunday = get_last_sunday()
     file_name = last_sunday.strftime('AZ_%Y%m%d.csv')
     extract = drive.lazyframe_from_file_name_csv(service, file_name=file_name, folder_id=folder, separator='|', infer_schema_length=100000)
-    extract.collect().write_csv(file_name)
+    extract.collect().write_csv(file_name, separator='|')
     print(f'writing {file_name} to sftp...')
     sftp.put(localpath=file_name, remotepath=file_name)
     print('file uploaded')
