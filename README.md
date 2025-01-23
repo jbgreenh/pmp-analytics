@@ -4,15 +4,11 @@ updated version of [az-pmp-analytics](https://github.com/jbgreenh/AZ-PMP-analyti
 
 ## setup
 
-this project uses `uv` for package and project management
+this project uses [uv](https://github.com/astral-sh/uv?tab=readme-ov-file)  
+after installing `uv` on your system using the link above, use `uv sync` to install all dependencies
 
-```
-pip install uv
-uv python install 3.13
-uv sync
-```
-
-scripts can then be run using `uv run {script_name}.py` make sure the `required files` for the script to be run are in the `data` folder
+scripts can then be run using `uv run {script_name}.py`  
+make sure the `required files` for the script to be run are in the `data` folder
 
 ## 3x3 Threshold Report
 
