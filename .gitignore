@@ -6,7 +6,7 @@
 **/secrets.toml
 **/*.pdf
 **/__pycache__
-test
+*test*
 build
 dist
 *.egg-info

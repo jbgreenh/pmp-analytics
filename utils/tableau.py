@@ -22,7 +22,7 @@ def lazyframe_from_view_id(view_id:str, filters:dict|None=None, **kwargs:Any) ->
         a LazyFrame containing the data from the specified view, filtered if 
         filters are specified 
     """
-    with open('../secrets.toml', 'r') as f:
+    with open('secrets.toml', 'r') as f:
         secrets = toml.load(f)
 
     server = secrets['tableau']['server']
@@ -58,7 +58,7 @@ def find_view_luid(view_name:str, workbook_name:str) -> str:
     returns:
         string luid of the target view
     """
-    with open('../secrets.toml', 'r') as f:
+    with open('secrets.toml', 'r') as f:
         secrets = toml.load(f)
 
     server = secrets['tableau']['server']

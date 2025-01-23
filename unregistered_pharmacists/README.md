@@ -1,2 +1,0 @@
-# unregistered_pharmacists
-this script checks the monthly inspection list for pharmacist registration, adds information from igov, and then adds the results to the unregistered pharmacist report on google drive
