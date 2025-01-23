@@ -36,7 +36,7 @@ this script finds the pharmacy with the most errors, uploads the file to the goo
 
 ## exclude_ndcs
 
-this script updates `data/excluded_ndcs.csv` and prints the new opiate antagonist ndcs to exclude in AWARxE.
+this script updates `excluded_ndcs` on the google drive and prints the new opiate antagonist ndcs to exclude in AWARxE.
 
 ## mm_phys_audit
 
