@@ -37,7 +37,7 @@ def pharm_clean():
 
     ddr = (
         pl.scan_csv('data/DelinquentDispenserRequest.csv')
-        .filter((pl.col('Days Delinquent') >= 14) | (pl.col('Days Delinquent').is_null()))
+        .filter((pl.col('Days Delinquent') >= 10) | (pl.col('Days Delinquent').is_null()))
         .with_columns(
             pl.col('DEA').str.strip_chars().str.to_uppercase()
         )
