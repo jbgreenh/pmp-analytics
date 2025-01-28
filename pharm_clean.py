@@ -1,7 +1,7 @@
 import polars as pl
 from datetime import date
 import os
-import toml
+from dotenv import load_dotenv
 
 from googleapiclient.discovery import build
 from utils import auth, drive, email
@@ -92,21 +92,18 @@ def pharm_clean():
 
 def main():
     creds = auth.auth()
-    with open('secrets.toml', 'r') as f:
-        secrets = toml.load(f)
-
+    load_dotenv()
     fname = pharm_clean()
 
     service = build('drive', 'v3', credentials=creds)
-    folder_id = secrets['folders']['pharm_clean']
+    folder_id = os.environ.get('PHARM_CLEAN_FOLDER')
 
     drive.upload_csv_as_sheet(service=service, file_name=fname, folder_id=folder_id)
 
     os.remove(fname)
 
-    # email notification
-    sender = secrets['email']['data']
-    to = secrets['email']['compliance']
+    sender = os.environ.get('EMAIL_DATA')
+    to = os.environ.get('EMAIL_COMPLIANCE')
     subject = 'delinquent submitters cleanup complete'
     # leaving links out as requested
     message_txt = 'hello, the weekly delinquent data submitters cleanup is complete\n\nthank you,\n\ndata team'

@@ -2,11 +2,10 @@ import os
 from typing import Any, List
 
 import polars as pl
-import toml
+from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
 from utils import auth, drive, tableau
-
 
 def pull_file() -> pl.LazyFrame:
     """
@@ -143,10 +142,10 @@ def update_error_sheet(creds, row_for_updating:List[Any], file_id:str):
     print(f'updated pharmacy error sheet at {row_for_updating[0]}')
 
 if __name__ == '__main__':
-    with open('secrets.toml', 'r') as f:
-        secrets = toml.load(f)
-    error_sheet_id = secrets['files']['pharmacy_corrections']
-    error_folder_id = secrets['folders']['error_corrections']
+    load_dotenv()
+
+    error_sheet_id = os.environ.get('PHARMACY_CORRECTIONS_FILE')
+    error_folder_id = os.environ.get('ERROR_CORRECTIONS_FOLDER')
 
     creds = auth.auth()
     service = build('drive', 'v3', credentials=creds)

@@ -1,6 +1,7 @@
+import os
 import polars as pl
 import datetime
-import toml
+from dotenv import load_dotenv
 from utils import auth, email, tableau
 from googleapiclient.discovery import build
 
@@ -37,12 +38,11 @@ def naloxone_file():
 
 
 def main():
-    with open('secrets.toml', 'r') as f:
-        secrets = toml.load(f)
+    load_dotenv()
 
-    sender = secrets['email']['data']
-    to = secrets['email']['naloxone']
-    signature = secrets['email']['data_sig'].replace(r'\n', '\n')
+    sender = os.environ.get('EMAIL_DATA')
+    to = os.environ.get('EMAIL_NALOXONE')
+    signature = os.environ.get('EMAIL_DATA_SIG').replace(r'\n', '\n')
     subject = 'Weekly Naloxone Report'
     file_paths, total_naloxone_str, tod = naloxone_file()
 

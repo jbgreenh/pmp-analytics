@@ -1,6 +1,7 @@
+import os
 import polars as pl
 import datetime
-import toml
+from dotenv import load_dotenv
 
 from googleapiclient.discovery import build
 from utils import auth, drive
@@ -14,11 +15,11 @@ def pull_files(service, last_month):
     file_name = f'AZ_Dispensations_{lm_yr}{lm_mo}.csv'
     ob_file_name = f'AZ_Dispensations_{lm_yr}{lm_mo}_opioid_benzo.csv'
 
-    folder_id = secrets['folders']['dispensations_47']
+    folder_id = os.environ.get('DISPENSATIONS_47_FOLDER')
     disp = drive.lazyframe_from_file_name_csv(service=service, file_name=file_name, folder_id=folder_id, separator='|', infer_schema_length=10000)
     ob_disp = drive.lazyframe_from_file_name_csv(service=service, file_name=ob_file_name, folder_id=folder_id, separator='|', infer_schema_length=10000)
 
-    patient_req_id = secrets['folders']['patient_requests']
+    patient_req_id = os.environ.get('PATIENT_REQUESTS_FOLDER')
     requests_folder_id = drive.folder_id_from_name(service=service, folder_name=f'AZ_PtReqByProfile_{lm_yr}{lm_mo}', parent_id=patient_req_id)
     requests = drive.lazyframe_from_file_name_csv(service=service, file_name='Prescriber.csv', folder_id=requests_folder_id, separator='|', infer_schema_length=10000)
 
@@ -72,7 +73,7 @@ def scorecard_new_row(service, last_month):
 
 
 def update_scorecard_sheet(creds, new_row):
-    sheet_id = secrets['files']['scorecard']
+    sheet_id = os.environ.get('SCORECARD_FILE')
     range_name = 'scorecard!A:A'
     service = build('sheets', 'v4', credentials=creds)
     result = service.spreadsheets().values().get(spreadsheetId=sheet_id, range=range_name).execute()
@@ -98,8 +99,7 @@ def update_scorecard_sheet(creds, new_row):
 
 
 if __name__ == '__main__':
-    with open('secrets.toml', 'r') as f:
-        secrets = toml.load(f)
+    load_dotenv()
 
     today = datetime.datetime.now()
     last_month = today.replace(day=1) - datetime.timedelta(days=1)

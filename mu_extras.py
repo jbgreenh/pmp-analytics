@@ -1,9 +1,10 @@
+import os
 import sys
 import calendar
 from datetime import date
 
 import polars as pl
-import toml
+from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
 from utils import auth, drive, deas
@@ -81,15 +82,14 @@ def process_mu(appearance_month:date, input_file:str):
     month_num = appearance_month.month
     year_str = str(appearance_month.year)
 
-    with open('secrets.toml', 'r') as f:
-        secrets = toml.load(f)
+    load_dotenv()
 
     creds = auth.auth()
     service = build('drive', 'v3', credentials=creds)
 
     no_violation = (
         drive.lazyframe_from_id_and_sheetname(
-            service=service, file_id=secrets['files']['not_violation'], sheet_name='no_violation', infer_schema_length=10000
+            service=service, file_id=os.environ.get('NO_VIOLATION_FILE'), sheet_name='no_violation', infer_schema_length=10000
         )
         .with_columns(
             pl.col('exclude until').str.to_date(format='%m/%d/%Y'),
@@ -115,7 +115,7 @@ def process_mu(appearance_month:date, input_file:str):
     )
 
     appear = (
-        drive.lazyframe_from_id_and_sheetname(service=service, file_id=secrets['files']['appearances'], sheet_name='appearances', engine='xlsx2csv', infer_schema_length=0)
+        drive.lazyframe_from_id_and_sheetname(service=service, file_id=os.environ.get('APPEARANCES_FILE'), sheet_name='appearances', engine='xlsx2csv', infer_schema_length=0)
         .with_columns(
             pl.col('appearance_date').str.to_date('%Y-%-m-%-d')
         )
@@ -177,7 +177,7 @@ def process_mu(appearance_month:date, input_file:str):
 
     print(f'{filepath} written')
 
-    update_appearances(creds, secrets['files']['appearances'], update_appearances=appear_combine)
+    update_appearances(creds, os.environ.get('APPEARANCES_FILE'), update_appearances=appear_combine)
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:

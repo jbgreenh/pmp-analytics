@@ -1,6 +1,7 @@
+import os
 import datetime
 import polars as pl
-import toml
+from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
 from utils import drive, auth
@@ -31,7 +32,7 @@ def mm2(service):
     for n in range(start, end+1):
         n = str(n).zfill(2)
         print(f'{year}{n}:')
-        requests_folder_id = secrets['folders']['patient_requests']
+        requests_folder_id = os.environ.get('PATIENT_REQUESTS_FOLDER')
         requests_folder_id = drive.folder_id_from_name(service=service, folder_name=f'AZ_PtReqByProfile_{year}{n}', parent_id=requests_folder_id)
         if requests_folder_id:
             requests = drive.lazyframe_from_file_name_csv(service=service, file_name='Prescriber.csv', folder_id=requests_folder_id, separator='|', infer_schema_length=10000)
@@ -120,8 +121,7 @@ def mm2(service):
 
 
 if __name__ == '__main__':
-    with open('secrets.toml', 'r') as f:
-        secrets = toml.load(f)
+    load_dotenv()
     creds = auth.auth()
     service = build('drive', 'v3', credentials=creds)
     mm2(service)
