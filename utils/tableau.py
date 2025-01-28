@@ -1,8 +1,9 @@
+import os
 from io import BytesIO
 from typing import Any
 
 import polars as pl
-import toml
+from dotenv import load_dotenv
 from tableauserverclient.models.tableau_auth import PersonalAccessTokenAuth
 from tableauserverclient.server.pager import Pager
 from tableauserverclient.server.request_options import CSVRequestOptions
@@ -22,13 +23,12 @@ def lazyframe_from_view_id(view_id:str, filters:dict|None=None, **kwargs:Any) ->
         a LazyFrame containing the data from the specified view, filtered if 
         filters are specified 
     """
-    with open('secrets.toml', 'r') as f:
-        secrets = toml.load(f)
+    load_dotenv()
 
-    server = secrets['tableau']['server']
-    site = secrets['tableau']['site']
-    token_name = secrets['tableau']['token_name']
-    token_value = secrets['tableau']['token_value']
+    server = os.environ.get('TABLEAU_SERVER')
+    site = os.environ.get('TABLEAU_SITE')
+    token_name = os.environ.get('TABLEAU_TOKEN_NAME')
+    token_value = os.environ.get('TABLEAU_TOKEN_VALUE')
 
     tableau_auth = PersonalAccessTokenAuth(token_name, token_value, site)
     tableau_server = Server(server, use_server_version=True, http_options={'verify':False})
@@ -58,13 +58,12 @@ def find_view_luid(view_name:str, workbook_name:str) -> str:
     returns:
         string luid of the target view
     """
-    with open('secrets.toml', 'r') as f:
-        secrets = toml.load(f)
+    load_dotenv()
 
-    server = secrets['tableau']['server']
-    site = secrets['tableau']['site']
-    token_name = secrets['tableau']['token_name']
-    token_value = secrets['tableau']['token_value']
+    server = os.environ.get('TABLEAU_SERVER')
+    site = os.environ.get('TABLEAU_SITE')
+    token_name = os.environ.get('TABLEAU_TOKEN_NAME')
+    token_value = os.environ.get('TABLEAU_TOKEN_VALUE')
 
     tableau_auth = PersonalAccessTokenAuth(token_name, token_value, site)
     tableau_server = Server(server, use_server_version=True, http_options={'verify':False})

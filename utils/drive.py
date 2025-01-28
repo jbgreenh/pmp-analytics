@@ -1,9 +1,10 @@
 import datetime
 import io
 import sys
+import os
 
 import polars as pl
-import toml
+from dotenv import load_dotenv
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 
@@ -139,10 +140,9 @@ def awarxe(service, day:str='') -> pl.LazyFrame:
         yesterday = day
         yesterday_year = day[0:4]
 
-    with open('secrets.toml', 'r') as f:
-        secrets = toml.load(f)
+    load_dotenv()
 
-    folder_id = secrets['folders']['awarxe']
+    folder_id = os.environ.get('AWARXE_FOLDER')
     file_name = f'AZ_UserEx_{yesterday}.csv'
 
     try:
