@@ -16,6 +16,7 @@ dependencies = [
     "polars>=1.19.0",
     "pyarrow>=18.1.0",
     "pypdf2>=3.0.1",
+    "python-dotenv>=1.0.1",
     "tableauserverclient>=0.35",
     "toml>=0.10.2",
     "tzdata>=2024.2",
