@@ -1,13 +1,17 @@
 import polars as pl
 import pandas as pd
 
+YEAR = 2025
+MONTH_NO = 1
+
 techs = (
     pl.from_pandas(pd.read_html('data/techs/techs.xls', header=1)[0])
-    .filter(
-        pl.col('Status').str.to_lowercase().str.starts_with('open')
-    )
     .with_columns(
         pl.col(['Expiration Date', 'Application Date', 'Issue Date']).str.to_date('%m/%d/%Y')
+    )
+    .filter(
+        pl.col('Status').str.to_lowercase().str.starts_with('open'),
+        (pl.col('Issue Date').dt.year() == YEAR & pl.col('Issue Date').dt.month() == MONTH_NO)
     )
 )
 superseded = (
