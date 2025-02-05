@@ -10,8 +10,8 @@ techs = (
         pl.col(['Expiration Date', 'Application Date', 'Issue Date']).str.to_date('%m/%d/%Y')
     )
     .filter(
-        pl.col('Status').str.to_lowercase().str.starts_with('open'),
-        (pl.col('Issue Date').dt.year() == YEAR & pl.col('Issue Date').dt.month() == MONTH_NO)
+        (pl.col('Status').str.to_lowercase().str.starts_with('open')) &
+        ((pl.col('Issue Date').dt.year() == YEAR) & (pl.col('Issue Date').dt.month() == MONTH_NO))
     )
 )
 superseded = (
