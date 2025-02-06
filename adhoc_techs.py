@@ -1,8 +1,8 @@
+from datetime import date, timedelta
 import polars as pl
 import pandas as pd
 
-YEAR = 2025
-MONTH_NO = 1
+last_mo = date.today().replace(day=1) - timedelta(days=1)
 
 techs = (
     pl.from_pandas(pd.read_html('data/techs/techs.xls', header=1)[0])
@@ -11,7 +11,7 @@ techs = (
     )
     .filter(
         (pl.col('Status').str.to_lowercase().str.starts_with('open')) &
-        ((pl.col('Issue Date').dt.year() == YEAR) & (pl.col('Issue Date').dt.month() == MONTH_NO))
+        ((pl.col('Issue Date').dt.year() == last_mo.year) & (pl.col('Issue Date').dt.month() == last_mo.month))
     )
 )
 superseded = (
