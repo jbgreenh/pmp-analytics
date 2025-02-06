@@ -128,8 +128,8 @@ this script adds a new tab to the superseded to techs sheet for the previous mon
 
 | file             | description                                                                                |
 | ---------------- | ------------------------------------------------------------------------------------------ |
-| `techs.csv`      | iGov>Person Search>Pharmacy Technician>License Status:any status with OPEN>Search>Download |
-| `superseded.csv` | iGov>Person Search>Pharmacy Technician Trainee>License Status:SUPERSEDED>Search>Download   |
+| `techs.xls`      | iGov>Person Search>Pharmacy Technician>License Status:any status with OPEN>Search>Download |
+| `superseded.xls` | iGov>Person Search>Pharmacy Technician Trainee>License Status:SUPERSEDED>Search>Download   |
 
 ## unregistered_pharmacists
 

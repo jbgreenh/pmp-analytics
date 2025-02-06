@@ -11,7 +11,7 @@ from utils import email, auth
 last_mo = date.today().replace(day=1) - timedelta(days=1)
 
 techs = (
-    pl.from_pandas(pd.read_html('data/techs/techs.xls', header=1)[0])
+    pl.from_pandas(pd.read_html('data/techs.xls', header=1)[0])
     .with_columns(
         pl.col(['Expiration Date', 'Application Date', 'Issue Date']).str.to_date('%m/%d/%Y')
     )
@@ -21,7 +21,7 @@ techs = (
     )
 )
 superseded = (
-    pl.from_pandas(pd.read_html('data/techs/superseded.xls', header=1)[0])
+    pl.from_pandas(pd.read_html('data/superseded.xls', header=1)[0])
     .with_columns(
         pl.col(['Expiration Date', 'Application Date', 'Issue Date']).str.to_date('%m/%d/%Y')
     )
