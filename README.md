@@ -120,6 +120,17 @@ counterparts for this script run `30 8 * * *` on google cloud for both `vendor` 
 - `vendor` for backing up the vendor sftp
 - `pmp` for backing up the pmp sftp
 
+## techs
+
+this script adds a new tab to the superseded to techs sheet for the previous month and sends an email to `EMAIL_SUP` with descriptive statistics
+
+### required files
+
+| file             | description                                                                                |
+| ---------------- | ------------------------------------------------------------------------------------------ |
+| `techs.csv`      | iGov>Person Search>Pharmacy Technician>License Status:any status with OPEN>Search>Download |
+| `superseded.csv` | iGov>Person Search>Pharmacy Technician Trainee>License Status:SUPERSEDED>Search>Download   |
+
 ## unregistered_pharmacists
 
 this script checks the monthly inspection list for pharmacist registration, adds information from igov, and then adds the results to the unregistered pharmacist report on google drive
