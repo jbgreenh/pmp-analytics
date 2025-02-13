@@ -1,7 +1,8 @@
+import os
 import polars as pl
 import datetime
-import toml
 
+from dotenv import load_dotenv
 from googleapiclient.discovery import build
 from utils import auth
 from utils import drive
@@ -26,7 +27,7 @@ def pull_inspection_list(file_name:str|None=None) -> pl.LazyFrame:
     else:
         lm_yr = file_name.split(' ')[0].split('/')[1]
 
-    folder_id = secrets['folders']['pharmacist_reg']
+    folder_id = os.environ.get('PHARMACIST_REG_FOLDER')
 
     folder_id = drive.folder_id_from_name(service=service, folder_name=lm_yr, parent_id=folder_id)
     return drive.lazyframe_from_file_name_sheet(service=service, file_name=file_name, folder_id=folder_id, infer_schema_length=10000)
@@ -150,7 +151,7 @@ def update_unreg_sheet(registration:pl.LazyFrame):
     args:
         registration: a LazyFrame with the registration status of this month's `inspection list`
     """
-    sheet_id = secrets['files']['unreg_pharmacists']
+    sheet_id = os.environ.get('UNREG_PHARMACISTS_FILE')
     range_name = 'pharmacists!B:B'
     service = build('sheets', 'v4', credentials=creds)
     result = service.spreadsheets().values().get(spreadsheetId=sheet_id, range=range_name).execute()
@@ -202,8 +203,7 @@ def update_unreg_sheet(registration:pl.LazyFrame):
 
 
 if __name__ == '__main__':
-    with open('secrets.toml', 'r') as f:
-        secrets = toml.load(f)
+    load_dotenv()
 
     creds = auth.auth()
     service = build('drive', 'v3', credentials=creds)

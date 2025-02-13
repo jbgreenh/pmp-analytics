@@ -1,16 +1,17 @@
+import os
+
 import polars as pl
 from utils import tableau, auth, drive
 
-import toml
+from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
 creds = auth.auth()
 service = build('drive', 'v3', credentials=creds)
 
-with open('secrets.toml', 'r') as f:
-    secrets = toml.load(f)
+load_dotenv()
 
-sheet_id = secrets['files']['excluded_ndcs']
+sheet_id = os.environ.get('EXCLUDED_NDCS_FILE')
 
 excluded_ndcs = drive.lazyframe_from_id_and_sheetname(service, sheet_id, 'excluded', infer_schema_length=0)
 

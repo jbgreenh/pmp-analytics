@@ -7,7 +7,7 @@ from email.mime.base import MIMEBase
 from email import encoders
 from typing import Dict, List, Optional
 
-def create_message_with_attachments(sender: str, to: str, subject: str, message_text: str, file_paths: Optional[List[str]] = None, bcc: Optional[List[str]] = None) -> Dict[str, str]:
+def create_message_with_attachments(sender: str, to: str, subject: str, message_text: str, file_paths: Optional[List[str]] = None, bcc: Optional[str] = None, monospace: bool=False) -> Dict[str, str]:
     '''
     returns an email message with the provided sender, to, subject, message_text, and attachments at the file_paths
     '''
@@ -17,9 +17,21 @@ def create_message_with_attachments(sender: str, to: str, subject: str, message_
     message['subject'] = subject
 
     if bcc:
-        message['bcc'] = ', '.join(bcc)
+        message['bcc'] = bcc
 
-    msg = MIMEText(message_text)
+    if monospace:
+        html_message = f"""
+        <html>
+        <body>
+            <p style="font-family:'Lucida Console','Courier New',monospace; white-space:pre-wrap">{message_text.replace("\n", "<br>")}</p>
+        </body>
+        </html>
+        """
+
+        msg = MIMEText(html_message, 'html')
+    else:
+        msg = MIMEText(message_text)
+
     message.attach(msg)
 
     if file_paths:

@@ -1,6 +1,7 @@
+import os
 import polars as pl
 import datetime
-import toml
+from dotenv import load_dotenv
 import sys
 from dataclasses import dataclass
 from googleapiclient.discovery import build
@@ -95,10 +96,8 @@ def main():
         print('please insert the number of patients from the threshold request in awarxe')
         sys.exit('eg: python threshold.py 678')
     else:
-        with open('secrets.toml', 'r') as f:
-            secrets = toml.load(f)
-
-        threshold_sheet_id = secrets['files']['threshold_sheet']
+        load_dotenv()
+        threshold_sheet_id = os.environ.get('THRESHOLD_SHEET_FILE')
 
         creds = auth.auth()
         thresh = threshold_report(int(sys.argv[1]))

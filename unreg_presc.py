@@ -1,11 +1,11 @@
 import polars as pl
-import toml
 import os
 import io
 import sys
 from datetime import date
 from dataclasses import dataclass
 
+from dotenv import load_dotenv
 from googleapiclient.discovery import build
 from utils import auth, drive, email, deas
 from PyPDF2 import PdfReader, PdfWriter
@@ -51,11 +51,8 @@ def get_board_dict(service) -> dict[str, BoardInfo]:
         )
     )
 
-    with open('secrets.toml', 'r') as f:
-        secrets = toml.load(f)
-
-    exclude_degs = drive.lazyframe_from_id_and_sheetname(service=service, file_id=secrets['files']['exclude_degs'], sheet_name='exclude_degs', infer_schema_length=100)
-    boards = drive.lazyframe_from_id_and_sheetname(service=service, file_id=secrets['files']['deg_board'], sheet_name='deg_board', infer_schema_length=100)
+    exclude_degs = drive.lazyframe_from_id_and_sheetname(service=service, file_id=os.environ.get('EXCLUDE_DEGS_FILE'), sheet_name='exclude_degs', infer_schema_length=100)
+    boards = drive.lazyframe_from_id_and_sheetname(service=service, file_id=os.environ.get('DEG_BOARD_FILE'), sheet_name='deg_board', infer_schema_length=100)
 
     # pattern to drop ')' '(' and '.' from Name
     pattern = r'[().]'
@@ -107,7 +104,7 @@ def get_board_dict(service) -> dict[str, BoardInfo]:
         print('data/unmatched.csv updated')
         sys.exit('unmatched degrees, either add to exclude_degs or deg_board')
 
-    # opto_folder = secrets['folders']['optometry_uploads']
+    # opto_folder = os.environ.get('OPTOMETRY_UPLOADS_FOLDER')
     #
     # yesterday = date.today() - timedelta(days=1)
     # yesterday = date(year=2024, month=10, day=28) # for setting date manually, comment out if receiving the file daily
@@ -189,7 +186,7 @@ def get_board_dict(service) -> dict[str, BoardInfo]:
     stats = pl.concat([board_counts, total_unreg])
     print(stats)
 
-    board_contacts = drive.lazyframe_from_id_and_sheetname(service=service, file_id=secrets['files']['board_contacts'], sheet_name='registration', infer_schema_length=100)
+    board_contacts = drive.lazyframe_from_id_and_sheetname(service=service, file_id=os.environ.get('BOARD_CONTACTS_FILE'), sheet_name='registration', infer_schema_length=100)
 
     board_list = ['Dental', 'Medical', 'Naturopathic', 'Nursing', 'Optometry', 'Osteopathic', 'Physician Assistant', 'Podiatry']
     board_dict = {}
@@ -214,11 +211,9 @@ def send_emails(board_dict:dict[str, BoardInfo], creds, service):
         `creds`: google api credentials
         `service`: a google drive service
     """
-    with open('../secrets.toml', 'r') as f:
-        secrets = toml.load(f)
 
     print('pulling RegistrationRequirementsNotice...')
-    reg_req_notice = secrets['files']['unreg_prescribers']
+    reg_req_notice = os.environ.get('UNREG_PRESCRIBERS_FILE')
     docs_service = build('docs', 'v1', credentials=creds)
     drive_service = service
 
@@ -260,7 +255,7 @@ def send_emails(board_dict:dict[str, BoardInfo], creds, service):
     print('data/RegistrationRequirementsNotice.pdf updated')
 
     print('pulling unregistered prescriber folder...')
-    reg_flyer = secrets['files']['unreg_presc_flyer']
+    reg_flyer = os.environ.get('UNREG_PRESC_FLYER')
     flyer_export = drive_service.files().export(fileId=reg_flyer, mimeType='application/pdf').execute()
 
     pdf_reader = PdfReader(io.BytesIO(flyer_export))
@@ -277,8 +272,8 @@ def send_emails(board_dict:dict[str, BoardInfo], creds, service):
     print('data/UnregisteredPrescriberFlyer.pdf updated')
 
     email_service = build('gmail', 'v1', credentials=creds)
-    sender = secrets['email']['compliance']
-    signature = secrets['email']['comp_sig'].replace(r'\n', '\n')
+    sender = os.environ.get('EMAIL_COMPLIANCE')
+    signature = os.environ.get('EMAIL_COMP_SIG').replace(r'\n', '\n')
 
     # board_dict['board'] = (board_df, board_name, board_email)
     for board, info in board_dict.items():
@@ -295,6 +290,7 @@ def send_emails(board_dict:dict[str, BoardInfo], creds, service):
 
 
 if __name__ == '__main__':
+    load_dotenv()
     creds = auth.auth()
     service = build('drive', 'v3', credentials=creds)
     board_dict = get_board_dict(service=service)

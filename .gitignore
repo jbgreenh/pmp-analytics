@@ -3,10 +3,10 @@
 **/*.csv
 **/*.txt
 **/*.json
-**/secrets.toml
 **/*.pdf
 **/__pycache__
 *test*
 build
 dist
 *.egg-info
+.env

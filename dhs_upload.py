@@ -2,11 +2,10 @@ import os
 from datetime import date, timedelta
 
 import paramiko
-import toml
+from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
 from utils import auth, drive
-
 
 def get_last_sunday() -> date:
     """
@@ -43,7 +42,7 @@ def upload_latest_dhs_file(service, sftp:paramiko.SFTPClient, folder:str):
     """
     last_sunday = get_last_sunday()
     file_name = last_sunday.strftime('AZ_%Y%m%d.csv')
-    extract = drive.lazyframe_from_file_name_csv(service, file_name=file_name, folder_id=folder, separator='|', infer_schema_length=100000)
+    extract = drive.lazyframe_from_file_name_csv(service, file_name=file_name, folder_id=folder, separator='|', infer_schema_length=0)
     extract.collect().write_csv(file_name, separator='|')
     print(f'writing {file_name} to sftp...')
     sftp.put(localpath=file_name, remotepath=file_name)
@@ -51,18 +50,18 @@ def upload_latest_dhs_file(service, sftp:paramiko.SFTPClient, folder:str):
     os.remove(file_name)
 
 def main():
+    load_dotenv()
+
     creds = auth.auth()
     service = build('drive', 'v3', credentials=creds)
 
-    with open('secrets.toml', 'r') as f:
-        secrets = toml.load(f)
+    folder = os.environ.get('STANDARD_EXTRACT_FOLDER')
 
-    folder = secrets['folders']['standard_extract']
+    sftp_host = os.environ.get('SERVU_HOST')
+    sftp_port = os.environ.get('SERVU_PORT')
+    sftp_user = os.environ.get('SERVU_USERNAME')
+    sftp_password = os.environ.get('SERVU_PASSWORD')
 
-    sftp_host = secrets['servu']['host']
-    sftp_port = secrets['servu']['port']
-    sftp_user = secrets['servu']['username']
-    sftp_password = secrets['servu']['password']
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.connect(hostname=sftp_host, port=sftp_port, username=sftp_user, password=sftp_password)
