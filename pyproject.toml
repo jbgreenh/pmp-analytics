@@ -5,6 +5,7 @@ description = "a repository of scripts for AZ pmp analytics"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "df-compare-pl>=0.1.3.2",
     "fastexcel>=0.12.1",
     "google-api-python-client>=2.157.0",
     "google-auth-oauthlib>=1.2.1",

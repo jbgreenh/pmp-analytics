@@ -20,6 +20,10 @@ this script takes the number of patients provided by bamboo, updates the file to
 | ------------ | ------------------------------------------------------------ |
 | `AZ 3x3.csv` | the AZ 3x3 recipient list csv emailed to us montly by bamboo |
 
+## check_masked
+
+checks the newest masked file and compares it to the preceding file
+
 ## dhs_upload
 
 takes the latest standard extract from the google drive and uploads it to the dhs sftp, after the upload, it also deletes the oldest file in the sftp folder for maintenance
