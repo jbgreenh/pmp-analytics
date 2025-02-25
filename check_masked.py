@@ -23,17 +23,22 @@ print('getting folder ids...')
 year_folder = drive.folder_id_from_name(service, folder_name=f'{mask_year}', parent_id=folder)
 prev_year_folder = drive.folder_id_from_name(service, folder_name=f'{prev_year}', parent_id=folder)
 
-print('pulling files...')
-
 mask_fn = f'AZ_{mask_year}{str(mask_month).zfill(2)}_masked.csv'
 mask_file = drive.lazyframe_from_file_name_csv(service, file_name=mask_fn, folder_id=year_folder, separator='|', infer_schema_length=None).collect()
 prev_fn = f'AZ_{prev_year}{str(prev_month).zfill(2)}_masked.csv'
 prev_file = drive.lazyframe_from_file_name_csv(service, file_name=prev_fn, folder_id=prev_year_folder, separator='|', infer_schema_length=None).collect()
 
-print('comparing files...')
+print('-----')
+print(f'comparing a:{mask_fn} and b:{prev_fn}...')
+print('-----')
 if df_compare(mask_file, prev_file, col_only=True):
     print('columns are equal')
-print(f'new file row count:{mask_file.height}')
-print(f'prev file row count:{prev_file.height}')
+print('-----')
+print(f'{mask_fn} row count: {mask_file.height}')
+print(f'{prev_fn} row count: {prev_file.height}')
 percent_change = round((((mask_file.height - prev_file.height) / prev_file.height) * 100), 2)
 print(f'percent change: {percent_change}')
+print('-----')
+mask_file.sample(20).write_clipboard()
+mask_file.sample(20).write_csv('data/mask_sample.csv')
+print('data/mask_sample.csv updated and written to clipboard')
