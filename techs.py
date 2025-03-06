@@ -64,7 +64,7 @@ s_to_t = (
 data = [list(row) for row in s_to_t.rows()]
 data.insert(0, s_to_t.columns)
 
-sheet_name = f'{last_mo.year}{last_mo.month}'
+sheet_name = f'{last_mo.year}{str(last_mo.month).zfill(2)}'
 
 creds = auth.auth()
 service = build('sheets', 'v4', credentials=creds)
