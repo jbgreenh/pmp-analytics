@@ -1,6 +1,9 @@
+import sys
+
 import polars as pl
 
-def deas(p:str) -> pl.LazyFrame:
+
+def deas(p:str='all') -> pl.LazyFrame:
     '''
     returns a lazyframe from the full dea fixed width file
     p:
@@ -66,3 +69,5 @@ def deas(p:str) -> pl.LazyFrame:
     elif p == 'all':
         print(deas.head())
         return deas.lazy()
+    else:
+        sys.exit('use one of presc, pharm, az, all')
