@@ -45,7 +45,7 @@ def lazyframe_from_view_id(view_id:str, filters:dict|None=None, **kwargs:Any) ->
         buffer = BytesIO()
         buffer.write(b''.join(view.csv))
         buffer.seek(0)
-        return pl.read_csv(buffer, **kwargs).lazy()
+        return pl.scan_csv(buffer, **kwargs)
 
 def find_view_luid(view_name:str, workbook_name:str) -> str:
     """
