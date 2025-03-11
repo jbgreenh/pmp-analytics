@@ -25,10 +25,10 @@ def lazyframe_from_view_id(view_id:str, filters:dict|None=None, **kwargs:Any) ->
     """
     load_dotenv()
 
-    server = os.environ.get('TABLEAU_SERVER')
-    site = os.environ.get('TABLEAU_SITE')
-    token_name = os.environ.get('TABLEAU_TOKEN_NAME')
-    token_value = os.environ.get('TABLEAU_TOKEN_VALUE')
+    server = os.environ.get('TABLEAU_SERVER', 'TABLEAU_SERVER missing from .env file')
+    site = os.environ.get('TABLEAU_SITE', 'TABLEAU_SITE missing from .env file')
+    token_name = os.environ.get('TABLEAU_TOKEN_NAME', 'TABLEAU_TOKEN_NAME missing from .env file')
+    token_value = os.environ.get('TABLEAU_TOKEN_VALUE', 'TABLEAU_TOKEN_VALUE missing from .env file')
 
     tableau_auth = PersonalAccessTokenAuth(token_name, token_value, site)
     tableau_server = Server(server, use_server_version=True, http_options={'verify':False})
@@ -60,10 +60,10 @@ def find_view_luid(view_name:str, workbook_name:str) -> str:
     """
     load_dotenv()
 
-    server = os.environ.get('TABLEAU_SERVER')
-    site = os.environ.get('TABLEAU_SITE')
-    token_name = os.environ.get('TABLEAU_TOKEN_NAME')
-    token_value = os.environ.get('TABLEAU_TOKEN_VALUE')
+    server = os.environ.get('TABLEAU_SERVER', 'TABLEAU_SERVER missing from .env file')
+    site = os.environ.get('TABLEAU_SITE', 'TABLEAU_SITE missing from .env file')
+    token_name = os.environ.get('TABLEAU_TOKEN_NAME', 'TABLEAU_TOKEN_NAME missing from .env file')
+    token_value = os.environ.get('TABLEAU_TOKEN_VALUE', 'TABLEAU_TOKEN_VALUE missing from .env file')
 
     tableau_auth = PersonalAccessTokenAuth(token_name, token_value, site)
     tableau_server = Server(server, use_server_version=True, http_options={'verify':False})
