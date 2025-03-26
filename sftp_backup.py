@@ -1,12 +1,16 @@
-import paramiko
-import toml
+import argparse
 import os
 import sys
 from datetime import datetime, timedelta, timezone
+
+import paramiko
+from dotenv import load_dotenv
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseUpload
+
 from utils import auth
+
 
 def upload_file(service, sftp, remote_file_path, drive_folder_id):
     # check if the file exists in the google drive folder if the file was updated in the last 24 hrs
@@ -95,32 +99,31 @@ def find_or_create_folder(service, name, parent_folder_id):
 
 
 if __name__ == '__main__':
-    with open('secrets.toml', 'r') as f:
-        secrets = toml.load(f)
+    parser = argparse.ArgumentParser(description='backup either the vendor or pmp sftp')
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('-v', '--vendor', action='store_true', help='backup vendor pmp')
+    group.add_argument('-p', '--pmp', action='store_true', help='backup pmp sftp')
 
-    if len(sys.argv) != 2 or (sys.argv[1] not in ['vendor', 'pmp']):
-        print('please run with one of the below formats')
-        print('python sftp_backup.py vendor')
-        print('python sftp_backup.py pmp')
-        sys.exit(0)
+    args = parser.parse_args()
+    load_dotenv()
+    if args.vendor:
+        sftp_host = os.environ.get('SFTP_HOST')
+        sftp_port = os.environ.get('SFTP_PORT')
+        sftp_user = os.environ.get('SFTP_USERNAME')
+        sftp_password = os.environ.get('SFTP_PASSWORD')
+        remote_path = os.environ.get('SFTP_REMOTE_PATH')
 
-    version = sys.argv[1]
-    if version == 'vendor':
-        sftp_host = secrets['sftp']['host']
-        sftp_port = secrets['sftp']['port']
-        sftp_user = secrets['sftp']['username']
-        sftp_password = secrets['sftp']['password']
-        remote_path = secrets['sftp']['remote_path']
+        drive_folder_id = os.environ.get('SFTP_BACKUP_FOLDER')
+    elif args.pmp:
+        sftp_host = os.environ.get('PMP_SFTP_HOST')
+        sftp_port = os.environ.get('PMP_SFTP_PORT')
+        sftp_user = os.environ.get('PMP_SFTP_USERNAME')
+        sftp_password = os.environ.get('PMP_SFTP_PASSWORD')
+        remote_path = os.environ.get('PMP_SFTP_REMOTE_PATH')
 
-        drive_folder_id = secrets['folders']['sftp_backup']
+        drive_folder_id = os.environ.get('PMP_SFTP_BACKUP_FOLDER')
     else:
-        sftp_host = secrets['pmp_sftp']['host']
-        sftp_port = secrets['pmp_sftp']['port']
-        sftp_user = secrets['pmp_sftp']['username']
-        sftp_password = secrets['pmp_sftp']['password']
-        remote_path = secrets['pmp_sftp']['remote_path']
-
-        drive_folder_id = secrets['folders']['pmp_sftp_backup']
+        sys.exit('we should never be here')
 
     creds = auth.auth()
     service = build('drive', 'v3', credentials=creds)
@@ -128,9 +131,11 @@ if __name__ == '__main__':
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.connect(hostname=sftp_host, port=sftp_port, username=sftp_user, password=sftp_password)
     sftp = ssh.open_sftp()
-    print(f'updating {version} sftp backup...')
+
+    vendor = "vendor" if args.vendor else "pmp"
+    print(f'updating {vendor} sftp backup...')
     upload_directory(service, sftp, remote_path, drive_folder_id)
 
     sftp.close()
     ssh.close()
-    print(f'{version} sftp backup complete')
+    print(f'{vendor} sftp backup complete')
