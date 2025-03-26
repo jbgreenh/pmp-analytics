@@ -193,8 +193,7 @@ if __name__ == '__main__':
             year_str += c
     if (month_name.title() not in calendar.month_name) or (len(year_str) != 4):
         print('please follow the below format')
-        print('python mu_extras.py january2024')
-        sys.exit(1)
+        sys.exit('python mu_extras.py january2024')
 
     input_file = f'{sys.argv[1]}_mandatory_use_full'
 
