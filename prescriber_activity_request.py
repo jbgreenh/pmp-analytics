@@ -40,11 +40,16 @@ if pdfs:
 
             file_name = f'{dea}_{start_date}_-_{end_date}'
             file_path = f'data/{file_name}.csv'
-            df = lf.collect()
-            if df.is_empty():
+            try:
+                df = lf.collect()
+            except pl.exceptions.NoDataError:
                 msg_dict = {'message':f'no results found for {file_name}'}
                 pl.DataFrame(msg_dict).write_csv(file_path)
                 print(f'{file_path} was empty, empty file written')
+            except Exception as e:
+                print(e)
+
+
             else:
                 df.write_csv(file_path)
                 print(f'{file_path} written')
