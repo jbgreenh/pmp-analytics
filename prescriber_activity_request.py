@@ -12,7 +12,7 @@ print('finding luid for prescriber activity report...')
 luid = tableau.find_view_luid('par', 'Prescriber Activity Report')
 print(f'luid found: {luid}')
 
-pdfs = glob.glob('data/*.pdf')
+pdfs = glob.glob('data/prescriber_activity_request/*.pdf')
 if pdfs:
     print('---')
     print(f'reading {len(pdfs)} pdfs...')
@@ -82,7 +82,7 @@ if pdfs:
             )
 
             file_name = f'{dea}_{start_date}_-_{end_date}'
-            file_path = f'data/{file_name}.csv'
+            file_path = f'data/prescriber_activity_request/{file_name}.csv'
             try:
                 df = lf.collect()
             except pl.exceptions.NoDataError:
