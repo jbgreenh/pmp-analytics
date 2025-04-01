@@ -34,7 +34,7 @@ if pdfs:
             filters = {
                 'dea':dea, 'start_date':start_date, 'end_date':end_date
             }
-            lf = tableau.lazyframe_from_view_id(luid, filters=filters, infer_schema_length=10000)
+            lf = tableau.lazyframe_from_view_id(luid, filters=filters, infer_schema=False)
 
             # any polars stuff we want to do like renaming cols etc...
 
