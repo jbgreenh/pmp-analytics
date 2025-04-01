@@ -18,7 +18,7 @@ def activity_request(request_type:str):
     pdfs = glob.glob(f'data/{request_type}_activity_request/*.pdf')
     if pdfs:
         print('---')
-        print(f'reading {len(pdfs)} pdfs...')
+        print(f'reading {len(pdfs)} {"pdf" if len(pdfs) == 1 else "pdfs"}...')
         for pdf in pdfs:
             page_text = pymupdf.get_text(pdf, pages=[1])[0]
 
