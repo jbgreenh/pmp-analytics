@@ -27,6 +27,7 @@ if pdfs:
         print(pdf)
         print(deas)
         print(f'{start_date} - {end_date}')
+        print('\n')
 
         for dea in deas:
             filters = {
@@ -36,9 +37,14 @@ if pdfs:
 
             # any polars stuff we want to do like renaming cols etc...
 
-            file_name = f'data/{dea}:{start_date}_-_{end_date}.csv'
-            lf.collect().write_csv(file_name)
-            print(f'{file_name} written')
+            file_name = f'{dea}_{start_date}_-_{end_date}'
+            file_path = f'data/{file_name}.csv'
+            df = lf.collect()
+            if df.is_empty():
+                print(f'{file_name} was empty, nothing written')
+            else:
+                df.write_csv(file_path)
+                print(f'{file_path} written')
 else:
     sys.exit('no pdfs in data folder')
 
