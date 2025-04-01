@@ -99,7 +99,7 @@ def activity_request(request_type:str):
                             pl.col('Orig Pharmacy Address Line Two').alias('Pharmacy Address 2'),
                             pl.col('Orig Pharmacy City').alias('Pharmacy City'),
                             pl.col('Orig Pharmacy State Abbr').alias('Pharmacy State'),
-                            pl.col('Orig Pharmacy Zip').alias('Pharmacy ZIP Code'),
+                            pl.col('Orig Pharmacy Zip').alias('Pharmacy ZIP'),
                             pl.col('Pharmacy Chain Site Id'),
                             pl.col('Patient First Name'),
                             pl.col('Patient Last Name'),
@@ -108,7 +108,7 @@ def activity_request(request_type:str):
                             pl.col('Orig Patient Address Line Two').alias('Patient Address 2'),
                             pl.col('Orig Patient City').alias('Patient City'),
                             pl.col('Orig Patient State Abbr').alias('Patient State'),
-                            pl.col('Orig Patient Zip').alias('Patient ZIP Code'),
+                            pl.col('Orig Patient Zip').alias('Patient ZIP'),
                             pl.col('Prescription Number').alias('Rx Number'),
                             pl.col('Day of Filled At').alias('Rx Fill Date'),
                             pl.col('Day of Written At').alias('Rx Written Date'),
@@ -131,7 +131,7 @@ def activity_request(request_type:str):
                             pl.col('Orig Prescriber Address Line Two').alias('Prescriber Address 2'),
                             pl.col('Orig Prescriber City').alias('Prescriber City'),
                             pl.col('Orig Prescriber State Abbr').alias('Prescriber State'),
-                            pl.col('Orig Prescriber Zip').alias('Prescriber ZIP Code'),
+                            pl.col('Orig Prescriber Zip').alias('Prescriber ZIP'),
                             pl.col('Veterinarian Prescription Y/N'))
                         )
 
