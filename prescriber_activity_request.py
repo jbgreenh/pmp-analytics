@@ -3,6 +3,7 @@ import re
 import sys
 from datetime import datetime
 
+import polars as pl
 import pymupdf
 
 from utils import tableau
@@ -41,7 +42,9 @@ if pdfs:
             file_path = f'data/{file_name}.csv'
             df = lf.collect()
             if df.is_empty():
-                print(f'{file_name} was empty, nothing written')
+                msg_dict = {'message':f'no results found for {file_name}'}
+                pl.DataFrame(msg_dict).write_csv(file_path)
+                print(f'{file_path} was empty, empty file written')
             else:
                 df.write_csv(file_path)
                 print(f'{file_path} written')
