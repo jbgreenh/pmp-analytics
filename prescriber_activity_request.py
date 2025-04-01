@@ -1,7 +1,8 @@
 import glob
 import re
 import sys
-from datetime import datetime
+from datetime import datetime, date
+from dateutil.relativedelta import relativedelta
 
 import polars as pl
 import pymupdf
@@ -22,6 +23,10 @@ if pdfs:
         deas = re.findall(r'[A-Z]{2}[\d]{7}', page_text)
         date_range = re.findall(r'([\d]+/[\d]+/[\d]+) (?:-|through|to) ([\d]+/[\d]+/[\d]+)', page_text)
         start_date = datetime.strptime(date_range[0][0], '%m/%d/%Y').date()
+        seven_years_ago = date.today() - relativedelta(years=7)
+
+        if start_date < seven_years_ago:
+            start_date = seven_years_ago
         end_date = datetime.strptime(date_range[0][1], '%m/%d/%Y').date()
 
         print('---')
