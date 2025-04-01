@@ -109,6 +109,14 @@ updated `data/cs_active.txt`
 `List Request.csv` list request in igov
 `pharmacies.csv` compliance>manage pharmacies>download
 
+## prescriber_activity_request
+
+this script checks all pdfs in the `data/prescriber_activity_request/` folder and pulls prescriber activity reports for all dea numbers and date ranges in those files
+
+### required files
+
+pdf requests in the `data/prescriber_activity_request/` folder
+
 ## scorecard
 
 this script updates the scorecard tracking sheet on google drive with prescriber search rates for opioid and benzodiazepine prescriptions  
