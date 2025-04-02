@@ -28,7 +28,6 @@ def activity_request(request_type:str):
             if not page_text:
                 print('---')
                 print(f'{pdf} does not have readable text')
-                print('---')
                 continue
 
             deas = re.findall(r'[A-Z]{2}[\d]{7}', page_text)
@@ -36,16 +35,14 @@ def activity_request(request_type:str):
                 print('---')
                 print(f'could not find any deas in {pdf}')
                 print(f'see {log_fp}')
-                print('---')
                 with open(log_fp, 'a') as file:
                     file.write(f'---\ncould not find any deas in {pdf}\n:::\npage text:\n:::\n{page_text}\n---')
                 continue
-            date_range = re.findall(r'([\d]{1,2}/[\d]{1,2}/[\d]{4})(?:\s*)(?:-|through|to)(?:\s*)([\d]{1,2}/[\d]{1,2}/[\d]{4})', page_text)
+            date_range = re.findall(r'(\d{1,2}/\d{1,2}/\d{4})\s*(?:-|through|to)\s*(\d{1,2}/\d{1,2}/\d{4})', page_text)
             if not date_range:
                 print('---')
                 print(f'could not find a daterange in {pdf}')
                 print(f'see {log_fp}')
-                print('---')
                 with open(log_fp, 'a') as file:
                     file.write(f'---\ncould not find a daterange in {pdf}\n:::\npage text:\n:::\n{page_text}\n---')
                 continue
