@@ -10,6 +10,15 @@ after installing `uv` on your system using the link above, use `uv sync` to inst
 scripts can then be run using `uv run {script_name}.py`  
 make sure the `required files` for the script to be run are in the `data` folder
 
+## activity_request
+
+this script checks all pdfs in the proper folder and pulls activity reports for all dea numbers and date ranges in those files  
+use the `-p` flag for prescriber activity requests and the -d flag for dispenser activity requests
+
+### required files
+
+pdf requests in the `data/prescriber_activity_request/` or the `data/dispenser_activity_request` folder
+
 ## 3x3 Threshold Report
 
 this script takes the number of patients provided by bamboo, updates the file to the google drive, and updates the 3x3 Threshold sheet in the google drive
@@ -108,14 +117,6 @@ this script checks for pharmacy dea numbers that are active with the dea but not
 updated `data/cs_active.txt`  
 `List Request.csv` list request in igov
 `pharmacies.csv` compliance>manage pharmacies>download
-
-## prescriber_activity_request
-
-this script checks all pdfs in the `data/prescriber_activity_request/` folder and pulls prescriber activity reports for all dea numbers and date ranges in those files
-
-### required files
-
-pdf requests in the `data/prescriber_activity_request/` folder
 
 ## scorecard
 
