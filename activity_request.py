@@ -21,9 +21,18 @@ def activity_request(request_type:str):
         print(f'reading {len(pdfs)} {"pdf" if len(pdfs) == 1 else "pdfs"}...')
         for pdf in pdfs:
             page_text = pymupdf.get_text(pdf, pages=[1])[0]
+            if not page_text:
+                print(f'{pdf} does not have readable text')
+                continue
 
             deas = re.findall(r'[A-Z]{2}[\d]{7}', page_text)
-            date_range = re.findall(r'([\d]+/[\d]+/[\d]+)(?:\s*)(?:-|through|to)(?:\s*)([\d]+/[\d]+/[\d]+)', page_text)
+            if not deas:
+                print(f'could not find any deas in {pdf}')
+                continue
+            date_range = re.findall(r'([\d]{1,2}/[\d]{1,2}/[\d]{4})(?:\s*)(?:-|through|to)(?:\s*)([\d]{1,2}/[\d]{1,2}/[\d]{4})', page_text)
+            if not date_range:
+                print(f'could not find a daterange in {pdf}')
+                continue
             start_date = datetime.strptime(date_range[0][0], '%m/%d/%Y').date()
             seven_years_ago = date.today() - relativedelta(years=7)
 
