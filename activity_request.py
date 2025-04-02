@@ -14,7 +14,10 @@ def activity_request(request_type:str):
     print(f'finding luid for {request_type} activity report...')
     luid = tableau.find_view_luid(f'{request_type}_activity_request', 'DEA Records Request')
     print(f'luid found: {luid}')
+
     log_fp = 'data/activity_request_log.txt'
+    with open(log_fp, 'w') as file:
+        pass # clear logs
 
     pdfs = glob.glob(f'data/{request_type}_activity_request/*.pdf')
     if pdfs:
@@ -35,7 +38,7 @@ def activity_request(request_type:str):
                 print(f'see {log_fp}')
                 print('---')
                 with open(log_fp, 'a') as file:
-                    file.write(f'---\ncould not find any deas in {pdf}\n:::\n{page_text}\n---')
+                    file.write(f'---\ncould not find any deas in {pdf}\n:::\npage text:\n:::\n{page_text}\n---')
                 continue
             date_range = re.findall(r'([\d]{1,2}/[\d]{1,2}/[\d]{4})(?:\s*)(?:-|through|to)(?:\s*)([\d]{1,2}/[\d]{1,2}/[\d]{4})', page_text)
             if not date_range:
@@ -44,7 +47,7 @@ def activity_request(request_type:str):
                 print(f'see {log_fp}')
                 print('---')
                 with open(log_fp, 'a') as file:
-                    file.write(f'---\ncould not find a daterange in {pdf}\n:::\n{page_text}\n---')
+                    file.write(f'---\ncould not find a daterange in {pdf}\n:::\npage text:\n:::\n{page_text}\n---')
                 continue
             start_date = datetime.strptime(date_range[0][0], '%m/%d/%Y').date()
             seven_years_ago = date.today() - relativedelta(years=7)
