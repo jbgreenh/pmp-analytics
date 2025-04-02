@@ -22,16 +22,22 @@ def activity_request(request_type:str):
         for pdf in pdfs:
             page_text = pymupdf.get_text(pdf, pages=[1])[0]
             if not page_text:
+                print('---')
                 print(f'{pdf} does not have readable text')
+                print('---')
                 continue
 
             deas = re.findall(r'[A-Z]{2}[\d]{7}', page_text)
             if not deas:
+                print('---')
                 print(f'could not find any deas in {pdf}')
+                print('---')
                 continue
             date_range = re.findall(r'([\d]{1,2}/[\d]{1,2}/[\d]{4})(?:\s*)(?:-|through|to)(?:\s*)([\d]{1,2}/[\d]{1,2}/[\d]{4})', page_text)
             if not date_range:
+                print('---')
                 print(f'could not find a daterange in {pdf}')
+                print('---')
                 continue
             start_date = datetime.strptime(date_range[0][0], '%m/%d/%Y').date()
             seven_years_ago = date.today() - relativedelta(years=7)
