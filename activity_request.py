@@ -30,7 +30,7 @@ def activity_request(request_type:str):
                 print(f'{pdf} does not have readable text')
                 continue
 
-            deas = re.findall(r'[A-Z]{2}[\d]{7}', page_text)
+            deas = re.findall(r'[A-Z]{2}\d{7}', page_text)
             if not deas:
                 print('---')
                 print(f'could not find any deas in {pdf}')
