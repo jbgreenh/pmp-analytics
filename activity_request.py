@@ -36,7 +36,6 @@ def activity_request(request_type:str):
                 print('---')
                 with open(log_fp, 'a') as file:
                     file.write(f'---\ncould not find any deas in {pdf}\n:::\n{page_text}\n---')
-                print(page_text)
                 continue
             date_range = re.findall(r'([\d]{1,2}/[\d]{1,2}/[\d]{4})(?:\s*)(?:-|through|to)(?:\s*)([\d]{1,2}/[\d]{1,2}/[\d]{4})', page_text)
             if not date_range:
