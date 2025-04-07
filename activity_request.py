@@ -5,6 +5,7 @@ import sys
 from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
 
+from dotenv import load_dotenv
 import polars as pl
 import pymupdf
 
@@ -28,8 +29,13 @@ def activity_request(request_type:str):
             if not page_text:
                 print('---')
                 print(f'{pdf} does not have readable text')
-                continue
-
+                print('attempting ocr...')
+                doc = pymupdf.open(pdf)
+                pdfocr = doc.load_page(0).get_pixmap(matrix=pymupdf.Matrix(2,2)).pdfocr_tobytes()
+                page_text = pymupdf.open('pdf', pdfocr).load_page(0).get_text()
+                if not page_text:
+                    print(f'{pdf} could not be read through ocr')
+                    continue
             deas = re.findall(r'[A-Z]{2}\d{7}', page_text)
             if not deas:
                 print('---')
@@ -174,6 +180,7 @@ def activity_request(request_type:str):
         sys.exit(f'no pdfs in data/{request_type}/ folder')
 
 def main():
+    load_dotenv()
     parser = argparse.ArgumentParser(description='pull a request')
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('-p', '--prescriber', action='store_true', help='pull prescriber activity request')
