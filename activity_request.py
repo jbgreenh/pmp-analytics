@@ -25,13 +25,13 @@ def activity_request(request_type:str):
         print('---')
         print(f'reading {len(pdfs)} {"pdf" if len(pdfs) == 1 else "pdfs"}...')
         for pdf in pdfs:
-            page_text = pymupdf.get_text(pdf, pages=[1])[0]
+            page = pymupdf.open(pdf).load_page(0)
+            page_text = page.get_text()
             if not page_text:
                 print('---')
                 print(f'{pdf} does not have readable text')
                 print('attempting ocr...')
-                doc = pymupdf.open(pdf)
-                pdfocr = doc.load_page(0).get_pixmap(matrix=pymupdf.Matrix(2,2)).pdfocr_tobytes()
+                pdfocr = page.get_pixmap(matrix=pymupdf.Matrix(2,2)).pdfocr_tobytes()
                 page_text = pymupdf.open('pdf', pdfocr).load_page(0).get_text()
                 if not page_text:
                     print(f'{pdf} could not be read through ocr')
