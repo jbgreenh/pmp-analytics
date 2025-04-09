@@ -52,7 +52,7 @@ def activity_request(request_type:str):
                 with open(log_fp, 'a') as file:
                     file.write(f'---\ncould not find a daterange in {pdf}\n:::\npage text:\n:::\n{page_text}\n---')
                 continue
-            if len(re.split('/', date_range[0][0])[2]):
+            if len(re.split('/', date_range[0][0])[2]) == 2:
                 start_date = datetime.strptime(date_range[0][0], '%m/%d/%y').date()
             else:
                 start_date = datetime.strptime(date_range[0][0], '%m/%d/%Y').date()
@@ -61,7 +61,7 @@ def activity_request(request_type:str):
             if start_date < seven_years_ago:
                 start_date = seven_years_ago
 
-            if len(re.split('/', date_range[0][1])[2]):
+            if len(re.split('/', date_range[0][1])[2]) == 2:
                 end_date = datetime.strptime(date_range[0][1], '%m/%d/%y').date()
             else:
                 end_date = datetime.strptime(date_range[0][1], '%m/%d/%Y').date()
