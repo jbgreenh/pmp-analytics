@@ -56,10 +56,11 @@ def activity_request(request_type:str):
                 start_date = datetime.strptime(date_range[0][0], '%m/%d/%y').date()
             else:
                 start_date = datetime.strptime(date_range[0][0], '%m/%d/%Y').date()
-            seven_years_ago = date.today() - relativedelta(years=7)
 
+            seven_years_ago = date.today() - relativedelta(years=7)
             if start_date < seven_years_ago:
                 start_date = seven_years_ago
+
             if len(re.split('/', date_range[0][1])[2]):
                 end_date = datetime.strptime(date_range[0][1], '%m/%d/%y').date()
             else:
