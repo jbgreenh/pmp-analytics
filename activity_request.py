@@ -44,7 +44,7 @@ def activity_request(request_type:str):
                 with open(log_fp, 'a') as file:
                     file.write(f'---\ncould not find any deas in {pdf}\n:::\npage text:\n:::\n{page_text}\n---')
                 continue
-            date_range = re.findall(r'(\d{1,2}/\d{1,2}/\d{4})\s*(?:-|through|to)\s*(\d{1,2}/\d{1,2}/\d{4})', page_text)
+            date_range = re.findall(r'(\d{1,2}/\d{1,2}/(?:\d{2}|\d{4})\s*(?:-|through|to)\s*(\d{1,2}/\d{1,2}/(?:\d{2}|\d{4}))', page_text)
             if not date_range:
                 print('---')
                 print(f'could not find a daterange in {pdf}')
@@ -52,12 +52,18 @@ def activity_request(request_type:str):
                 with open(log_fp, 'a') as file:
                     file.write(f'---\ncould not find a daterange in {pdf}\n:::\npage text:\n:::\n{page_text}\n---')
                 continue
-            start_date = datetime.strptime(date_range[0][0], '%m/%d/%Y').date()
+            if len(re.split('/', date_range[0][0])[2]):
+                start_date = datetime.strptime(date_range[0][0], '%m/%d/%y').date()
+            else:
+                start_date = datetime.strptime(date_range[0][0], '%m/%d/%Y').date()
             seven_years_ago = date.today() - relativedelta(years=7)
 
             if start_date < seven_years_ago:
                 start_date = seven_years_ago
-            end_date = datetime.strptime(date_range[0][1], '%m/%d/%Y').date()
+            if len(re.split('/', date_range[0][1])[2]):
+                end_date = datetime.strptime(date_range[0][1], '%m/%d/%y').date()
+            else:
+                end_date = datetime.strptime(date_range[0][1], '%m/%d/%Y').date()
 
             print('---')
             print(pdf)
