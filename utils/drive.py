@@ -183,7 +183,7 @@ def awarxe(service, day:str='') -> pl.LazyFrame:
         sys.exit(f'google drive error: {error}')
 
     file.seek(0) # after writing, pointer is at the end of the stream
-    return pl.read_csv(file, separator='|', infer_schema_length=100000).lazy()
+    return pl.scan_csv(file, separator='|', infer_schema_length=100000)
 
 
 def folder_id_from_name(service, folder_name:str, parent_id:str) -> str:
