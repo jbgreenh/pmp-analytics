@@ -48,7 +48,7 @@ def lazyframe_from_file_name_csv(service, file_name:str, folder_id:str, **kwargs
         sys.exit(f'google drive error: {error}')
 
     file.seek(0) # after writing, pointer is at the end of the stream
-    return pl.read_csv(file, **kwargs).lazy()
+    return pl.scan_csv(file, **kwargs)
 
 
 def lazyframe_from_file_name_sheet(service, file_name:str, folder_id:str, **kwargs) -> pl.LazyFrame:
@@ -89,7 +89,7 @@ def lazyframe_from_file_name_sheet(service, file_name:str, folder_id:str, **kwar
         sys.exit(f'google drive error: {error}')
 
     file.seek(0) # after writing, pointer is at the end of the stream
-    return pl.read_csv(file, **kwargs).lazy()
+    return pl.scan_csv(file, **kwargs)
 
 
 def lazyframe_from_id_and_sheetname(service, file_id:str, sheet_name:str, **kwargs) -> pl.LazyFrame:
