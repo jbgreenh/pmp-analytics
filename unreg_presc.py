@@ -2,7 +2,7 @@ import polars as pl
 import os
 import io
 import sys
-from datetime import date
+from datetime import date, timedelta
 from dataclasses import dataclass
 
 from dotenv import load_dotenv
@@ -51,8 +51,13 @@ def get_board_dict(service) -> dict[str, BoardInfo]:
         )
     )
 
-    exclude_degs = drive.lazyframe_from_id_and_sheetname(service=service, file_id=os.environ.get('EXCLUDE_DEGS_FILE'), sheet_name='exclude_degs', infer_schema_length=100)
-    boards = drive.lazyframe_from_id_and_sheetname(service=service, file_id=os.environ.get('DEG_BOARD_FILE'), sheet_name='deg_board', infer_schema_length=100)
+    ex_degs_file = os.environ.get('EXCLUDE_DEGS_FILE')
+    assert type(ex_degs_file) is str
+    deg_board_file = os.environ.get('DEG_BOARD_FILE')
+    assert type(deg_board_file) is str
+
+    exclude_degs = drive.lazyframe_from_id_and_sheetname(service=service, file_id=ex_degs_file, sheet_name='exclude_degs', infer_schema_length=100)
+    boards = drive.lazyframe_from_id_and_sheetname(service=service, file_id=deg_board_file, sheet_name='deg_board', infer_schema_length=100)
 
     # pattern to drop ')' '(' and '.' from Name
     pattern = r'[().]'
@@ -104,71 +109,71 @@ def get_board_dict(service) -> dict[str, BoardInfo]:
         print('data/unmatched.csv updated')
         sys.exit('unmatched degrees, either add to exclude_degs or deg_board')
 
-    # opto_folder = os.environ.get('OPTOMETRY_UPLOADS_FOLDER')
-    #
-    # yesterday = date.today() - timedelta(days=1)
-    # yesterday = date(year=2024, month=10, day=28) # for setting date manually, comment out if receiving the file daily
-    # yesterday_str = yesterday.strftime('%Y%m%d')
-    #
-    # opto = (
-    #     drive.lazyframe_from_file_name_sheet(service, file_name=f'Optometry Pharmacy Report_{yesterday_str}', folder_id=opto_folder, skip_rows=3)
-    #     .filter(
-    #         pl.col('First Name').str.to_lowercase().str.contains('totals').not_()
-    #     )
-    #     .collect()
-    # )
-    #
-    # unreg_opto = (
-    #     unreg_prescribers_w_boards.filter(pl.col('board') == "Optometry")
-    # )
-    #
-    # unreg_opto_ez = (
-    #     unreg_opto
-    #     .join(opto, how='inner', left_on='State License Number', right_on='License Number')
-    #     .drop('First Name', 'Last Name', 'Date of Birth')
-    # )
-    #
-    # unreg_opto_no_ez = (
-    #     unreg_opto
-    #     .join(opto, how='anti', left_on='State License Number', right_on='License Number')
-    #     .with_columns(
-    #         (pl.lit('OPT-') + pl.col('State License Number').str.replace_all('[^0-9]', '').str.zfill(6)).alias('cleaned_lino')
-    #     )
-    # )
-    #
-    # unreg_no_ez_cleaned = (
-    #     unreg_opto_no_ez
-    #     .join(opto, how='inner', left_on='cleaned_lino', right_on='License Number')
-    # )
-    #
-    # unreg_opto_cleaned_matches_good_names = (
-    #     unreg_no_ez_cleaned
-    #     .filter(
-    #         pl.col('Name').str.contains(pl.col('First Name').str.to_uppercase())
-    #     )
-    #     .with_columns(
-    #         pl.col('cleaned_lino').alias('State License Number')
-    #     )
-    #     .drop('cleaned_lino', 'First Name', 'Last Name', 'Date of Birth')
-    # )
-    #
-    # opto_matches = pl.concat([unreg_opto_ez, unreg_opto_cleaned_matches_good_names]).sort(by='Status')
-    #
-    # # opto_no_match = (
-    # #     unreg_opto
-    # #     .filter(
-    # #         pl.col('DEA Number').is_in(opto_matches['DEA Number']).not_()
-    # #     )
-    # # )
-    # # opto_matches.write_csv('data/opto/deas/opto_matches.csv')
-    # # opto_no_match.write_csv('data/opto/deas/opto_no_match.csv')
+    opto_folder = os.environ.get('OPTOMETRY_UPLOADS_FOLDER')
+    assert type(opto_folder) is str
+
+    yesterday = date.today() - timedelta(days=1)
+    yesterday_str = yesterday.strftime('%Y-%m-%d')
+
+    opto = (
+        drive.lazyframe_from_file_name_sheet(service, file_name=f'Report_{yesterday_str}', folder_id=opto_folder, skip_rows=3, infer_schema=False)
+        .filter(
+            pl.col('First Name').str.to_lowercase().str.contains('totals').not_()
+        )
+        .collect()
+    )
+
+    unreg_opto = (
+        unreg_prescribers_w_boards.filter(pl.col('board') == "Optometry")
+    )
+
+    unreg_opto_ez = (
+        unreg_opto
+        .join(opto, how='inner', left_on='State License Number', right_on='License Number')
+        .drop('First Name', 'Last Name', 'Date of Birth')
+    )
+
+    unreg_opto_no_ez = (
+        unreg_opto
+        .join(opto, how='anti', left_on='State License Number', right_on='License Number')
+        .with_columns(
+            (pl.lit('OPT-') + pl.col('State License Number').str.replace_all('[^0-9]', '').str.zfill(6)).alias('cleaned_lino')
+        )
+    )
+
+    unreg_no_ez_cleaned = (
+        unreg_opto_no_ez
+        .join(opto, how='inner', left_on='cleaned_lino', right_on='License Number')
+    )
+
+    unreg_opto_cleaned_matches_good_names = (
+        unreg_no_ez_cleaned
+        .filter(
+            pl.col('Name').str.contains(pl.col('First Name').str.to_uppercase())
+        )
+        .with_columns(
+            pl.col('cleaned_lino').alias('State License Number')
+        )
+        .drop('cleaned_lino', 'First Name', 'Last Name', 'Date of Birth')
+    )
+
+    opto_matches = pl.concat([unreg_opto_ez, unreg_opto_cleaned_matches_good_names]).sort(by='Status')
+
+    opto_no_match = (
+        unreg_opto
+        .filter(
+            pl.col('DEA Number').is_in(opto_matches['DEA Number']).not_()
+        )
+    )
+    opto_matches.write_csv('data/opto/deas/opto_matches.csv')
+    opto_no_match.write_csv('data/opto/deas/opto_no_match.csv')
 
     unreg_prescribers_w_boards = (
         unreg_prescribers_w_boards
-        # .filter(pl.col('board') != 'Optometry')
+        .filter(pl.col('board') != 'Optometry')
     )
 
-    # unreg_prescribers_w_boards = pl.concat([unreg_prescribers_w_boards, opto_matches], how='diagonal')
+    unreg_prescribers_w_boards = pl.concat([unreg_prescribers_w_boards, opto_matches], how='diagonal')
 
     board_counts = (
         unreg_prescribers_w_boards['board']
@@ -186,7 +191,9 @@ def get_board_dict(service) -> dict[str, BoardInfo]:
     stats = pl.concat([board_counts, total_unreg])
     print(stats)
 
-    board_contacts = drive.lazyframe_from_id_and_sheetname(service=service, file_id=os.environ.get('BOARD_CONTACTS_FILE'), sheet_name='registration', infer_schema_length=100)
+    contacts_file = os.environ.get('BOARD_CONTACTS_FILE')
+    assert type(contacts_file) is str
+    board_contacts = drive.lazyframe_from_id_and_sheetname(service=service, file_id=contacts_file, sheet_name='registration', infer_schema_length=100)
 
     board_list = ['Dental', 'Medical', 'Naturopathic', 'Nursing', 'Optometry', 'Osteopathic', 'Physician Assistant', 'Podiatry']
     board_dict = {}
@@ -273,7 +280,10 @@ def send_emails(board_dict:dict[str, BoardInfo], creds, service):
 
     email_service = build('gmail', 'v1', credentials=creds)
     sender = os.environ.get('EMAIL_COMPLIANCE')
-    signature = os.environ.get('EMAIL_COMP_SIG').replace(r'\n', '\n')
+    assert type(sender) is str
+    signature = os.environ.get('EMAIL_COMP_SIG')
+    assert type(signature) is str
+    signature = signature.replace(r'\n', '\n')
 
     # board_dict['board'] = (board_df, board_name, board_email)
     for board, info in board_dict.items():

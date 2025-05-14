@@ -348,14 +348,14 @@ wheels = [
 
 [[package]]
 name = "df-compare-pl"
-version = "0.1.3.3"
+version = "0.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "polars" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/61/42/4ce68cc6da2bd5499ea23103bd571d27f4c7460b18a1b3c167c78813463a/df_compare_pl-0.1.3.3.tar.gz", hash = "sha256:d89c1bd80bb4c56e00cd637b6c0a2933c196cb30e33e65ada9830b668b8d1aa7", size = 15280 }
+sdist = { url = "https://files.pythonhosted.org/packages/26/16/d06f3d978946a484cc3eacf493bd754c3211e60c7c2137435edf3089df9c/df_compare_pl-0.2.tar.gz", hash = "sha256:7789d68cf1224849abc2492faabb6d57197d409c3893883166b0992ab786e5fe", size = 15478 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/04/cc/779a36277922f8224716d61a3c281f756a2743b8d97676f49d50c8f93179/df_compare_pl-0.1.3.3-py3-none-any.whl", hash = "sha256:3726b703d86dfd68b95d534f0e5bf3662998a742a75f7701d788caf7c29a1a4e", size = 15051 },
+    { url = "https://files.pythonhosted.org/packages/78/3e/242b04a03313029431c6755deb33743e4d80dc680fa00ed51b2c0040cb83/df_compare_pl-0.2-py3-none-any.whl", hash = "sha256:9ccb241936ecfef0351c0debe9773fce7630b1a519515f8bd9404b9a23b48b93", size = 15148 },
 ]
 
 [[package]]
