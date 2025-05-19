@@ -80,9 +80,9 @@ def bad_npis(awarxe):
     pattern = r'^\d{10}$'
     npi_pattern_match = (
         awarxe
-        # .with_columns(
-        #     pl.col('npi number').str.replace_all(r'[‭|‬]', '')
-        # )
+        .with_columns(
+            pl.col('npi number').str.replace_all(r'[‭|‬]', '')
+        )
         .filter(
             pl.col('npi number').str.contains(pattern).not_() & pl.col('npi number').is_not_null()
         )
