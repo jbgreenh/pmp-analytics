@@ -24,7 +24,7 @@ def read_all_deas():
     return deas.deas('all')
 
 def bad_deas(awarxe):
-    pattern = r'^[ABCFMPRSTUabcfmprstu][A-Za-z](?:[0-9]{6}[1-9]|[0-9]{5}[1-9][0-9]|[0-9]{4}[1-9][0-9]{2}|[0-9]{3}[1-9][0-9]{3}|[0-9]{2}[1-9][0-9]{4}|[0-9][1-9][0-9]{5}|[1-9][0-9]{6})$'
+    pattern = r'^[ABCFGHMPRabcfghmpr][A-Za-z](?:[0-9]{6}[1-9]|[0-9]{5}[1-9][0-9]|[0-9]{4}[1-9][0-9]{2}|[0-9]{3}[1-9][0-9]{3}|[0-9]{2}[1-9][0-9]{4}|[0-9][1-9][0-9]{5}|[1-9][0-9]{6})$'
     pattern_match = (
         awarxe
         .filter(pl.col('dea number').str.contains(pattern).not_() & pl.col('dea number').is_not_null())
