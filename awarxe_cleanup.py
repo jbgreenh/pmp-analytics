@@ -21,7 +21,7 @@ def tab_awarxe():
     print('wrote data/tab_awarxe.csv')
 
 def read_all_deas():
-    return deas.deas('all')
+    return deas.deas()
 
 def bad_deas(awarxe):
     pattern = r'^[ABCFGHMPRabcfghmpr][A-Za-z](?:[0-9]{6}[1-9]|[0-9]{5}[1-9][0-9]|[0-9]{4}[1-9][0-9]{2}|[0-9]{3}[1-9][0-9]{3}|[0-9]{2}[1-9][0-9]{4}|[0-9][1-9][0-9]{5}|[1-9][0-9]{6})$'
@@ -117,6 +117,20 @@ def bad_npis(awarxe):
     npi_checksum.write_csv(checksum_fp)
     print(f'wrote {checksum_fp}')
 
+def multiple_roles(awarxe):
+    mult = (
+        awarxe
+        .with_columns(
+            pl.col('role title').len().over('dea number').alias('role totals')
+        )
+        .filter(
+            (pl.col('role totals') > 1) & (pl.col('dea suffix').is_null()) & (pl.col('dea number').is_not_null())
+        )
+    )
+    mult_fp = 'data/awarxe_cleanup/multiple_roles.csv'
+    mult.write_csv(mult_fp)
+    print(f'wrote {mult_fp}')
+
 
 def main():
     Path('data/awarxe_cleanup').mkdir( parents=True, exist_ok=True)
@@ -129,6 +143,7 @@ def main():
     bad_deas(awarxe)
     inactive_deas(awarxe, dea_list)
     bad_npis(awarxe)
+    multiple_roles(awarxe)
 
 if __name__ == '__main__':
     main()
