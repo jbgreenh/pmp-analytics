@@ -62,7 +62,7 @@ def get_board_dict(service) -> dict[str, BoardInfo]:
     # pattern to drop ')' '(' and '.' from Name
     pattern = r'[().]'
 
-    awarxe_deas = awarxe.collect()['dea number']
+    awarxe_deas = awarxe.collect()['dea number'].to_list()
 
     unreg_prescribers = (
         az_presc_deas
@@ -73,7 +73,7 @@ def get_board_dict(service) -> dict[str, BoardInfo]:
         .filter(pl.col('awarxe').str.contains('NO'))
     )
 
-    deg_exclude = exclude_degs.collect()['deg']
+    deg_exclude = exclude_degs.collect()['deg'].to_list()
 
     unreg_prescribers_w_boards = (
         unreg_prescribers
@@ -162,7 +162,7 @@ def get_board_dict(service) -> dict[str, BoardInfo]:
     opto_no_match = (
         unreg_opto
         .filter(
-            pl.col('DEA Number').is_in(opto_matches['DEA Number']).not_()
+            pl.col('DEA Number').is_in(opto_matches['DEA Number'].to_list()).not_()
         )
     )
     opto_matches.write_csv('data/opto/deas/opto_matches.csv')
