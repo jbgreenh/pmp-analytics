@@ -113,7 +113,7 @@ def get_board_dict(service) -> dict[str, BoardInfo]:
     assert type(opto_folder) is str
 
     yesterday = date.today() - timedelta(days=1)
-    yesterday_str = yesterday.strftime('%Y-%m-%d')
+    yesterday_str = yesterday.strftime('%Y%m%d')
 
     opto = (
         drive.lazyframe_from_file_name_sheet(service, file_name=f'Report_{yesterday_str}', folder_id=opto_folder, skip_rows=3, infer_schema=False)
