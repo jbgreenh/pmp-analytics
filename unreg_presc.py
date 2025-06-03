@@ -262,7 +262,7 @@ def send_emails(board_dict:dict[str, BoardInfo], creds, service):
     print('data/RegistrationRequirementsNotice.pdf updated')
 
     print('pulling unregistered prescriber folder...')
-    reg_flyer = os.environ.get('UNREG_PRESC_FLYER')
+    reg_flyer = os.environ.get('UNREG_PRESC_FLYER_FILE')
     flyer_export = drive_service.files().export(fileId=reg_flyer, mimeType='application/pdf').execute()
 
     pdf_reader = PdfReader(io.BytesIO(flyer_export))
