@@ -13,7 +13,7 @@ make sure the `required files` for the script to be run are in the `data` folder
 ## activity_request
 
 this script checks all pdfs in the proper folder and pulls activity reports for all dea numbers and date ranges in those files  
-use the `-p` flag for prescriber activity requests and the -d flag for dispenser activity requests  
+use the `-p` flag for prescriber activity requests and the `-d` flag for dispenser activity requests  
 you can also use the `-at` flag for audit trails
 
 ### required files
