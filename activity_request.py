@@ -286,8 +286,6 @@ def main():
     elif args.audit_trail:
         params = process_pdf('audit_trail')
         activity_request('audit_trail', params)
-    else:
-        sys.exit('use a flag, see: uv run activity_request.py -h')
 
 if __name__ == '__main__':
     main()
