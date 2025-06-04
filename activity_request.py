@@ -95,20 +95,24 @@ def activity_request(request_type:str, params:SearchParameters):
     if request_type == 'audit_trail':
         workbook_name = f'dea_{request_type}'
         print(f'finding luid for {workbook_name} report...')
-        user_ids_luid = tableau.find_view_luid(workbook_name, 'UserIDs')
+        user_ids_luid = tableau.find_view_luid('UserIDs', workbook_name)
         print(f'luid found: {user_ids_luid}')
-        searches_luid = tableau.find_view_luid(workbook_name, 'Searches')
+        searches_luid = tableau.find_view_luid('Searches', workbook_name)
         print(f'luid found: {searches_luid}')
-        users_luid = tableau.find_view_luid(workbook_name, 'users')
+        users_luid = tableau.find_view_luid('users', workbook_name)
         print(f'luid found: {users_luid}')
 
+        print('pulling users file...')
+        users_lf = tableau.lazyframe_from_view_id(users_luid, infer_schema=False)
+
+        user_ids = []
         for dea in params.deas:
             filters = {
-                'search_dea':dea, 'search_start_date':params.start_date, 'search_end_date':params.end_date
+                'search_dea':dea
             }
+
+            print(f'pulling userids file for {dea}...')
             user_ids_df = tableau.lazyframe_from_view_id(user_ids_luid, filters, infer_schema=False).collect()
-            searches_lf = tableau.lazyframe_from_view_id(searches_luid, filters, infer_schema=False)
-            users_lf = tableau.lazyframe_from_view_id(users_luid, filters, infer_schema=False)
 
             if user_ids_df.height > 1:
                 user_ids_df = user_ids_df.filter(pl.col('Active') == 'Y')
@@ -117,11 +121,38 @@ def activity_request(request_type:str, params:SearchParameters):
                 elif user_ids_df.height > 1:
                     sys.exit(f'{dea} has multiple associated active user ids')
 
-            user_id = user_ids_df['User ID'].first()
-            # __AUTO_GENERATED_PRINT_VAR_START__
-            print(f"activity_request user_id: {str(user_id)}") # __AUTO_GENERATED_PRINT_VAR_END__
+            user_ids.append(user_ids_df['User ID'].first())
 
-    else:
+        for id in set(user_ids):
+            filters = {
+                'search_trueid':id, 'search_start_date':params.start_date, 'search_end_date':params.end_date
+            }
+            user_name = users_lf.filter(pl.col('User ID') == id).collect()['User Full Name'].first()
+
+            print(f'pulling searches for {id}...')
+            searches_lf = (
+                tableau.lazyframe_from_view_id(searches_luid, filters, infer_schema=False)
+                .join(users_lf, how='left', left_on='Requestor ID', right_on='User ID', coalesce=True)
+                .drop('Requestor ID')
+                .select(
+                    'Search ID',
+                    'Searched First Name',
+                    'Searched Last Name',
+                    pl.col('Month, Day, Year of Searched DOB').str.to_date('%B %d, %Y').alias('Searched DOB'),
+                    'User Full Name',
+                    'User Role',
+                    'delegate?',
+                    'Is Gateway Request?',
+                    'Request Status',
+                    pl.col('Month, Day, Year of Search Creation Date').str.to_date('%B %d, %Y').alias('Search Creation Date'),
+                )
+                .sort('Search Creation Date')
+            )
+            fn = f'data/{request_type}/{user_name}_audit_trail_{params.start_date}_-_{params.end_date}.csv'
+            searches_lf.collect().write_csv(fn)
+            print(f'{fn} written')
+
+    else: # prescriber or dispenser activity request
         print(f'finding luid for {request_type} activity report...')
         luid = tableau.find_view_luid(f'{request_type}_activity_request', 'DEA Records Request')
         print(f'luid found: {luid}')
