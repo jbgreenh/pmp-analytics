@@ -92,7 +92,7 @@ def get_board_dict(service) -> dict[str, BoardInfo]:
             boards.collect(), how='left', left_on='final_deg', right_on='degree', coalesce=True
         )
         .select(
-            'awarxe', 'DEA Number', 'Name', 'Additional Company Info', 'Address 1', 'Address 2', 'City', 'State', 'Zip Code', 'final_deg','State License Number', 'board'
+            'awarxe', 'DEA Number', 'Name', 'Address 1', 'Address 2', 'Address 3', 'City', 'State', 'Zip Code', 'final_deg','State License Number', 'board'
         )
         .rename({'final_deg':'degree'})
         .with_columns(
