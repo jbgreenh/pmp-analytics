@@ -104,6 +104,8 @@ def activity_request(request_type:str, params:SearchParameters):
 
         print('pulling users file...')
         users_lf = tableau.lazyframe_from_view_id(users_luid, infer_schema=False)
+        if users_lf is None:
+            sys.exit('users file not found in tableau')
 
         user_ids = []
         for dea in params.deas:
@@ -112,7 +114,13 @@ def activity_request(request_type:str, params:SearchParameters):
             }
 
             print(f'pulling userids file for {dea}...')
-            user_ids_df = tableau.lazyframe_from_view_id(user_ids_luid, filters, infer_schema=False).collect()
+            user_ids_lf = tableau.lazyframe_from_view_id(user_ids_luid, filters, infer_schema=False)
+
+            if user_ids_lf is None:
+                print(f'found no user ids for {dea}')
+                continue
+            else:
+                user_ids_df = user_ids_lf.collect()
 
             if user_ids_df.height > 1:
                 user_ids_df = user_ids_df.filter(pl.col('Active') == 'Y')
@@ -130,8 +138,13 @@ def activity_request(request_type:str, params:SearchParameters):
             user_name = users_lf.filter(pl.col('User ID') == id).collect()['User Full Name'].first()
 
             print(f'pulling searches for {id}...')
+            searches_lf = tableau.lazyframe_from_view_id(searches_luid, filters, infer_schema=False)
+            if searches_lf is None:
+                print(f'{id} had no searches from {params.start_date} to {params.end_date}')
+                continue
+
             searches_lf = (
-                tableau.lazyframe_from_view_id(searches_luid, filters, infer_schema=False)
+                searches_lf
                 .join(users_lf, how='left', left_on='Requestor ID', right_on='User ID', coalesce=True)
                 .drop('Requestor ID')
                 .select(
@@ -162,8 +175,13 @@ def activity_request(request_type:str, params:SearchParameters):
                 'dea':dea, 'start_date':params.start_date, 'end_date':params.end_date
             }
             if request_type == 'prescriber':
+                lf = tableau.lazyframe_from_view_id(luid, filters=filters, infer_schema=False)
+                if lf is None:
+                    print(f'no records found for {dea}')
+                    continue
+
                 lf = (
-                    tableau.lazyframe_from_view_id(luid, filters=filters, infer_schema=False)
+                    lf
                     .select(
                         pl.col('Prescriber DEA'),
                         pl.col('Prescriber NPI'),
@@ -209,8 +227,12 @@ def activity_request(request_type:str, params:SearchParameters):
                     )
                 )
             else:   # dispenser
+                lf = tableau.lazyframe_from_view_id(luid, filters=filters, infer_schema=False)
+                if lf is None:
+                    print(f'no records found for {dea}')
+                    continue
                 lf = (
-                    tableau.lazyframe_from_view_id(luid, filters=filters, infer_schema=False)
+                    lf
                     .select(
                         pl.col('Pharmacy DEA'),
                         pl.col('Pharmacy NPI'),
