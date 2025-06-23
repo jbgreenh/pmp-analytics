@@ -45,7 +45,7 @@ def lazyframe_from_view_id(view_id:str, filters:dict|None=None, **kwargs:Any) ->
         buffer = BytesIO()
         buffer.write(b''.join(view.csv))
         buffer.seek(0)
-        if len(buffer.getvalue()) == 0:
+        if len(buffer.getvalue()) <= 1:
             return
         return pl.scan_csv(buffer, **kwargs)
 
