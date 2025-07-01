@@ -24,7 +24,7 @@ dea = (
             .otherwise(pl.col('Address 2')).alias('Address')
     )
     .with_columns(
-        pl.when((pl.col('Address 3').is_not_null()) & (pl.col('Address 4') != ''))
+        pl.when((pl.col('Address 3').is_not_null()) & (pl.col('Address 3') != ''))
             .then(pl.col('Address') + pl.lit(', ') + pl.col('Address 3'))
             .otherwise(pl.col('Address')).alias('Address')
     )
