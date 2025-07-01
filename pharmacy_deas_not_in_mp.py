@@ -19,12 +19,12 @@ dea = (
     .filter(pl.col('DEA Number').is_in(mp).not_())
     .join(igov, how='left', left_on='State License Number', right_on='License/Permit #', coalesce=True)
     .with_columns(
-        pl.when((pl.col('Address 1').is_not_null()) | (pl.col('Address 1') != ''))
+        pl.when((pl.col('Address 1').is_null()) | (pl.col('Address 1') != ''))
             .then(pl.col('Address 1') + pl.lit(', ') + pl.col('Address 2'))
             .otherwise(pl.col('Address 2')).alias('Address')
     )
     .with_columns(
-        pl.when((pl.col('Address 3').is_not_null()) | (pl.col('Address 3') != ''))
+        pl.when((pl.col('Address 3').is_null()) | (pl.col('Address 3') != ''))
             .then(pl.col('Address') + pl.lit(', ') + pl.col('Address 3'))
             .otherwise(pl.col('Address')).alias('Address')
     )
