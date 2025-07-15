@@ -6,24 +6,47 @@ from googleapiclient.discovery import build
 from utils import auth, deas, drive, tableau
 
 
-def pull_awarxe():
+def pull_awarxe() -> pl.DataFrame:
+    """
+    pulls the mose current awarxe registrants file
+
+    returns:
+        a dataframe with all active awarxe registants
+    """
     creds = auth.auth()
     service = build('drive', 'v3', credentials=creds)
 
-    print('pullng awarxe...')
-    drive.awarxe(service).collect().write_csv('data/awarxe.csv')
-    print('wrote data/awarxe.csv')
+    awarxe = drive.awarxe(service).collect()
+    return awarxe
 
 def tab_awarxe():
+    """writes a file with tableau awarxe registrants; the tableau file has associated deas rather than an entry for each dea number"""
     print('pulling awarxe from tableau...')
     luid = tableau.find_view_luid('UsersEx','UsersEx')
-    tableau.lazyframe_from_view_id(luid, infer_schema_length=10000).collect().write_csv('data/tab_awarxe.csv')
-    print('wrote data/tab_awarxe.csv')
+    tab_awarxe = tableau.lazyframe_from_view_id(luid, infer_schema_length=10000)
+    if tab_awarxe is not None:
+        fn = 'data/tab_awarxe.csv'
+        tab_awarxe.collect().write_csv(fn)
+        print(f'wrote {fn}')
+    else:
+        print('no data in tableau awarxe')
 
-def read_all_deas():
+def read_all_deas() -> pl.LazyFrame:
+    """
+    helper function to process the dea file
+
+    returns:
+        a lazyframe of all dea registrants
+    """
     return deas.deas()
 
-def bad_deas(awarxe):
+def bad_deas(awarxe:pl.DataFrame):
+    """
+    writes csv files with awarxe registrations that have incorrect dea numbers (those that fail a pattern match for the first and those that do not pass the checksum for the second)
+
+    args:
+        `awarxe`: a dataframe with active awarxe registrations
+    """
     pattern = r'^[ABCFGHMPRabcfghmpr][A-Za-z](?:[0-9]{6}[1-9]|[0-9]{5}[1-9][0-9]|[0-9]{4}[1-9][0-9]{2}|[0-9]{3}[1-9][0-9]{3}|[0-9]{2}[1-9][0-9]{4}|[0-9][1-9][0-9]{5}|[1-9][0-9]{6})$'
     pattern_match = (
         awarxe
@@ -59,7 +82,14 @@ def bad_deas(awarxe):
     checksum.write_csv(checksum_fp)
     print(f'wrote {checksum_fp}')
 
-def inactive_deas(awarxe, dea_list):
+def inactive_deas(awarxe:pl.DataFrame, dea_list:pl.LazyFrame):
+    """
+    writes a csv with all inactive deas associated to active awarxe registrations
+
+    args:
+        `awarxe`: a dataframe with active awarxe registrations
+        `dea_list`: lazyframe of all dea registrants
+    """
     inactive = (
         awarxe
         .drop_nulls('dea number')
@@ -76,7 +106,13 @@ def inactive_deas(awarxe, dea_list):
     inactive.write_csv(inactive_fp)
     print(f'wrote {inactive_fp}')
 
-def bad_npis(awarxe):
+def bad_npis(awarxe:pl.DataFrame):
+    """
+    writes csvs for awarxe registrations that have bad npi numbers (are not 10 digits for the 1st and do not pass the checksum for the 2nd)
+
+    args:
+        `awarxe`: a dataframe with active awarxe registrations
+    """
     pattern = r'^\d{10}$'
     npi_pattern_match = (
         awarxe
@@ -117,7 +153,13 @@ def bad_npis(awarxe):
     npi_checksum.write_csv(checksum_fp)
     print(f'wrote {checksum_fp}')
 
-def multiple_roles(awarxe):
+def multiple_roles(awarxe:pl.DataFrame):
+    """
+    writes a csv with awarxe registrations that have multiple roles
+
+    args:
+        `awarxe`: a dataframe with active awarxe registrations
+    """
     mult = (
         awarxe
         .with_columns(
@@ -131,7 +173,14 @@ def multiple_roles(awarxe):
     mult.write_csv(mult_fp)
     print(f'wrote {mult_fp}')
 
-def multiple_deas(awarxe, dea_list):
+def multiple_deas(awarxe:pl.DataFrame, dea_list:pl.LazyFrame):
+    """
+    writes a csv with az prescribers with multiple dea numbers and at least one of those dea numbers not registered in awarxe
+
+    args:
+        `awarxe`: a dataframe with active awarxe registrations
+        `dea_list`: lazyframe of all dea registrants
+    """
     awarxe_deas = awarxe['dea number'].to_list()
 
     prescribers = (
@@ -185,9 +234,8 @@ def multiple_deas(awarxe, dea_list):
 
 def main():
     Path('data/awarxe_cleanup').mkdir(parents=True, exist_ok=True)
-    pull_awarxe()
+    awarxe = pull_awarxe()
     # tab_awarxe()
-    awarxe = pl.read_csv('data/awarxe.csv', infer_schema=False)
     # tab_awarxe = pl.read_csv('data/tab_awarxe.csv', infer_schema=False)
     # TODO use tab_aware to check if all deas are inactive on an acct
     dea_list = read_all_deas()
