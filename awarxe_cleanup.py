@@ -8,7 +8,7 @@ from utils import auth, deas, drive, tableau
 
 def pull_awarxe() -> pl.DataFrame:
     """
-    pulls the mose current awarxe registrants file
+    pulls the most current awarxe registrants file
 
     returns:
         a dataframe with all active awarxe registants
