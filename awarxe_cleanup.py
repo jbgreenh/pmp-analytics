@@ -21,14 +21,17 @@ def pull_awarxe() -> pl.DataFrame:
     return awarxe
 
 def tab_awarxe():
-    """writes a file with tableau awarxe registrants; the tableau file has associated deas rather than an entry for each dea number"""
+    """
+    pulls active awarxe registrants from tableau. this file differs from the one `pull_awarxe()` returns because each row is one registrant with all of their dea numbers rather than each row being one dea number.
+
+    returns:
+        a lazyframe with the tableau version of active awarxe registrants
+    """
     print('pulling awarxe from tableau...')
-    luid = tableau.find_view_luid('UsersEx','UsersEx')
+    luid = tableau.find_view_luid('active_approved','tab_awarxe')
     tab_awarxe = tableau.lazyframe_from_view_id(luid, infer_schema_length=10000)
     if tab_awarxe is not None:
-        fn = 'data/tab_awarxe.csv'
-        tab_awarxe.collect().write_csv(fn)
-        print(f'wrote {fn}')
+        return tab_awarxe
     else:
         sys.exit('no data in tableau awarxe')
 
@@ -83,29 +86,62 @@ def bad_deas(awarxe:pl.DataFrame):
     checksum.write_csv(checksum_fp)
     print(f'wrote {checksum_fp}')
 
-def inactive_deas(awarxe:pl.DataFrame, dea_list:pl.LazyFrame):
+def inactive_deas(dea_list:pl.LazyFrame):
     """
     writes a csv with all inactive deas associated to active awarxe registrations
 
     args:
-        `awarxe`: a dataframe with active awarxe registrations
         `dea_list`: lazyframe of all dea registrants
     """
+    dea_nums = dea_list.collect()['DEA Number'].to_list()
     inactive = (
-        awarxe
-        .drop_nulls('dea number')
+        tab_awarxe()
+        .drop_nulls('Associated DEA Number(s)')
+        .filter(
+            pl.col('User Role').str.to_lowercase().str.contains('resident').not_() &
+            pl.col('User Role').str.to_lowercase().str.contains('fellow').not_()
+        )
         .with_columns(
-            pl.col('dea number').str.strip_chars().str.to_uppercase()
+            pl.col('Associated DEA Number(s)')
+            .str.strip_chars().str.replace_all(r'\s', '').str.to_uppercase().str.split(',').alias('deas_list')
         )
-        .join(
-            dea_list.select('DEA Number').collect(), left_on='dea number', right_on='DEA Number', how='anti'
+        .with_columns(
+            pl.col('deas_list').list.filter(pl.element().is_in(dea_nums)).alias('active_deas'),
+            pl.col('deas_list').list.filter(pl.element().is_in(dea_nums).not_()).alias('inactive_deas'),
         )
-        .sort(pl.col('dea number'))
-        .select('email address', pl.col('dea number').str.to_uppercase(), 'dea suffix', 'first name', 'last name', 'role category', 'role title', 'registration review date')
+        .with_columns(
+            (pl.col('active_deas').list.len() == 0).alias('all_inactive'),
+            ((pl.col('active_deas').list.len() > 0) & (pl.col('inactive_deas').list.len() > 0)).alias('some_inactive'),
+        )
+        .with_columns(
+            pl.col('active_deas', 'inactive_deas').cast(pl.List(pl.String)).list.join(' | '),
+        )
+        .drop('deas_list')
+        .collect(engine='streaming')
     )
-    inactive_fp = 'data/awarxe_cleanup/inactive_deas.csv'
-    inactive.write_csv(inactive_fp)
-    print(f'wrote {inactive_fp}')
+
+    some_inactive = (
+        inactive
+        .filter(
+            pl.col('some_inactive')
+        )
+        .drop('some_inactive', 'all_inactive')
+    )
+
+    all_inactive = (
+        inactive
+        .filter(
+            pl.col('all_inactive')
+        )
+        .drop('some_inactive', 'all_inactive')
+    )
+
+    si_fn = 'data/awarxe_cleanup/some_inactive_deas.csv'
+    ai_fn = 'data/awarxe_cleanup/all_inactive_deas.csv'
+    some_inactive.write_csv(si_fn)
+    print(f'wrote {si_fn}')
+    all_inactive.write_csv(ai_fn)
+    print(f'wrote {ai_fn}')
 
 def bad_npis(awarxe:pl.DataFrame):
     """
@@ -236,13 +272,10 @@ def multiple_deas(awarxe:pl.DataFrame, dea_list:pl.LazyFrame):
 def main():
     Path('data/awarxe_cleanup').mkdir(parents=True, exist_ok=True)
     awarxe = pull_awarxe()
-    # tab_awarxe()
-    # tab_awarxe = pl.read_csv('data/tab_awarxe.csv', infer_schema=False)
-    # TODO use tab_aware to check if all deas are inactive on an acct
     dea_list = read_all_deas()
     bad_deas(awarxe)
     multiple_deas(awarxe, dea_list)
-    inactive_deas(awarxe, dea_list)
+    inactive_deas(dea_list)
     bad_npis(awarxe)
     multiple_roles(awarxe)
 
