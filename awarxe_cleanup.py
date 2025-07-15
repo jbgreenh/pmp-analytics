@@ -131,16 +131,68 @@ def multiple_roles(awarxe):
     mult.write_csv(mult_fp)
     print(f'wrote {mult_fp}')
 
+def multiple_deas(awarxe, dea_list):
+    awarxe_deas = awarxe['dea number'].to_list()
+
+    prescribers = (
+        dea_list
+        .filter(
+            (pl.col('State') == 'AZ') &
+            ((pl.col('Business Activity Code') == 'C') | (pl.col('Business Activity Code') == 'M'))
+        )
+        .select(
+            'Name',
+            'DEA Number',
+            'SSN',
+            # 'Tax ID',
+        )
+    )
+
+    names = (
+        prescribers
+        .filter(
+            (pl.col('SSN') != '')
+        )
+        .with_columns(
+            pl.col('Name').str.split(' ').list.get(1).alias('fname'),
+        )
+        .with_columns(
+            (pl.col('SSN') + pl.col('fname')).alias('ssn_fname')
+        )
+        .group_by('ssn_fname')
+        .agg('Name', 'DEA Number')
+        .sort(pl.col('DEA Number').list.len(), descending=True)
+        .filter(
+            pl.col('DEA Number').list.len() > 1
+        )
+        .with_columns(
+            pl.col('DEA Number').list.filter(pl.element().is_in(awarxe_deas)).alias('registered'),
+            pl.col('DEA Number').list.filter(pl.element().is_in(awarxe_deas).not_()).alias('unregistered'),
+            pl.col('Name').list.unique(),
+        )
+        .filter(
+            pl.col('unregistered').list.len() > 0
+        )
+        .with_columns(
+            pl.col('Name', 'registered', 'unregistered').cast(pl.List(pl.String)).list.join(' | '),
+        )
+        .drop('DEA Number')
+    )
+    mdfname = 'data/awarxe_cleanup/multiple_deas.csv'
+    names.collect().write_csv(mdfname)
+    print(f'wrote {mdfname}')
+
 
 def main():
-    Path('data/awarxe_cleanup').mkdir( parents=True, exist_ok=True)
-    # pull_awarxe()
+    Path('data/awarxe_cleanup').mkdir(parents=True, exist_ok=True)
+    pull_awarxe()
     # tab_awarxe()
     awarxe = pl.read_csv('data/awarxe.csv', infer_schema=False)
     # tab_awarxe = pl.read_csv('data/tab_awarxe.csv', infer_schema=False)
     # TODO use tab_aware to check if all deas are inactive on an acct
     dea_list = read_all_deas()
     bad_deas(awarxe)
+    multiple_deas(awarxe, dea_list)
     inactive_deas(awarxe, dea_list)
     bad_npis(awarxe)
     multiple_roles(awarxe)
