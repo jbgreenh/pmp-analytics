@@ -80,15 +80,33 @@ def bad_deas(awarxe:pl.DataFrame):
         )
         .sort(pl.col('dea number'))
         .select('email address', pl.col('dea number').str.to_uppercase(), 'dea suffix', 'first name', 'last name', 'role category', 'role title', 'registration review date')
-        # .select(pl.col('dea number'))
     )
     checksum_fp = 'data/awarxe_cleanup/dea_checksum_fail.csv'
     checksum.write_csv(checksum_fp)
     print(f'wrote {checksum_fp}')
 
+def suffix_not_res(awarxe:pl.DataFrame):
+    """
+    writes a csv with all active awarxe registrants not in the resident or fellow roles that still have a dea suffix
+
+    args:
+        `awarxe`: a dataframe with active awarxe registrations
+    """
+    bad_suffix = (
+        awarxe
+        .filter(
+            ((pl.col('dea suffix').is_not_null()) | (pl.col('dea number').str.contains('-'))) &
+            ((pl.col('role title').str.to_lowercase().str.contains('resident').not_()) & (pl.col('role title').str.to_lowercase().str.contains('fellow').not_()))
+        )
+    )
+    bs_fn = 'data/awarxe_cleanup/suffix_not_res_not_fellow.csv'
+    bad_suffix.write_csv(bs_fn)
+    print(f'wrote {bs_fn}')
+
+
 def inactive_deas(dea_list:pl.LazyFrame):
     """
-    writes a csv with all inactive deas associated to active awarxe registrations
+    writes csvs with all inactive deas associated to active awarxe registrations (one file with some but not all deas inactive and one file with all deas inactive)
 
     args:
         `dea_list`: lazyframe of all dea registrants
@@ -275,6 +293,7 @@ def main():
     dea_list = read_all_deas()
     bad_deas(awarxe)
     multiple_deas(awarxe, dea_list)
+    suffix_not_res(awarxe)
     inactive_deas(dea_list)
     bad_npis(awarxe)
     multiple_roles(awarxe)
