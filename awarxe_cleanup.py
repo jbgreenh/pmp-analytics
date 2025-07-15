@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 
 import polars as pl
@@ -29,7 +30,7 @@ def tab_awarxe():
         tab_awarxe.collect().write_csv(fn)
         print(f'wrote {fn}')
     else:
-        print('no data in tableau awarxe')
+        sys.exit('no data in tableau awarxe')
 
 def read_all_deas() -> pl.LazyFrame:
     """
