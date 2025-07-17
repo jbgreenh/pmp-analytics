@@ -144,6 +144,7 @@ def inactive_deas(dea_list:pl.LazyFrame):
             pl.col('some_inactive')
         )
         .drop('some_inactive', 'all_inactive')
+        .sort(pl.col('inactive_deas').str.len_chars(), descending=True)
     )
 
     all_inactive = (
@@ -152,6 +153,7 @@ def inactive_deas(dea_list:pl.LazyFrame):
             pl.col('all_inactive')
         )
         .drop('some_inactive', 'all_inactive')
+        .sort(pl.col('inactive_deas').str.len_chars(), descending=True)
     )
 
     si_fn = 'data/awarxe_cleanup/some_inactive_deas.csv'
