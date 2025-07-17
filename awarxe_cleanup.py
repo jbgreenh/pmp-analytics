@@ -143,8 +143,8 @@ def inactive_deas(dea_list:pl.LazyFrame):
         .filter(
             pl.col('some_inactive')
         )
-        .drop('some_inactive', 'all_inactive')
         .sort(pl.col('inactive_deas').str.len_chars(), descending=True)
+        .select('User ID', 'Day of DOB', 'Email Address', 'User Full Name', 'User Role', 'User Role Category', 'active_deas', 'inactive_deas')
     )
 
     all_inactive = (
@@ -152,8 +152,8 @@ def inactive_deas(dea_list:pl.LazyFrame):
         .filter(
             pl.col('all_inactive')
         )
-        .drop('some_inactive', 'all_inactive')
         .sort(pl.col('inactive_deas').str.len_chars(), descending=True)
+        .select('User ID', 'Associated DEA Number(s)', 'Day of DOB', 'Email Address', 'User Full Name', 'User Role', 'User Role Category')
     )
 
     si_fn = 'data/awarxe_cleanup/some_inactive_deas.csv'
