@@ -1,8 +1,10 @@
-from datetime import date
 import sys
+from datetime import date
+
 import polars as pl
 
 from utils import tableau
+
 
 def mm2():
     year = date.today().year
