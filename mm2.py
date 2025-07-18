@@ -77,7 +77,7 @@ def mm2():
         .with_columns(
             (pl.col('>=20') & pl.col('<80% Lookups')).alias('test')
         )
-        .drop('User ID', 'TrueID')
+        .drop('User ID')
         .sort(['test', 'Application Count'], descending=[True, True])
     )
 
