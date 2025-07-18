@@ -1,50 +1,53 @@
-import os
-import datetime
+from datetime import date
+import sys
 import polars as pl
-from dotenv import load_dotenv
-from googleapiclient.discovery import build
 
-from utils import drive, auth
+from utils import tableau
 
-def mm2(service):
+def mm2():
     # read and combine files for six months of lookups
-    year = datetime.datetime.now().year
-    month = datetime.datetime.now().month
-    start, end = 0, 0
+    year = date.today().year
+    month = date.today().month
     if month < 7:
         year = year - 1
-        start, end = 7, 12
+        start, end = date(year=year, month=7, day=1), date(year=year, month=12, day=31)
     else:
-        start, end = 1, 6
+        start, end = date(year=year, month=1, day=1), date(year=year, month=6, day=30)
 
-    schema = {
-        'last_name': pl.String,
-        'first_name': pl.String,
-        'dea_number': pl.String,
-        'npi': pl.String,
-        'prof_lic': pl.String,
-        'nooflookup': pl.Int64,
-        'noofinterstatelookup': pl.Int64,
-        'noofdelegateslookup': pl.Int64,
-        'totallookups': pl.Int64,
+    workbook_name = 'mm_audit'
+    user_ids_luid = tableau.find_view_luid('UserIDs', workbook_name)
+    print(f'luid found: {user_ids_luid}')
+    searches_luid = tableau.find_view_luid('Searches', workbook_name)
+    print(f'luid found: {searches_luid}')
+
+    print('pulling user ids...')
+    user_ids_lf = tableau.lazyframe_from_view_id(user_ids_luid, infer_schema_length=False)
+    if user_ids_lf is None:
+        sys.exit('no user ids data found, check the mm_audit workbook in tableau')
+    users_explode = (
+        user_ids_lf
+        .drop_nulls('Associated DEA Number(s)')
+        .with_columns(
+            pl.col('User ID').cast(pl.Int32),
+            pl.col('Associated DEA Number(s)').str.replace_all(r'\s', '').str.split('').explode().alias('dea')
+        )
+        .select('User ID', 'dea')
+    )
+
+    filters = {
+        'search_start_date':start,
+        'search_end_date':end,
     }
-    lookups = pl.LazyFrame(schema=schema)
-    for n in range(start, end+1):
-        n = str(n).zfill(2)
-        print(f'{year}{n}:')
-        requests_folder_id = os.environ.get('PATIENT_REQUESTS_FOLDER')
-        requests_folder_id = drive.folder_id_from_name(service=service, folder_name=f'AZ_PtReqByProfile_{year}{n}', parent_id=requests_folder_id)
-        if requests_folder_id:
-            requests = drive.lazyframe_from_file_name_csv(service=service, file_name='Prescriber.csv', folder_id=requests_folder_id, separator='|', infer_schema_length=10000)
-
-        lookups = pl.concat([lookups, requests])
-
-    # group by DEA Number and sum of totallookups
-    lookups = (
-        lookups.collect().lazy() # ??????????????????
-        .select('dea_number','totallookups')
-        .group_by('dea_number')
-        .agg(pl.col('totallookups').sum())
+    print('pulling searches data...')
+    searches_lf = tableau.lazyframe_from_view_id(searches_luid, filters=filters, infer_schema_length=False)
+    if searches_lf is None:
+        sys.exit('no searches data found, check the mm_audit workbook in tableau')
+    searches_lf = (
+        searches_lf
+        .select(
+            pl.col('TrueID').cast(pl.Int32),
+            pl.col('Distinct count of Search ID').cast(pl.Int32).alias('totallookups')
+        )
     )
 
     mm_matches = (
@@ -60,7 +63,8 @@ def mm2(service):
     mm_combined = pl.concat([mm_matches, mm_manual])
     mm_combined = (
         mm_combined
-        .join(lookups, left_on='DEA Number', right_on='dea_number', how='left', coalesce=True)
+        .join(users_explode, left_on='DEA Number', right_on='dea', how='left', coalesce=True)
+        .join(searches_lf, left_on='User ID', right_on='TrueID', how='left', coalesce=True)
         .with_columns(
             pl.col('totallookups').fill_null(0)
         )
@@ -72,6 +76,7 @@ def mm2(service):
         .with_columns(  # extra with_columns to force >=20 and <80% Lookups to be created first
             (pl.col('>=20') & pl.col('<80% Lookups')).alias('test')
         )
+        .drop('User ID', 'TrueID')
         .sort(['test', 'Application Count'], descending=[True, True])
     )
 
@@ -121,7 +126,4 @@ def mm2(service):
 
 
 if __name__ == '__main__':
-    load_dotenv()
-    creds = auth.auth()
-    service = build('drive', 'v3', credentials=creds)
-    mm2(service)
+    mm2()
