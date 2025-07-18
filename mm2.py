@@ -33,8 +33,8 @@ def mm2():
             pl.col('Associated DEA Number(s)').str.replace_all(r'\s', '').str.split(',').alias('dea')
         )
         .explode('dea')
-        .sort('Active', descending=True)
-        .unique(subset=['dea'], keep='first', maintain_order=True)
+        .sort('Active', descending=True)                            # sorting like this and keeping first will favor active accounts
+        .unique(subset=['dea'], keep='first', maintain_order=True) #  but still give search credit for inactive accounts if that's all there is
         .select('User ID', 'dea')
     )
 
