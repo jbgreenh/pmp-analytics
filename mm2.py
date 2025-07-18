@@ -5,7 +5,6 @@ import polars as pl
 from utils import tableau
 
 def mm2():
-    # read and combine files for six months of lookups
     year = date.today().year
     month = date.today().month
     if month < 7:
@@ -68,12 +67,12 @@ def mm2():
         .with_columns(
             pl.col('totallookups').fill_null(0)
         )
-        .with_columns(  # extra with_columns to force fill_null(0) first
+        .with_columns(
             (pl.col('totallookups') / pl.col('Application Count')).alias('Lookups/Count'),
             (pl.col('Application Count') >= 20).alias('>=20'),
             ((pl.col('totallookups') / pl.col('Application Count')) < 0.8).alias('<80% Lookups')
         )
-        .with_columns(  # extra with_columns to force >=20 and <80% Lookups to be created first
+        .with_columns(
             (pl.col('>=20') & pl.col('<80% Lookups')).alias('test')
         )
         .drop('User ID', 'TrueID')
@@ -84,7 +83,7 @@ def mm2():
     mm_combined.collect().write_excel(
         file_path,
         worksheet='mm phys audit',
-        conditional_formats={       # something is making giving the columns as a tuple act strange
+        conditional_formats={
             '>=20':[{
                 'type':'cell',
                 'criteria':'equal to',
