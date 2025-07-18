@@ -30,8 +30,11 @@ def mm2():
         .drop_nulls('Associated DEA Number(s)')
         .with_columns(
             pl.col('User ID').cast(pl.Int32),
-            pl.col('Associated DEA Number(s)').str.replace_all(r'\s', '').str.split('').explode().alias('dea')
+            pl.col('Associated DEA Number(s)').str.replace_all(r'\s', '').str.split(',').alias('dea')
         )
+        .explode('dea')
+        .sort('Active', descending=True)
+        .unique(subset=['dea'], keep='first', maintain_order=True)
         .select('User ID', 'dea')
     )
 
@@ -47,7 +50,7 @@ def mm2():
         searches_lf
         .select(
             pl.col('TrueID').cast(pl.Int32),
-            pl.col('Distinct count of Search ID').cast(pl.Int32).alias('totallookups')
+            pl.col('Distinct count of Search ID').str.replace_all(',','').cast(pl.Int32).alias('totallookups')
         )
     )
 
