@@ -20,6 +20,14 @@ you can also use the `-at` flag for audit trails
 
 pdf requests in the `data/prescriber_activity_request/` or the `data/dispenser_activity_request` folder
 
+## awarxe_cleanup
+
+writes a variety of files for awarxe cleanup
+
+### required files
+
+an updated `data/cs_active.txt`
+
 ## 3x3 Threshold Report
 
 this script takes the number of patients provided by bamboo, updates the file to the google drive, and updates the 3x3 Threshold sheet in the google drive
