@@ -97,6 +97,40 @@ python mu_extras.py january2024
 this script sends the weekly naloxone report to ADHS in an email  
 it also saves the weekly file at `data/naloxone_{today}.xlsx`.
 
+## od
+
+this script pulls dispensation and odt information for overdose patients
+this script uses flags, `uv run od.py -h` to see the available settings and their defaults:
+
+<details>
+    <summary>help output</summary>
+
+```
+    usage: od.py [-h] [-f FILE] [-d DAYS_BEFORE] [-r RATIO]
+
+configure constants
+
+options:
+-h, --help show this help message and exit
+-f, --file FILE file name to be inspected; no extension (default: od)
+-d, --days-before DAYS_BEFORE
+max number of days before DOD to consider a dispensation a match (default: 90)
+-r, --ratio RATIO patient name similarity ratio for dispensation to be considered a match (default: 0.8)
+```
+
+</details>
+
+### required files
+
+a file in `data/od/` in the following format:
+
+| column     | description                        |
+| ---------- | ---------------------------------- |
+| LAST NAME  |                                    |
+| FIRST NAME |                                    |
+| DOD        | date of overdose MM/DD/YYYY format |
+| DOB        | date of birth MM/DD/YYYY format    |
+
 ## pharmacy_cleanup
 
 this script performs the weekly pharmacy cleanup and provides a link to the file on google drive for changing closed pharmacies in awarxe to exempt under manage pharmacies
@@ -115,20 +149,20 @@ this script checks for pharmacy dea numbers that are active with the dea but not
 
 ### required files
 
-updated `data/cs_active.txt`  
+updated `data/cs_active.txt`
 `List Request.csv` list request in igov
 `pharmacies.csv` compliance>manage pharmacies>download
 
 ## scorecard
 
-this script updates the scorecard tracking sheet on google drive with prescriber search rates for opioid and benzodiazepine prescriptions  
-a counterpart for this script runs `0 10 12 * *` on google cloud  
+this script updates the scorecard tracking sheet on google drive with prescriber search rates for opioid and benzodiazepine prescriptions
+a counterpart for this script runs `0 10 12 * *` on google cloud
 `scorecard.py` is for running on a local machine as needed
 
 ## sftp_backup
 
-these scripts backup the vendor and pmp sftps to the google drive daily  
-counterparts for this script run `30 8 * * *` on google cloud for both `vendor` and `pmp`  
+these scripts backup the vendor and pmp sftps to the google drive daily
+counterparts for this script run `30 8 * * *` on google cloud for both `vendor` and `pmp`
 `sftp_backup.py` is for running on a local machine as needed and takes a command line argument:
 
 - `vendor` for backing up the vendor sftp
@@ -163,3 +197,7 @@ this script checks the dea list for prescriber registration and emails unregiste
 ### required files
 
 updated `data/cs_active.txt`
+
+```
+
+```
