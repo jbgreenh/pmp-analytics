@@ -99,7 +99,7 @@ it also saves the weekly file at `data/naloxone_{today}.xlsx`.
 
 ## od
 
-this script pulls dispensation and odt information for overdose patients
+this script pulls dispensation and odt information for overdose patients  
 this script uses flags, `uv run od.py -h` to see the available settings and their defaults:
 
 <details>
