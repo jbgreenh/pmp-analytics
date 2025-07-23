@@ -423,6 +423,9 @@ dependencies = [
     { name = "uritemplate" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/35/99/237cd2510aecca9fabb54007e58553274cc43cb3c18512ee1ea574d11b87/google_api_python_client-2.171.0.tar.gz", hash = "sha256:057a5c08d28463c6b9eb89746355de5f14b7ed27a65c11fdbf1d06c66bb66b23", size = 13028937 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/79/db/c397e3eb3ea18f423855479d0a5852bdc9c3f644e3d4194931fa664a70b4/google_api_python_client-2.171.0-py3-none-any.whl", hash = "sha256:c9c9b76f561e9d9ac14e54a9e2c0842876201d5b96e69e48f967373f0784cbe9", size = 13547393 },
+]
 
 [[package]]
 name = "google-auth"
@@ -1267,14 +1270,17 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/72/51/48f713c4c728d7c55ef7444ba5ea027c26998d96d1a40953b346438602fc/pandas-2.3.0.tar.gz", hash = "sha256:34600ab34ebf1131a7613a260a61dbe8b62c188ec0ea4c296da7c9a06b004133", size = 4484490 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d3/57/5cb75a56a4842bbd0511c3d1c79186d8315b82dac802118322b2de1194fe/pandas-2.3.0-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:2c7e2fc25f89a49a11599ec1e76821322439d90820108309bf42130d2f36c983", size = 11518913 },
+    { url = "https://files.pythonhosted.org/packages/05/01/0c8785610e465e4948a01a059562176e4c8088aa257e2e074db868f86d4e/pandas-2.3.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:c6da97aeb6a6d233fb6b17986234cc723b396b50a3c6804776351994f2a658fd", size = 10655249 },
     { url = "https://files.pythonhosted.org/packages/e8/6a/47fd7517cd8abe72a58706aab2b99e9438360d36dcdb052cf917b7bf3bdc/pandas-2.3.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:bb32dc743b52467d488e7a7c8039b821da2826a9ba4f85b89ea95274f863280f", size = 11328359 },
     { url = "https://files.pythonhosted.org/packages/2a/b3/463bfe819ed60fb7e7ddffb4ae2ee04b887b3444feee6c19437b8f834837/pandas-2.3.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:213cd63c43263dbb522c1f8a7c9d072e25900f6975596f883f4bebd77295d4f3", size = 12024789 },
+    { url = "https://files.pythonhosted.org/packages/04/0c/e0704ccdb0ac40aeb3434d1c641c43d05f75c92e67525df39575ace35468/pandas-2.3.0-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:1d2b33e68d0ce64e26a4acc2e72d747292084f4e8db4c847c6f5f6cbe56ed6d8", size = 12480734 },
     { url = "https://files.pythonhosted.org/packages/e9/df/815d6583967001153bb27f5cf075653d69d51ad887ebbf4cfe1173a1ac58/pandas-2.3.0-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:430a63bae10b5086995db1b02694996336e5a8ac9a96b4200572b413dfdfccb9", size = 13223381 },
     { url = "https://files.pythonhosted.org/packages/79/88/ca5973ed07b7f484c493e941dbff990861ca55291ff7ac67c815ce347395/pandas-2.3.0-cp313-cp313-win_amd64.whl", hash = "sha256:4930255e28ff5545e2ca404637bcc56f031893142773b3468dc021c6c32a1390", size = 10970135 },
     { url = "https://files.pythonhosted.org/packages/24/fb/0994c14d1f7909ce83f0b1fb27958135513c4f3f2528bde216180aa73bfc/pandas-2.3.0-cp313-cp313t-macosx_10_13_x86_64.whl", hash = "sha256:f925f1ef673b4bd0271b1809b72b3270384f2b7d9d14a189b12b7fc02574d575", size = 12141356 },
     { url = "https://files.pythonhosted.org/packages/9d/a2/9b903e5962134497ac4f8a96f862ee3081cb2506f69f8e4778ce3d9c9d82/pandas-2.3.0-cp313-cp313t-macosx_11_0_arm64.whl", hash = "sha256:e78ad363ddb873a631e92a3c063ade1ecfb34cae71e9a2be6ad100f875ac1042", size = 11474674 },
     { url = "https://files.pythonhosted.org/packages/81/3a/3806d041bce032f8de44380f866059437fb79e36d6b22c82c187e65f765b/pandas-2.3.0-cp313-cp313t-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:951805d146922aed8357e4cc5671b8b0b9be1027f0619cea132a9f3f65f2f09c", size = 11439876 },
     { url = "https://files.pythonhosted.org/packages/15/aa/3fc3181d12b95da71f5c2537c3e3b3af6ab3a8c392ab41ebb766e0929bc6/pandas-2.3.0-cp313-cp313t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1a881bc1309f3fce34696d07b00f13335c41f5f5a8770a33b09ebe23261cfc67", size = 11966182 },
+    { url = "https://files.pythonhosted.org/packages/37/e7/e12f2d9b0a2c4a2cc86e2aabff7ccfd24f03e597d770abfa2acd313ee46b/pandas-2.3.0-cp313-cp313t-musllinux_1_2_aarch64.whl", hash = "sha256:e1991bbb96f4050b09b5f811253c4f3cf05ee89a589379aa36cd623f21a31d6f", size = 12547686 },
     { url = "https://files.pythonhosted.org/packages/39/c2/646d2e93e0af70f4e5359d870a63584dacbc324b54d73e6b3267920ff117/pandas-2.3.0-cp313-cp313t-musllinux_1_2_x86_64.whl", hash = "sha256:bb3be958022198531eb7ec2008cfc78c5b1eed51af8600c6c5d9160d89d8d249", size = 13231847 },
 ]
 
@@ -1349,6 +1355,7 @@ dependencies = [
     { name = "pandas" },
     { name = "paramiko" },
     { name = "polars" },
+    { name = "polars-distance" },
     { name = "pyarrow" },
     { name = "pymupdf" },
     { name = "pypdf2" },
@@ -1376,6 +1383,7 @@ requires-dist = [
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "paramiko", specifier = ">=3.5.0" },
     { name = "polars", specifier = ">=1.19.0" },
+    { name = "polars-distance", specifier = ">=0.5.3" },
     { name = "pyarrow", specifier = ">=18.1.0" },
     { name = "pymupdf", specifier = ">=1.25.5" },
     { name = "pypdf2", specifier = ">=3.0.1" },
@@ -1400,6 +1408,26 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/cb/e7/b88b973021be07b13d91b9301cc14392c994225ef5107a32a8ffd3fd6424/polars-1.30.0-cp39-abi3-manylinux_2_24_aarch64.whl", hash = "sha256:ffb3ef133454275d4254442257c5f71dd6e393ce365c97997dadeb6fa9d6d4b5", size = 33416871 },
     { url = "https://files.pythonhosted.org/packages/dd/7c/d46d4381adeac537b8520b653dc30cb8b7edbf59883d71fbb989e9005de1/polars-1.30.0-cp39-abi3-win_amd64.whl", hash = "sha256:c26b633a9bd530c5fc09d317fca3bb3e16c772bd7df7549a9d8ec1934773cc5d", size = 36363630 },
     { url = "https://files.pythonhosted.org/packages/fb/b5/5056d0c12aadb57390d0627492bef8b1abf3549474abb9ae0fd4e2bfa885/polars-1.30.0-cp39-abi3-win_arm64.whl", hash = "sha256:476f1bde65bc7b4d9f80af370645c2981b5798d67c151055e58534e89e96f2a8", size = 32643590 },
+]
+
+[[package]]
+name = "polars-distance"
+version = "0.5.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "polars" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f4/89/c689e461dffc5eeded2927cb214aae20f1103ff5e2b5e0c7042dff81f74c/polars_distance-0.5.3.tar.gz", hash = "sha256:26b7fbfc38de1c81b847ffa87b4f106dd10d4585a2240fff882e0f1fcb1acad8", size = 38226 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c3/cb/55546cb7eaf22ab5d25df6f863f79dcfe6545c2889a12d1136b833c80388/polars_distance-0.5.3-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:80c01b3210588987d917d85db2a0c12fb9ab5a71d6a7c519e318be139ef6ad5a", size = 5412548 },
+    { url = "https://files.pythonhosted.org/packages/c7/07/495504f4c42b4fb22162267b3ac6abe9f0665001547f4d54226c7d52434d/polars_distance-0.5.3-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:a47c033d1b9bcf376d8d15d74f0ad60bf98594fad08ca906c1f4b93907e19104", size = 4836127 },
+    { url = "https://files.pythonhosted.org/packages/65/7b/d099a1ac0a8f06cd4b184cdb575004696d902142ec0e9f8dafa02b9c94d6/polars_distance-0.5.3-cp38-abi3-manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:2bcf6f32ebf7b8efa258393ea58175abf5844379cc9acf239767927fe989aada", size = 5860321 },
+    { url = "https://files.pythonhosted.org/packages/4e/77/b2476cfde9a0ec2e00f4cea5ab9db668b31cf61236377be8dd53f28538a1/polars_distance-0.5.3-cp38-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:6c73567844fcf354b6e3387beb1253130d1fa09969100af5c51016f9e55f506d", size = 4962912 },
+    { url = "https://files.pythonhosted.org/packages/94/82/16f10aefc3b1d87050cc29fc1dc3e9c18b8ec557742da53e02a25fcbf902/polars_distance-0.5.3-cp38-abi3-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:21ca13be28d7a4e220a8a5d7276e6dfda6a507e799cfb714ac3c016bbcbd2ce9", size = 5503483 },
+    { url = "https://files.pythonhosted.org/packages/fc/3d/f08df8558489ba66401a3ba382c11a0f9b3d225ba100e8e1511991f272f0/polars_distance-0.5.3-cp38-abi3-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:bdfc5b840389a266e3b850a1320037c1a9419b0e58ab45dc01889dc8948870be", size = 5828726 },
+    { url = "https://files.pythonhosted.org/packages/c3/a4/cba0275a1cc313507de399c01ff695df6e84a9164f7ece5615ce30c0b0f8/polars_distance-0.5.3-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:bbdba9190b1b34f1c609540ac0d2a34be3563fb6d0f751ad1e2ed916dbd7c6fb", size = 5420779 },
+    { url = "https://files.pythonhosted.org/packages/54/ed/5ff29878c01a153c4fcbd08668bd200c12430ed80a4cfd04ccff78046326/polars_distance-0.5.3-cp38-abi3-win32.whl", hash = "sha256:59d21c12c4ef628f201ba7ed815015c1dcf0be842984275923fab03e89bfe02c", size = 5131706 },
+    { url = "https://files.pythonhosted.org/packages/4e/02/9658eee9c2a47013ee9def21cc8917b946503db8f5eea098da72b91288cd/polars_distance-0.5.3-cp38-abi3-win_amd64.whl", hash = "sha256:48e90994ae0e7945572a6d70f7711cb2d9101ea338fa993488d405e7492ab389", size = 5527949 },
 ]
 
 [[package]]
@@ -2069,11 +2097,11 @@ wheels = [
 
 [[package]]
 name = "xlsxwriter"
-version = "3.2.3"
+version = "3.2.5"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/a7/d1/e026d33dd5d552e5bf3a873dee54dad66b550230df8290d79394f09b2315/xlsxwriter-3.2.3.tar.gz", hash = "sha256:ad6fd41bdcf1b885876b1f6b7087560aecc9ae5a9cc2ba97dcac7ab2e210d3d5", size = 209135 }
+sdist = { url = "https://files.pythonhosted.org/packages/a7/47/7704bac42ac6fe1710ae099b70e6a1e68ed173ef14792b647808c357da43/xlsxwriter-3.2.5.tar.gz", hash = "sha256:7e88469d607cdc920151c0ab3ce9cf1a83992d4b7bc730c5ffdd1a12115a7dbe", size = 213306 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/37/b1/a252d499f2760b314fcf264d2b36fcc4343a1ecdb25492b210cb0db70a68/XlsxWriter-3.2.3-py3-none-any.whl", hash = "sha256:593f8296e8a91790c6d0378ab08b064f34a642b3feb787cf6738236bd0a4860d", size = 169433 },
+    { url = "https://files.pythonhosted.org/packages/fa/34/a22e6664211f0c8879521328000bdcae9bf6dbafa94a923e531f6d5b3f73/xlsxwriter-3.2.5-py3-none-any.whl", hash = "sha256:4f4824234e1eaf9d95df9a8fe974585ff91d0f5e3d3f12ace5b71e443c1c6abd", size = 172347 },
 ]
 
 [[package]]
