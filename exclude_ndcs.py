@@ -1,4 +1,5 @@
 import os
+import sys
 
 import polars as pl
 from utils import tableau, auth, drive
@@ -12,12 +13,17 @@ service = build('drive', 'v3', credentials=creds)
 load_dotenv()
 
 sheet_id = os.environ.get('EXCLUDED_NDCS_FILE')
+assert type(sheet_id) is  str
 
 excluded_ndcs = drive.lazyframe_from_id_and_sheetname(service, sheet_id, 'excluded', infer_schema_length=0)
 
 luid = tableau.find_view_luid('opiate_antagonists', 'opiate antagonists')
+lf = tableau.lazyframe_from_view_id(luid, infer_schema_length=0)
+if lf is None:
+    sys.exit('could not pull opiate_antagonists workbook')
+
 antagonists = (
-    tableau.lazyframe_from_view_id(luid, infer_schema_length=0)
+    lf
     .join(excluded_ndcs, on='NDC', how='anti')
     .rename(
         {'Generic Name':'drug'}
@@ -33,6 +39,8 @@ else:
     print('please input exclusion list in awarxe')
     print(new_ndcs)
     new_fn = 'new_ndcs.csv'
+    new_ndcs.write_clipboard(include_header=False)
+    print('new_ndcs written to clipboard')
     new_ndcs.write_csv(new_fn)
     print(f'{new_fn} written')
 
