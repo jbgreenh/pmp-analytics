@@ -1,6 +1,5 @@
 import datetime
 import io
-import sys
 import os
 
 import polars as pl
@@ -33,9 +32,9 @@ def lazyframe_from_file_name_csv(service, file_name:str, folder_id:str, **kwargs
             try:
                 request = service.files().get_media(fileId=file_id)
             except HttpError as error:
-                sys.exit(f'error checking google drive: {error}')
+                raise Exception(f'error checking google drive: {error}')
         else:
-            sys.exit('no file found')
+            raise Exception(f'no file found with name: {file_name} in folder with id: {folder_id}')
 
         file = io.BytesIO()
         downloader = MediaIoBaseDownload(file, request)
@@ -45,7 +44,7 @@ def lazyframe_from_file_name_csv(service, file_name:str, folder_id:str, **kwargs
         while done is False:
             _status, done = downloader.next_chunk()
     except HttpError as error:
-        sys.exit(f'google drive error: {error}')
+        raise Exception(f'google drive error: {error}')
 
     file.seek(0) # after writing, pointer is at the end of the stream
     return pl.scan_csv(file, **kwargs)
@@ -74,9 +73,9 @@ def lazyframe_from_file_name_sheet(service, file_name:str, folder_id:str, **kwar
             try:
                 request = service.files().export_media(fileId=file_id, mimeType='text/csv')
             except HttpError as error:
-                sys.exit(f'error checking google drive: {error}')
+                raise Exception(f'error checking google drive: {error}')
         else:
-            sys.exit('no file found')
+            raise Exception(f'no file found with name: {file_name} in folder with id: {folder_id}')
 
         file = io.BytesIO()
         downloader = MediaIoBaseDownload(file, request)
@@ -86,7 +85,7 @@ def lazyframe_from_file_name_sheet(service, file_name:str, folder_id:str, **kwar
         while done is False:
             _status, done = downloader.next_chunk()
     except HttpError as error:
-        sys.exit(f'google drive error: {error}')
+        raise Exception(f'google drive error: {error}')
 
     file.seek(0) # after writing, pointer is at the end of the stream
     return pl.scan_csv(file, **kwargs)
@@ -108,7 +107,7 @@ def lazyframe_from_id_and_sheetname(service, file_id:str, sheet_name:str, **kwar
     try:
         request = service.files().export_media(fileId=file_id, mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     except HttpError as error:
-        sys.exit(f'error checking google drive: {error}')
+        raise Exception(f'error checking google drive: {error}')
     file = io.BytesIO()
     downloader = MediaIoBaseDownload(file, request)
 
@@ -121,69 +120,67 @@ def lazyframe_from_id_and_sheetname(service, file_id:str, sheet_name:str, **kwar
     return pl.read_excel(file, sheet_name=sheet_name, **kwargs).lazy()
 
 
-def awarxe(service, day:str='') -> pl.LazyFrame:
+def awarxe(service, day:datetime.date=datetime.date.today()-datetime.timedelta(days=1)) -> pl.LazyFrame:
     """
         return a lazy frame of the most recent awarxe file from the google drive, unless day is specified
         
     args:
         service: an authorized google drive service
-        day: the day for the awarxe file in %Y%m%d format
+        day: the day for the awarxe file
 
     returns:
-       awarxe: a lazyframe with all active awarxe registrants as of `day` if specified or yesterday if `day` is not specified
+       awarxe: a lazyframe with all active awarxe registrants from the most recent file as of `day` if specified, or yesterday if `day` is not specified
     """
-    if day == '':
-        yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
-        yesterday_year = yesterday.strftime('%Y')
-        yesterday = yesterday.strftime('%Y%m%d')
-    else:
-        yesterday = day
-        yesterday_year = day[0:4]
-
+    if day < datetime.date(year=2022, month=12, day=7):
+        raise Exception('there are no awarxe files before 12/7/2022')
+    if day > datetime.date.today():
+        raise Exception('no future dates')
     load_dotenv()
+    awarxe_folder_id = os.environ.get('AWARXE_FOLDER')
 
-    folder_id = os.environ.get('AWARXE_FOLDER')
-    file_name = f'AZ_UserEx_{yesterday}.csv'
+    while True:
+        day_string = day.strftime('%Y%m%d')
+        file_name = f'AZ_UserEx_{day_string}.csv'
+        print(f'pulling awarxe file {file_name}...')
 
-    try:
-        results_folder = service.files().list(q=f"name = '{yesterday_year}' and '{folder_id}' in parents",
-                                    supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
-        folders = results_folder.get('files', [])
-        if folders:
-            folder_id = folders[0]['id']
-        else:
-            print('folder not found')
-            folder_id = None
-    except HttpError as error:
-        sys.exit(f'error checking google drive: {error}')
+        try:
+            results_folder = service.files().list(q=f"name = '{day.year}' and '{awarxe_folder_id}' in parents",
+                                        supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
+            folders = results_folder.get('files', [])
+            if folders:
+                year_folder_id = folders[0]['id']
+            else:
+                raise Exception(f'folder {day.year} not found')
+        except HttpError as error:
+            raise Exception(f'error checking google drive: {error}')
 
-    try:
-        results = service.files().list(q=f"name = '{file_name}' and '{folder_id}' in parents",
-                                    supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
-        files = results.get('files', [])
-        file_id = None
-        if files:
-            file_id = files[0]['id']
-            try:
-                request = service.files().get_media(fileId=file_id)
-            except HttpError as error:
-                sys.exit(f'error checking google drive: {error}')
-        else:
-            sys.exit('no file found')
+        try:
+            results = service.files().list(q=f"name = '{file_name}' and '{year_folder_id}' in parents",
+                                        supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
+            files = results.get('files', [])
+            file_id = None
+            if files:
+                file_id = files[0]['id']
+                try:
+                    request = service.files().get_media(fileId=file_id)
+                except HttpError as error:
+                    raise Exception(f'error checking google drive: {error}')
+                file = io.BytesIO()
+                downloader = MediaIoBaseDownload(file, request)
 
+                done = False
+                print(f'pulling {file_name} from google drive...')
+                while done is False:
+                    _status, done = downloader.next_chunk()
+                file.seek(0) # after writing, pointer is at the end of the stream
+                return pl.scan_csv(file, separator='|', infer_schema_length=100000)
+            else:
+                print(f'{file_name} not found')
+                day = day - datetime.timedelta(days=1)
 
-        file = io.BytesIO()
-        downloader = MediaIoBaseDownload(file, request)
+        except HttpError as error:
+            raise Exception(f'google drive error: {error}')
 
-        done = False
-        print(f'pulling {file_name} from google drive...')
-        while done is False:
-            _status, done = downloader.next_chunk()
-    except HttpError as error:
-        sys.exit(f'google drive error: {error}')
-
-    file.seek(0) # after writing, pointer is at the end of the stream
-    return pl.scan_csv(file, separator='|', infer_schema_length=100000)
 
 
 def folder_id_from_name(service, folder_name:str, parent_id:str) -> str:
@@ -205,11 +202,11 @@ def folder_id_from_name(service, folder_name:str, parent_id:str) -> str:
         if folders:
             folder_id = folders[0]['id']
         else:
-            sys.exit('folder not found')
+            raise Exception(f'folder {folder_name} not found')
 
         return folder_id
     except HttpError as error:
-        sys.exit(f'error checking google drive: {error}')
+        raise Exception(f'error checking google drive: {error}')
 
 
 def upload_csv_as_sheet(service, file_name:str, folder_id:str) -> None:
@@ -245,7 +242,7 @@ def upload_csv_as_sheet(service, file_name:str, folder_id:str) -> None:
         print (f'uploaded to: {file.get("webViewLink")}')
 
     except HttpError as error:
-        sys.exit(f'an error occurred: {error}')
+        raise Exception(f'an error occurred: {error}')
 
 
 def update_sheet(service, file_name:str, file_id:str) -> None:
@@ -271,7 +268,7 @@ def update_sheet(service, file_name:str, file_id:str) -> None:
         print (f'uploaded to: {file.get("webViewLink")}')
 
     except HttpError as error:
-        sys.exit(f'an error occurred: {error}')
+        raise Exception(f'an error occurred: {error}')
 
 
 def find_or_create_folder(service, folder_name:str, parent_folder_id:str) -> str:
@@ -309,4 +306,4 @@ def find_or_create_folder(service, folder_name:str, parent_folder_id:str) -> str
             return folder['id']
 
     except HttpError as error:
-        sys.exit(f'error checking google drive: {error}')
+        raise Exception(f'error checking google drive: {error}')
