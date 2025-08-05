@@ -131,10 +131,21 @@ def awarxe(service, day:datetime.date=datetime.date.today()-datetime.timedelta(d
     returns:
        awarxe: a lazyframe with all active awarxe registrants from the most recent file as of `day` if specified, or yesterday if `day` is not specified
     """
+    class DateTooEarlyError(Exception):
+        def __init__(self, value):
+            message = f'{value} is before the minimum awarxe file date of 2022-12-07'
+            super().__init__(message)
+
+    class FutureDateError(Exception):
+        def __init__(self, value):
+            message = f'{value} is in the future'
+            super().__init__(message)
+
     if day < datetime.date(year=2022, month=12, day=7):
-        raise Exception('there are no awarxe files before 12/7/2022')
+        raise DateTooEarlyError(day)
     if day > datetime.date.today():
-        raise Exception('no future dates')
+        raise FutureDateError(day)
+
     load_dotenv()
     awarxe_folder_id = os.environ.get('AWARXE_FOLDER')
 
