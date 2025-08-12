@@ -24,6 +24,20 @@ class BoardInfo:
     board_name: str
     board_emails: str
 
+@dataclass
+class IntegratedBoard:
+    """
+    a class containing info on integrated boards and google drive file locations for daily uploads
+
+    args:
+        `board_name`: a `str` with the name of the board, eg: 'Optometry'
+        `uploads_folder`: a `str` with the google drive folder id for the board's respective uploads folder
+        `cleaned_license_expr`: an expression for cleaning license numbers: eg `(pl.lit('OPT-') + pl.col('State License Number').str.replace_all('[^0-9]', '').str.zfill(6)).alias('cleaned_lino')`
+    """
+    board_name: str
+    uploads_folder: str
+    cleaned_license_expr: pl.Expr
+
 def get_board_dict(service) -> dict[str, BoardInfo]:
     """
     checks the dea list for prescriber registration in awarxe
@@ -111,6 +125,22 @@ def get_board_dict(service) -> dict[str, BoardInfo]:
 
     opto_folder = os.environ.get('OPTOMETRY_UPLOADS_FOLDER')
     assert type(opto_folder) is str
+    opto_clean = (pl.lit('OPT-') + pl.col('State License Number').str.replace_all('[^0-9]', '').str.zfill(6)).alias('cleaned_lino')
+
+    osteo_folder = os.environ.get('OSTEOPATHIC_UPLOADS_FOLDER')
+    assert type(osteo_folder) is str
+    osteo_clean = (
+        pl.when(pl.col('State License Number').str.to_uppercase().str.starts_with('R'))
+        .then(pl.col('State License Number').str.to_uppercase().alias('cleaned_lino'))
+        .otherwise(pl.col('State License Number').str.zfill(6).alias('cleaned_lino'))
+    )
+
+    gi_t_ib_list = [
+        IntegratedBoard(board_name='Optometry', uploads_folder=opto_folder, cleaned_license_expr=opto_clean),
+        IntegratedBoard(board_name='Osteopathic', uploads_folder=osteo_folder, cleaned_license_expr=osteo_clean)
+    ]
+
+    #TODO: add for loop to go through gi_t_ib_list
 
     yesterday = date.today() - timedelta(days=1)
     yesterday_str = yesterday.strftime('%Y%m%d')
