@@ -1,9 +1,9 @@
 import argparse
-import glob
 import re
 import sys
 from dataclasses import dataclass
 from datetime import datetime, date
+from pathlib import Path
 from dateutil.relativedelta import relativedelta
 
 from dotenv import load_dotenv
@@ -27,19 +27,23 @@ class SearchParameters:
     start_date: date
     end_date:date
 
-def process_pdf(request_type) -> SearchParameters:
+def process_pdf(request_type):
     log_fp = 'data/activity_request_log.txt'
     with open(log_fp, 'w') as file:
         pass # clear logs
 
     if request_type == 'audit_trail':
-        pdfs = glob.glob(f'data/{request_type}/*.pdf')
+        pdfs = Path(f'data/{request_type}')
+        pdfs.mkdir(parents=True, exist_ok=True)
+        pdfs = pdfs.glob('*.pdf')
     else:
-        pdfs = glob.glob(f'data/{request_type}_activity_request/*.pdf')
+        pdfs = Path(f'data/{request_type}_activity_request')
+        pdfs.mkdir(parents=True, exist_ok=True)
+        pdfs = pdfs.glob('*.pdf')
 
     if pdfs:
         print('---')
-        print(f'reading {len(pdfs)} {"pdf" if len(pdfs) == 1 else "pdfs"}...')
+        print('reading pdf(s)')
         for pdf in pdfs:
             page = pymupdf.open(pdf).load_page(0)
             page_text = page.get_text()
@@ -87,7 +91,7 @@ def process_pdf(request_type) -> SearchParameters:
             print(deas)
             print(f'{start_date} - {end_date}')
             print('\n')
-            return SearchParameters(deas, start_date, end_date)
+            activity_request(request_type, SearchParameters(deas, start_date, end_date))
     else:
         sys.exit(f'no pdfs in data/{request_type}/ folder')
 
@@ -300,14 +304,11 @@ def main():
     group.add_argument('-at', '--audit-trail', action ='store_true', help='pull audit trail')
     args = parser.parse_args()
     if args.prescriber:
-        params = process_pdf('prescriber')
-        activity_request('prescriber', params)
+        process_pdf('prescriber')
     elif args.dispenser:
-        params = process_pdf('dispenser')
-        activity_request('dispenser', params)
+        process_pdf('dispenser')
     elif args.audit_trail:
-        params = process_pdf('audit_trail')
-        activity_request('audit_trail', params)
+        process_pdf('audit_trail')
 
 if __name__ == '__main__':
     main()
