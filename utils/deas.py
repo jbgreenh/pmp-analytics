@@ -1,9 +1,11 @@
 import sys
+from typing import Literal, TypeAlias
 
 import polars as pl
 
+DeaSelector: TypeAlias = Literal['all', 'presc', 'pharm', 'az']
 
-def deas(p:str='all') -> pl.LazyFrame:
+def deas(p:DeaSelector='all') -> pl.LazyFrame:
     '''
     returns a lazyframe from the full dea fixed width file
     p:
@@ -57,11 +59,12 @@ def deas(p:str='all') -> pl.LazyFrame:
         print(deas_pharm.head())
         return deas_pharm.lazy()
     elif p == 'presc':
+        sub_codes = ['5', '6', '7', '8', 'A', 'B', 'C', 'D', 'J']
         deas_presc = (
             deas
             .filter(
                 (pl.col('State') == 'AZ') &
-                ((pl.col('Business Activity Code') == 'C') | (pl.col('Business Activity Code') == 'M'))
+                ((pl.col('Business Activity Code') == 'C') | ((pl.col('Business Activity Code') == 'M') & pl.col('Business Activity Sub Code').is_in(sub_codes)))
             )
         )
         print(deas_presc.head())
