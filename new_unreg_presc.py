@@ -2,7 +2,6 @@ import sys
 import polars as pl
 import os
 # import io
-# import sys
 # from datetime import date, timedelta
 from dataclasses import dataclass, field
 
@@ -90,6 +89,16 @@ def check_deas_for_registration(service) -> pl.LazyFrame:
     return unreg_presc
 
 def infer_degrees(service, unreg_deas:pl.LazyFrame) -> pl.LazyFrame:
+    """
+    infer degrees
+
+    args:
+        `service` ([TODO:parameter]): [TODO:description]
+        `unreg_deas`: [TODO:description]
+
+    returns:
+        [TODO:return]
+    """
     ex_degs_file = os.environ.get('EXCLUDE_DEGS_FILE')
     assert type(ex_degs_file) is str
     deg_board_file = os.environ.get('DEG_BOARD_FILE')
