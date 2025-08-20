@@ -101,7 +101,7 @@ def find_or_create_folder(service, name, parent_folder_id):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='backup either the vendor or pmp sftp')
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('-v', '--vendor', action='store_true', help='backup vendor pmp')
+    group.add_argument('-v', '--vendor', action='store_true', help='backup vendor sftp')
     group.add_argument('-p', '--pmp', action='store_true', help='backup pmp sftp')
 
     args = parser.parse_args()
