@@ -224,8 +224,8 @@ def add_dfs_to_board_info(service, unreg_presc:pl.LazyFrame, board_info:dict) ->
     unreg_dir = Path('data/unreg_presc/')
     unreg_dir.mkdir(parents=True, exist_ok=True)
     for board, board_dict in board_info.items():
+        print(f'processing for {board}...')
         if board_dict.upload_file_type == 'none':
-            print(f'{board} standard')
             board_dict.board_df = unreg_presc.filter(pl.col('board') == board).drop('SSN', 'Tax ID').collect()
         else:
             latest_file = drive.get_latest_uploaded(service, folder_id=board_dict.uploads_folder, drive_ft=board_dict.upload_file_type, skip_rows=board_dict.upload_skip_rows, infer_schema=False)
@@ -241,6 +241,7 @@ def add_dfs_to_board_info(service, unreg_presc:pl.LazyFrame, board_info:dict) ->
             unreg_presc_board = (
                 unreg_presc
                 .filter(pl.col('board') == board)
+                .with_columns(board_dict.cleaned_license_expr)
             )
 
             upload_lf = (
@@ -258,13 +259,12 @@ def add_dfs_to_board_info(service, unreg_presc:pl.LazyFrame, board_info:dict) ->
             upload_no_ez_match = (
                 unreg_presc_board
                 .join(upload_lf, how='anti', left_on='State License Number', right_on='license_number')
-                .with_columns(board_dict.cleaned_license_expr)
                 .join(upload_lf, how='inner', left_on='cleaned_lino', right_on='license_number')
                 .filter(pl.col('Name').str.contains(pl.col('first_name')))
                 .with_columns(
                     pl.col('cleaned_lino').alias('State License Number')
                 )
-                .drop('cleaned_lino', 'first_name', 'last_name', 'dob')
+                .drop('first_name', 'last_name', 'dob')
             )
 
             upload_matches = pl.concat([upload_ez_match, upload_no_ez_match]).collect()
