@@ -125,6 +125,12 @@ if __name__ == '__main__':
     else:
         sys.exit('we should never be here')
 
+    assert type(sftp_host) is str
+    assert type(sftp_port) is int
+    assert type(sftp_user) is str
+    assert type(sftp_password) is str
+    assert type(remote_path) is str
+
     creds = auth.auth()
     service = build('drive', 'v3', credentials=creds)
     ssh = paramiko.SSHClient()
