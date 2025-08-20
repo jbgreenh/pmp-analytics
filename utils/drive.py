@@ -1,6 +1,7 @@
 import datetime
 import io
 import os
+from dataclasses import dataclass
 from typing import Literal, TypeAlias
 
 import polars as pl
@@ -54,7 +55,18 @@ def lazyframe_from_file_name(service, file_name:str, folder_id:str, drive_ft:Dri
     file.seek(0) # after writing, pointer is at the end of the stream
     return pl.scan_csv(file, **kwargs)
 
-def get_latest_uploaded(service, folder_id:str, drive_ft:DriveFileType, **kwargs) -> tuple[pl.LazyFrame, datetime.date]:
+@dataclass
+class LatestFile:
+    """
+    a dataclass containing a lazyframe and the created at timestamp from google drive
+
+    attributes: 
+        `lf`: the lazyframe
+        `created_at`: the created at timestamp
+    """
+    lf: pl.LazyFrame
+    created_at: datetime.datetime
+def get_latest_uploaded(service, folder_id:str, drive_ft:DriveFileType, **kwargs) -> LatestFile:
     try:
         results = service.files().list( q=f"'{folder_id}' in parents and trashed=false",
             supportsAllDrives=True, includeItemsFromAllDrives=True,
@@ -89,7 +101,7 @@ def get_latest_uploaded(service, folder_id:str, drive_ft:DriveFileType, **kwargs
         raise Exception(f'google drive error: {error}')
 
     file.seek(0) # after writing, pointer is at the end of the stream
-    return pl.scan_csv(file, **kwargs), file_ct
+    return LatestFile(lf=pl.scan_csv(file, **kwargs), created_at=file_ct)
 
 def lazyframe_from_id_and_sheetname(service, file_id:str, sheet_name:str, **kwargs) -> pl.LazyFrame:
     """
