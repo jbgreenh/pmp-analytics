@@ -3,6 +3,7 @@ import io
 import os
 from dataclasses import dataclass
 from typing import Literal, TypeAlias
+from zoneinfo import ZoneInfo
 
 import polars as pl
 from dotenv import load_dotenv
@@ -62,7 +63,7 @@ class LatestFile:
 
     attributes: 
         `lf`: the lazyframe
-        `created_at`: the created at timestamp
+        `created_at`: the created at timestamp in phx time
     """
     lf: pl.LazyFrame
     created_at: datetime.datetime
@@ -79,7 +80,12 @@ def get_latest_uploaded(service, folder_id:str, drive_ft:DriveFileType, **kwargs
         if files:
             file_id = files[0]['id']
             file_name = files[0]['name']
+
             file_ct = files[0]['createdTime']
+            file_ts = datetime.datetime.strptime(file_ct, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=ZoneInfo('UTC'))
+            phx_tz = ZoneInfo('America/Phoenix')
+            phx_ts = file_ts.astimezone(phx_tz)
+
             try:
                 if drive_ft == 'csv':
                     request = service.files().get_media(fileId=file_id)
@@ -101,7 +107,7 @@ def get_latest_uploaded(service, folder_id:str, drive_ft:DriveFileType, **kwargs
         raise Exception(f'google drive error: {error}')
 
     file.seek(0) # after writing, pointer is at the end of the stream
-    return LatestFile(lf=pl.scan_csv(file, **kwargs), created_at=file_ct)
+    return LatestFile(lf=pl.scan_csv(file, **kwargs), created_at=phx_ts)
 
 def lazyframe_from_id_and_sheetname(service, file_id:str, sheet_name:str, **kwargs) -> pl.LazyFrame:
     """
