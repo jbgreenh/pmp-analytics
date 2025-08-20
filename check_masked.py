@@ -24,9 +24,9 @@ year_folder = drive.folder_id_from_name(service, folder_name=f'{mask_year}', par
 prev_year_folder = drive.folder_id_from_name(service, folder_name=f'{prev_year}', parent_id=folder)
 
 mask_fn = f'AZ_{mask_year}{str(mask_month).zfill(2)}_masked.csv'
-mask_file = drive.lazyframe_from_file_name_csv(service, file_name=mask_fn, folder_id=year_folder, separator='|', infer_schema_length=None).collect()
+mask_file = drive.lazyframe_from_file_name(service, file_name=mask_fn, folder_id=year_folder, drive_ft='csv', separator='|', infer_schema_length=None).collect()
 prev_fn = f'AZ_{prev_year}{str(prev_month).zfill(2)}_masked.csv'
-prev_file = drive.lazyframe_from_file_name_csv(service, file_name=prev_fn, folder_id=prev_year_folder, separator='|', infer_schema_length=None).collect()
+prev_file = drive.lazyframe_from_file_name(service, file_name=prev_fn, folder_id=prev_year_folder, drive_ft='csv', separator='|', infer_schema_length=None).collect()
 
 print('-----')
 print(f'comparing a:{mask_fn} and b:{prev_fn}...')

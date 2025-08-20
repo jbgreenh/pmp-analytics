@@ -1,14 +1,16 @@
 import datetime
 import io
 import os
+from typing import Literal, TypeAlias
 
 import polars as pl
 from dotenv import load_dotenv
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 
+DriveFileType: TypeAlias = Literal['sheet', 'csv']
 
-def lazyframe_from_file_name_csv(service, file_name:str, folder_id:str, **kwargs) -> pl.LazyFrame:
+def lazyframe_from_file_name(service, file_name:str, folder_id:str, drive_ft:DriveFileType, **kwargs) -> pl.LazyFrame:
     """
         return a lazyframe of the csv in the provided folder
 
@@ -30,7 +32,10 @@ def lazyframe_from_file_name_csv(service, file_name:str, folder_id:str, **kwargs
         if files:
             file_id = files[0]['id']
             try:
-                request = service.files().get_media(fileId=file_id)
+                if drive_ft == 'csv':
+                    request = service.files().get_media(fileId=file_id)
+                elif drive_ft == 'sheet':
+                    request = service.files().export_media(fileId=file_id, mimeType='text/csv')
             except HttpError as error:
                 raise Exception(f'error checking google drive: {error}')
         else:
@@ -49,33 +54,29 @@ def lazyframe_from_file_name_csv(service, file_name:str, folder_id:str, **kwargs
     file.seek(0) # after writing, pointer is at the end of the stream
     return pl.scan_csv(file, **kwargs)
 
-
-def lazyframe_from_file_name_sheet(service, file_name:str, folder_id:str, **kwargs) -> pl.LazyFrame:
-    """
-        return a lazyframe of the sheet in the provided folder
-
-    args:
-        service: an authorized google service
-        file_name: the file name of the google sheet
-        folder_id: the parent folder id
-        **kwargs: kwargs for `pl.read_csv()`
-
-    returns:
-       a pl.LazyFrame with the contents of the sheet
-    """
+def get_latest_uploaded(service, folder_id:str, drive_ft:DriveFileType, **kwargs) -> tuple[pl.LazyFrame, datetime.date]:
     try:
-        results = service.files().list(q=f"name = '{file_name}' and '{folder_id}' in parents",
-                                    supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
+        results = service.files().list( q=f"'{folder_id}' in parents and trashed=false",
+            supportsAllDrives=True, includeItemsFromAllDrives=True,
+            orderBy="createdTime desc",
+            fields="files(id, name, createdTime)"
+        ).execute()
+
         files = results.get('files', [])
         file_id = None
         if files:
             file_id = files[0]['id']
+            file_name = files[0]['name']
+            file_ct = files[0]['createdTime']
             try:
-                request = service.files().export_media(fileId=file_id, mimeType='text/csv')
+                if drive_ft == 'csv':
+                    request = service.files().get_media(fileId=file_id)
+                elif drive_ft == 'sheet':
+                    request = service.files().export_media(fileId=file_id, mimeType='text/csv')
             except HttpError as error:
                 raise Exception(f'error checking google drive: {error}')
         else:
-            raise Exception(f'no file found with name: {file_name} in folder with id: {folder_id}')
+            raise Exception(f'no files found in folder with id: {folder_id}')
 
         file = io.BytesIO()
         downloader = MediaIoBaseDownload(file, request)
@@ -88,8 +89,7 @@ def lazyframe_from_file_name_sheet(service, file_name:str, folder_id:str, **kwar
         raise Exception(f'google drive error: {error}')
 
     file.seek(0) # after writing, pointer is at the end of the stream
-    return pl.scan_csv(file, **kwargs)
-
+    return pl.scan_csv(file, **kwargs), file_ct
 
 def lazyframe_from_id_and_sheetname(service, file_id:str, sheet_name:str, **kwargs) -> pl.LazyFrame:
     """

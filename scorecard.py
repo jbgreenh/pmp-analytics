@@ -16,12 +16,12 @@ def pull_files(service, last_month):
     ob_file_name = f'AZ_Dispensations_{lm_yr}{lm_mo}_opioid_benzo.csv'
 
     folder_id = os.environ.get('DISPENSATIONS_47_FOLDER')
-    disp = drive.lazyframe_from_file_name_csv(service=service, file_name=file_name, folder_id=folder_id, separator='|', infer_schema_length=10000)
-    ob_disp = drive.lazyframe_from_file_name_csv(service=service, file_name=ob_file_name, folder_id=folder_id, separator='|', infer_schema_length=10000)
+    disp = drive.lazyframe_from_file_name(service=service, file_name=file_name, folder_id=folder_id, drive_ft='csv', separator='|', infer_schema_length=10000)
+    ob_disp = drive.lazyframe_from_file_name(service=service, file_name=ob_file_name, folder_id=folder_id, drive_ft='csv', separator='|', infer_schema_length=10000)
 
     patient_req_id = os.environ.get('PATIENT_REQUESTS_FOLDER')
     requests_folder_id = drive.folder_id_from_name(service=service, folder_name=f'AZ_PtReqByProfile_{lm_yr}{lm_mo}', parent_id=patient_req_id)
-    requests = drive.lazyframe_from_file_name_csv(service=service, file_name='Prescriber.csv', folder_id=requests_folder_id, separator='|', infer_schema_length=10000)
+    requests = drive.lazyframe_from_file_name(service=service, file_name='Prescriber.csv', folder_id=requests_folder_id, drive_ft='csv', separator='|', infer_schema_length=10000)
 
     return disp, ob_disp, requests
 

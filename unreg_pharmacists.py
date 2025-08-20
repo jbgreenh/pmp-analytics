@@ -30,7 +30,7 @@ def pull_inspection_list(file_name:str|None=None) -> pl.LazyFrame:
     folder_id = os.environ.get('PHARMACIST_REG_FOLDER')
 
     folder_id = drive.folder_id_from_name(service=service, folder_name=lm_yr, parent_id=folder_id)
-    return drive.lazyframe_from_file_name_sheet(service=service, file_name=file_name, folder_id=folder_id, infer_schema_length=10000)
+    return drive.lazyframe_from_file_name(service=service, file_name=file_name, folder_id=folder_id, drive_ft='sheet', infer_schema_length=10000)
 
 
 def registration(inspection_list:pl.LazyFrame) -> pl.LazyFrame:
