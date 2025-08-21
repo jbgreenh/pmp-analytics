@@ -31,7 +31,7 @@ class BoardInfo:
         `board_emails`: a `str` with a comma seperated list of the contact email(s) for the board
         `uploads_folder`: a `str` with the google drive folder id for the board's respective uploads folder
         `upload_skip_rows`: an `int` indicating the number of rows to skip when reading the upload file
-        `upload_file_type`: an `UploadFileType` indicating the file type of the upload file 
+        `upload_file_type`: an `UploadFileType` indicating of the upload file type (whoa)
         `upload_select_expr`: an expression for getting column names in order, with the correct dtypes, named properly, etc.
         `upload_filter_expr`: an expression for filtering the upload file
         `cleaned_license_expr`: an expression for cleaning license numbers, alias must be `cleaned_lino`: eg `(pl.lit('OPT-') + pl.col('State License Number').str.replace_all('[^0-9]', '').str.zfill(6)).alias('cleaned_lino')`
@@ -282,7 +282,7 @@ def add_dfs_to_board_info(service, unreg_presc:pl.LazyFrame, board_info:dict) ->
             upload_no_match.write_csv(no_match_fp)
             print(f'{no_match_fp} written')
 
-            board_dict.board_df = upload_matches.drop('SSN', 'Tax ID')
+            board_dict.board_df = upload_matches.drop('SSN', 'Tax ID') # , cleaned_lino | drop after testing
             #TODO: see above todo
         boards_dir = unreg_dir / 'boards'
         boards_dir.mkdir(parents=True, exist_ok=True)
