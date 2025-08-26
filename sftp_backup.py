@@ -125,17 +125,17 @@ if __name__ == '__main__':
     else:
         sys.exit('we should never be here')
 
-    assert type(sftp_host) is str
-    assert type(sftp_port) is int
-    assert type(sftp_user) is str
-    assert type(sftp_password) is str
-    assert type(remote_path) is str
+    assert isinstance(sftp_host, str), '(PMP_)SFTP_HOST not found'
+    assert isinstance(sftp_port, str), '(PMP_)SFTP_PORT not found'
+    assert isinstance(sftp_user, str), '(PMP_)SFTP_USERNAME not found'
+    assert isinstance(sftp_password, str), '(PMP_)SFTP_PASSWORD not found'
+    assert isinstance(remote_path, str), '(PMP_)SFTP_REMOTE_PATH not found'
 
     creds = auth.auth()
     service = build('drive', 'v3', credentials=creds)
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(hostname=sftp_host, port=sftp_port, username=sftp_user, password=sftp_password)
+    ssh.connect(hostname=sftp_host, port=int(sftp_port), username=sftp_user, password=sftp_password)
     sftp = ssh.open_sftp()
 
     vendor = "vendor" if args.vendor else "pmp"

@@ -13,7 +13,7 @@ service = build('drive', 'v3', credentials=creds)
 load_dotenv()
 
 sheet_id = os.environ.get('EXCLUDED_NDCS_FILE')
-assert type(sheet_id) is  str
+assert isinstance(sheet_id, str), 'EXCLUDED_NDCS_FILE not found'
 
 excluded_ndcs = drive.lazyframe_from_id_and_sheetname(service, sheet_id, 'excluded', infer_schema_length=0)
 

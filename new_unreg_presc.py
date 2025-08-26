@@ -58,15 +58,15 @@ def get_board_contacts(service) -> dict:
         a dictionary with a board name as the key and BoardInfo (with default uploads_folder, cleaned_license_expr, and board_df) as the value
     """
     contacts_file = os.environ.get('BOARD_CONTACTS_FILE')
-    assert type(contacts_file) is str
+    assert isinstance(contacts_file, str), 'BOARD_CONTACTS_FILE not found'
     board_contacts = drive.lazyframe_from_id_and_sheetname(service=service, file_id=contacts_file, sheet_name='registration', infer_schema_length=100).collect()
     boards = board_contacts['Board'].to_list()
     boards_dict = {}
     for board in boards:
         bn = board_contacts.filter(pl.col('Board') == board)['Board Name'].first()
-        assert(type(bn) is str)
+        assert isinstance(bn, str), 'Board Name not found'
         be = board_contacts.filter(pl.col('Board') == board)['Email'].first()
-        assert(type(be) is str)
+        assert isinstance(be, str), 'Board Email not found'
         boards_dict[board] = BoardInfo(board_name=bn, board_emails=be)
     return boards_dict
 
@@ -123,9 +123,9 @@ def infer_board(service, unreg_deas:pl.LazyFrame) -> pl.LazyFrame:
         a lazyframe of unregistered prescribers with inferred degrees and board names
     """
     ex_degs_file = os.environ.get('EXCLUDE_DEGS_FILE')
-    assert type(ex_degs_file) is str
+    assert isinstance(ex_degs_file, str), 'EXCLUDE_DEGS_FILE not found'
     deg_board_file = os.environ.get('DEG_BOARD_FILE')
-    assert type(deg_board_file) is str
+    assert isinstance(deg_board_file, str), 'DEG_BOARD_FILE not found'
 
     exclude_degs = drive.lazyframe_from_id_and_sheetname(service=service, file_id=ex_degs_file, sheet_name='exclude_degs', infer_schema_length=100)
     deg_exclude = exclude_degs.collect()['deg'].to_list()
@@ -173,7 +173,7 @@ def update_board_info_with_uploaders(board_contacts:dict) -> dict:
         a dict of board contacts with added infor for uploaders
     """
     opto_folder = os.environ.get('OPTOMETRY_UPLOADS_FOLDER')
-    assert type(opto_folder) is str
+    assert isinstance(opto_folder, str), 'OPTOMETRY_UPLOADS_FOLDER not found'
     opto_select = (
         pl.col('First Name').str.to_uppercase().alias('first_name'),
         pl.col('Last Name').str.to_uppercase().alias('last_name'),
@@ -195,7 +195,7 @@ def update_board_info_with_uploaders(board_contacts:dict) -> dict:
     board_contacts['Optometry'].cleaned_license_expr = opto_clean
 
     osteo_folder = os.environ.get('OSTEOPATHIC_UPLOADS_FOLDER')
-    assert type(osteo_folder) is str
+    assert isinstance(osteo_folder, str), 'OSTEOPATHIC_UPLOADS_FOLDER not found'
     osteo_ft = 'csv'
     osteo_select = (
         pl.col('registrant_first_name').str.to_uppercase().alias('first_name'),
