@@ -1,6 +1,7 @@
 **/*.xlsx
 **/*.xls
 **/*.csv
+**/*.CSV
 **/*.txt
 **/*.json
 **/*.pdf
