@@ -40,3 +40,5 @@ indent-style = 'space'
 
 [tool.basedpyright]
 typeCheckingMode = 'standard'
+useLibraryCodeForTypes = true
+disableOrganizeImports = true
