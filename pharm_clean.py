@@ -1,13 +1,16 @@
-import polars as pl
-from datetime import date
 import os
-from dotenv import load_dotenv
+import pathlib
+from datetime import date
 
+import polars as pl
+from dotenv import load_dotenv
 from googleapiclient.discovery import build
+
 from utils import auth, drive, email
 
+
 def pharm_clean():
-    '''shape data for final report'''
+    """shape data for final report"""
     today = date.today().strftime("%m-%d-%Y")
 
     mp = (
@@ -27,7 +30,7 @@ def pharm_clean():
             pl.col('License/Permit #').str.strip_chars().str.to_uppercase()
         )
         .rename(
-            {'License/Permit #':'Pharmacy License Number'}
+            {'License/Permit #': 'Pharmacy License Number'}
         )
         .select(
             'Pharmacy License Number', 'Status', 'Business Name', 'Street Address', 'Apt/Suite #',
@@ -90,20 +93,21 @@ def pharm_clean():
     ddr.collect().write_csv(fname)
     return fname
 
+
 def main():
     creds = auth.auth()
     load_dotenv()
     fname = pharm_clean()
 
     service = build('drive', 'v3', credentials=creds)
-    folder_id = os.environ.get('PHARM_CLEAN_FOLDER')
+    folder_id = os.environ['PHARM_CLEAN_FOLDER']
 
     drive.upload_csv_as_sheet(service=service, file_name=fname, folder_id=folder_id)
 
-    os.remove(fname)
+    pathlib.Path(fname).unlink()
 
-    sender = os.environ.get('EMAIL_DATA')
-    to = os.environ.get('EMAIL_COMPLIANCE')
+    sender = os.environ['EMAIL_DATA']
+    to = os.environ['EMAIL_COMPLIANCE']
     subject = 'delinquent submitters cleanup complete'
     # leaving links out as requested
     message_txt = 'hello, the weekly delinquent data submitters cleanup is complete\n\nthank you,\n\ndata team'
@@ -113,6 +117,6 @@ def main():
     email_service = build('gmail', 'v1', credentials=creds)
     email.send_email(service=email_service, message=message)
 
+
 if __name__ == '__main__':
     main()
-

@@ -6,7 +6,7 @@ import polars as pl
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
-from utils import email, auth
+from utils import auth, email
 
 last_mo = date.today().replace(day=1) - timedelta(days=1)
 
@@ -50,10 +50,10 @@ dtt = s_to_t.select('days_to_tech').describe()
 dttfe = s_to_t.select('days_to_tech_from_exp').describe()
 
 load_dotenv()
-sup_sheet = os.environ.get('SUPERSEDED_FILE')
-to = os.environ.get('EMAIL_SUP')
-sender = os.environ.get('EMAIL_DATA')
-signature = os.environ.get('EMAIL_DATA_SIG').replace(r'\n', '\n')
+sup_sheet = os.environ['SUPERSEDED_FILE']
+to = os.environ['EMAIL_SUP']
+sender = os.environ['EMAIL_DATA']
+signature = os.environ['EMAIL_DATA_SIG'].replace(r'\n', '\n')
 
 s_to_t = (
     s_to_t
@@ -94,4 +94,3 @@ message = email.create_message_with_attachments(sender=sender, to=to, subject=su
 
 email_service = build('gmail', 'v1', credentials=creds)
 email.send_email(service=email_service, message=message)
-

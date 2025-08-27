@@ -2,35 +2,43 @@ import argparse
 import re
 import sys
 from dataclasses import dataclass
-from datetime import datetime, date
+from datetime import date, datetime
 from pathlib import Path
-from dateutil.relativedelta import relativedelta
+from typing import Literal
+from zoneinfo import ZoneInfo
 
-from dotenv import load_dotenv
 import polars as pl
 import pymupdf
+from dateutil.relativedelta import relativedelta
 
 from utils import tableau
+
+PHX_TZ = ZoneInfo('America/Phoenix')
+
 
 @dataclass
 class SearchParameters:
     """
     class with search parameters for pulling tableau files
-    
+
     attributes:
-        `deas`: a list of dea numbers to search for
-        `start_date`: start date for search
-        `end_date`: end date for search
+        deas: a list of dea numbers to search for
+        start_date: start date for search
+        end_date: end date for search
         ``
     """
     deas: list[int]
     start_date: date
-    end_date:date
+    end_date: date
 
-def process_pdf(request_type):
-    log_fp = 'data/activity_request_log.txt'
-    with open(log_fp, 'w') as file:
-        pass # clear logs
+
+type RequestType = Literal['prescriber', 'dispenser', 'audit_trail']
+
+
+def process_pdf(request_type: RequestType) -> None:
+    log_fp = Path('data/activity_request_log.txt')
+    with log_fp.open('w', encoding='utf-8') as file:
+        pass  # clear logs
 
     if request_type == 'audit_trail':
         pdfs = Path(f'data/{request_type}')
@@ -51,7 +59,7 @@ def process_pdf(request_type):
                 print('---')
                 print(f'{pdf} does not have readable text')
                 print('attempting ocr...')
-                pdfocr = page.get_pixmap(matrix=pymupdf.Matrix(2,2)).pdfocr_tobytes()
+                pdfocr = page.get_pixmap(matrix=pymupdf.Matrix(2, 2)).pdfocr_tobytes()
                 page_text = pymupdf.open('pdf', pdfocr).load_page(0).get_text()
                 if not page_text:
                     print(f'{pdf} could not be read through ocr')
@@ -61,7 +69,7 @@ def process_pdf(request_type):
                 print('---')
                 print(f'could not find any deas in {pdf}')
                 print(f'see {log_fp}')
-                with open(log_fp, 'a') as file:
+                with log_fp.open('a', encoding='utf-8') as file:
                     file.write(f'---\ncould not find any deas in {pdf}\n:::\npage text:\n:::\n{page_text}\n---')
                 continue
             date_range = re.findall(r'(\d{1,2}/\d{1,2}/(?:\d{4}|\d{2}))\s*(?:-|through|to)\s*(\d{1,2}/\d{1,2}/(?:\d{4}|\d{2}))', page_text)
@@ -69,22 +77,21 @@ def process_pdf(request_type):
                 print('---')
                 print(f'could not find a daterange in {pdf}')
                 print(f'see {log_fp}')
-                with open(log_fp, 'a') as file:
+                with log_fp.open('a', encoding='utf-8') as file:
                     file.write(f'---\ncould not find a daterange in {pdf}\n:::\npage text:\n:::\n{page_text}\n---')
                 continue
-            if len(re.split('/', date_range[0][0])[2]) == 2:
-                start_date = datetime.strptime(date_range[0][0], '%m/%d/%y').date()
+            if len(date_range[0][0].split('/')[2]) == 2:    # noqa: PLR2004 checking if year is 2 or 4 chars
+                start_date = datetime.strptime(date_range[0][0], '%m/%d/%y').astimezone(tz=PHX_TZ).date()
             else:
-                start_date = datetime.strptime(date_range[0][0], '%m/%d/%Y').date()
+                start_date = datetime.strptime(date_range[0][0], '%m/%d/%Y').astimezone(tz=PHX_TZ).date()
 
-            seven_years_ago = date.today() - relativedelta(years=7)
-            if start_date < seven_years_ago:
-                start_date = seven_years_ago
+            seven_years_ago = datetime.now(tz=PHX_TZ).date() - relativedelta(years=7)
+            start_date = max(start_date, seven_years_ago)
 
-            if len(re.split('/', date_range[0][1])[2]) == 2:
-                end_date = datetime.strptime(date_range[0][1], '%m/%d/%y').date()
+            if len(date_range[0][1].split('/')[2]) == 2:    # noqa: PLR2004
+                end_date = datetime.strptime(date_range[0][1], '%m/%d/%y').astimezone(tz=PHX_TZ).date()
             else:
-                end_date = datetime.strptime(date_range[0][1], '%m/%d/%Y').date()
+                end_date = datetime.strptime(date_range[0][1], '%m/%d/%Y').astimezone(tz=PHX_TZ).date()
 
             print('---')
             print(pdf)
@@ -95,7 +102,8 @@ def process_pdf(request_type):
     else:
         sys.exit(f'no pdfs in data/{request_type}/ folder')
 
-def activity_request(request_type:str, params:SearchParameters):
+
+def activity_request(request_type: RequestType, params: SearchParameters):
     if request_type == 'audit_trail':
         workbook_name = f'dea_{request_type}'
         print(f'finding luid for {workbook_name} report...')
@@ -114,7 +122,7 @@ def activity_request(request_type:str, params:SearchParameters):
         user_ids = []
         for dea in params.deas:
             filters = {
-                'search_dea':dea
+                'search_dea': dea
             }
 
             print(f'pulling userids file for {dea}...')
@@ -123,8 +131,7 @@ def activity_request(request_type:str, params:SearchParameters):
             if user_ids_lf is None:
                 print(f'found no user ids for {dea}')
                 continue
-            else:
-                user_ids_df = user_ids_lf.collect()
+            user_ids_df = user_ids_lf.collect()
 
             if user_ids_df.height > 1:
                 user_ids_df = user_ids_df.filter(pl.col('Active') == 'Y')
@@ -135,16 +142,16 @@ def activity_request(request_type:str, params:SearchParameters):
 
             user_ids.append(user_ids_df['User ID'].first())
 
-        for id in set(user_ids):
+        for user_id in set(user_ids):
             filters = {
-                'search_trueid':id, 'search_start_date':params.start_date, 'search_end_date':params.end_date
+                'search_trueid': user_id, 'search_start_date': params.start_date, 'search_end_date': params.end_date
             }
-            user_name = users_lf.filter(pl.col('User ID') == id).collect()['User Full Name'].first()
+            user_name = users_lf.filter(pl.col('User ID') == user_id).collect()['User Full Name'].first()
 
-            print(f'pulling searches for {id}...')
+            print(f'pulling searches for {user_id}...')
             searches_lf = tableau.lazyframe_from_view_id(searches_luid, filters, infer_schema=False)
             if searches_lf is None:
-                print(f'{id} had no searches from {params.start_date} to {params.end_date}')
+                print(f'{user_id} had no searches from {params.start_date} to {params.end_date}')
                 continue
 
             searches_lf = (
@@ -169,14 +176,14 @@ def activity_request(request_type:str, params:SearchParameters):
             searches_lf.collect().write_csv(fn)
             print(f'{fn} written')
 
-    else: # prescriber or dispenser activity request
+    else:  # prescriber or dispenser activity request
         print(f'finding luid for {request_type} activity report...')
         luid = tableau.find_view_luid(f'{request_type}_activity_request', 'DEA Records Request')
         print(f'luid found: {luid}')
 
         for dea in params.deas:
             filters = {
-                'dea':dea, 'start_date':params.start_date, 'end_date':params.end_date
+                'dea': dea, 'start_date': params.start_date, 'end_date': params.end_date
             }
             if request_type == 'prescriber':
                 lf = tableau.lazyframe_from_view_id(luid, filters=filters, infer_schema=False)
@@ -286,7 +293,7 @@ def activity_request(request_type:str, params:SearchParameters):
             try:
                 df = lf.collect()
             except pl.exceptions.NoDataError:
-                msg_dict = {'message':f'no results found for {file_name}'}
+                msg_dict = {'message': f'no results found for {file_name}'}
                 pl.DataFrame(msg_dict).write_csv(file_path)
                 print(f'{file_path} was empty, empty file written')
             except Exception as e:
@@ -295,20 +302,18 @@ def activity_request(request_type:str, params:SearchParameters):
                 df.write_csv(file_path)
                 print(f'{file_path} written')
 
-def main():
-    load_dotenv()
+
+if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='pull a request')
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('-p', '--prescriber', action='store_true', help='pull prescriber activity request')
     group.add_argument('-d', '--dispenser', action='store_true', help='pull dispenser activity request')
-    group.add_argument('-at', '--audit-trail', action ='store_true', help='pull audit trail')
+    group.add_argument('-at', '--audit-trail', action='store_true', help='pull audit trail')
     args = parser.parse_args()
+
     if args.prescriber:
         process_pdf('prescriber')
     elif args.dispenser:
         process_pdf('dispenser')
     elif args.audit_trail:
         process_pdf('audit_trail')
-
-if __name__ == '__main__':
-    main()

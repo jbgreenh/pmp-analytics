@@ -5,21 +5,23 @@ import sys
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from pathlib import Path
-from typing import Literal, TypeAlias
+from typing import Literal
 from zoneinfo import ZoneInfo
 
 import polars as pl
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
-from utils import auth, deas, drive  #, email
+from utils import auth, deas, drive  # , email
 
 # from PyPDF2 import PdfReader, PdfWriter
 
-UploadFileType: TypeAlias = Literal['sheet', 'csv', 'none']
+type UploadFileType = Literal['sheet', 'csv', 'none']
 
-def ft_default_factory() -> UploadFileType:
+
+def ft_default_factory() -> UploadFileType:  # noqa: D103
     return 'none'
+
 
 @dataclass
 class BoardInfo:
@@ -27,15 +29,15 @@ class BoardInfo:
     a class with the info needed to email the boards
 
     args:
-        `board_name`: a `str` with the name of the board, eg: 'Arizona Osteopathic Board'
-        `board_emails`: a `str` with a comma seperated list of the contact email(s) for the board
-        `uploads_folder`: a `str` with the google drive folder id for the board's respective uploads folder
-        `upload_skip_rows`: an `int` indicating the number of rows to skip when reading the upload file
-        `upload_file_type`: an `UploadFileType` indicating of the upload file type (whoa)
-        `upload_select_expr`: an expression for getting column names in order, with the correct dtypes, named properly, etc.
-        `upload_filter_expr`: an expression for filtering the upload file
-        `cleaned_license_expr`: an expression for cleaning license numbers, alias must be `cleaned_lino`: eg `(pl.lit('OPT-') + pl.col('State License Number').str.replace_all('[^0-9]', '').str.zfill(6)).alias('cleaned_lino')`
-        `board_df`: a `pl.DataFrame` with all unregistered prescribers from the relevant board
+        board_name: a `str` with the name of the board, eg: 'Arizona Osteopathic Board'
+        board_emails: a `str` with a comma seperated list of the contact email(s) for the board
+        uploads_folder: a `str` with the google drive folder id for the board's respective uploads folder
+        upload_skip_rows: an `int` indicating the number of rows to skip when reading the upload file
+        upload_file_type: an `UploadFileType` indicating of the upload file type (whoa)
+        upload_select_expr: an expression for getting column names in order, with the correct dtypes, named properly, etc.
+        upload_filter_expr: an expression for filtering the upload file
+        cleaned_license_expr: an expression for cleaning license numbers, alias must be `cleaned_lino`: eg `(pl.lit('OPT-') + pl.col('State License Number').str.replace_all('[^0-9]', '').str.zfill(6)).alias('cleaned_lino')`
+        board_df: a `pl.DataFrame` with all unregistered prescribers from the relevant board
     """
     board_name: str
     board_emails: str
@@ -47,17 +49,18 @@ class BoardInfo:
     cleaned_license_expr: pl.Expr = field(default_factory=pl.Expr)
     board_df: pl.DataFrame = field(default_factory=pl.DataFrame)
 
+
 def get_board_contacts(service) -> dict:
     """
     pulls board names and emails from the `BOARD_CONTACTS_FILE`
 
     args:
-        `service`: a google drive service
+        service: a google drive service
 
     returns:
         a dictionary with a board name as the key and BoardInfo (with default uploads_folder, cleaned_license_expr, and board_df) as the value
     """
-    contacts_file = os.environ.get('BOARD_CONTACTS_FILE')
+    contacts_file = os.environ['BOARD_CONTACTS_FILE']
     assert isinstance(contacts_file, str), 'BOARD_CONTACTS_FILE not found'
     board_contacts = drive.lazyframe_from_id_and_sheetname(service=service, file_id=contacts_file, sheet_name='registration', infer_schema_length=100).collect()
     boards = board_contacts['Board'].to_list()
@@ -70,12 +73,13 @@ def get_board_contacts(service) -> dict:
         boards_dict[board] = BoardInfo(board_name=bn, board_emails=be)
     return boards_dict
 
+
 def check_deas_for_registration(service) -> pl.LazyFrame:
     """
     return a lazyframe with DEA registrations that are not also registered in awarxe
 
     args:
-        `service`: a google drive service
+        service: a google drive service
 
     returns:
         a `LazyFrame` with unregistered DEAs
@@ -100,7 +104,7 @@ def check_deas_for_registration(service) -> pl.LazyFrame:
         .with_columns(pl.col(['Date of Original Registration', 'Expiration Date']).str.to_date('%Y%m%d', strict=False))
         .filter(pl.col('Expiration Date') > today)
     )
-    unreg_presc = (
+    return (
         az_presc
         .filter(
             pl.col('DEA Number').str.strip_chars().str.to_uppercase().is_in(awarxe).not_()
@@ -109,23 +113,21 @@ def check_deas_for_registration(service) -> pl.LazyFrame:
             pl.col('Name').str.contains_any(['DVM', 'VMD']).not_() & pl.col('Degree').str.contains_any(['DVM', 'VMD']).not_()
         )
     )
-    return unreg_presc
 
-def infer_board(service, unreg_deas:pl.LazyFrame) -> pl.LazyFrame:
+
+def infer_board(service, unreg_deas: pl.LazyFrame) -> pl.LazyFrame:
     """
     infer degrees and then board, prints the number of deas for which a board was unable to be inferred
 
     args:
-        `service`: a google drive service
-        `unreg_deas`: a lazyframe of unregistered prescribers returned by `check_deas_for_registration()`
+        service: a google drive service
+        unreg_deas: a lazyframe of unregistered prescribers returned by `check_deas_for_registration()`
 
     returns:
         a lazyframe of unregistered prescribers with inferred degrees and board names
     """
-    ex_degs_file = os.environ.get('EXCLUDE_DEGS_FILE')
-    assert isinstance(ex_degs_file, str), 'EXCLUDE_DEGS_FILE not found'
-    deg_board_file = os.environ.get('DEG_BOARD_FILE')
-    assert isinstance(deg_board_file, str), 'DEG_BOARD_FILE not found'
+    ex_degs_file = os.environ['EXCLUDE_DEGS_FILE']
+    deg_board_file = os.environ['DEG_BOARD_FILE']
 
     exclude_degs = drive.lazyframe_from_id_and_sheetname(service=service, file_id=ex_degs_file, sheet_name='exclude_degs', infer_schema_length=100)
     deg_exclude = exclude_degs.collect()['deg'].to_list()
@@ -162,7 +164,8 @@ def infer_board(service, unreg_deas:pl.LazyFrame) -> pl.LazyFrame:
     print(f'no board could be found or inferred for {still_no_board} of {all_degs.collect().height} deas')
     return all_degs.filter(pl.col('board').is_not_null())
 
-def update_board_info_with_uploaders(board_contacts:dict) -> dict:
+
+def update_board_info_with_uploaders(board_contacts: dict) -> dict:
     """
     add uploader information to the board contacts to allow for custom handling of boards that provide an upload
 
@@ -172,8 +175,7 @@ def update_board_info_with_uploaders(board_contacts:dict) -> dict:
     returns:
         a dict of board contacts with added infor for uploaders
     """
-    opto_folder = os.environ.get('OPTOMETRY_UPLOADS_FOLDER')
-    assert isinstance(opto_folder, str), 'OPTOMETRY_UPLOADS_FOLDER not found'
+    opto_folder = os.environ['OPTOMETRY_UPLOADS_FOLDER']
     opto_select = (
         pl.col('First Name').str.to_uppercase().alias('first_name'),
         pl.col('Last Name').str.to_uppercase().alias('last_name'),
@@ -194,8 +196,7 @@ def update_board_info_with_uploaders(board_contacts:dict) -> dict:
     board_contacts['Optometry'].upload_filter_expr = opto_filter
     board_contacts['Optometry'].cleaned_license_expr = opto_clean
 
-    osteo_folder = os.environ.get('OSTEOPATHIC_UPLOADS_FOLDER')
-    assert isinstance(osteo_folder, str), 'OSTEOPATHIC_UPLOADS_FOLDER not found'
+    osteo_folder = os.environ['OSTEOPATHIC_UPLOADS_FOLDER']
     osteo_ft = 'csv'
     osteo_select = (
         pl.col('registrant_first_name').str.to_uppercase().alias('first_name'),
@@ -210,7 +211,7 @@ def update_board_info_with_uploaders(board_contacts:dict) -> dict:
         .then(pl.col('State License Number').str.to_uppercase())
         .otherwise(pl.col('State License Number').str.replace_all('[^0-9]', '').str.zfill(6)).alias('cleaned_lino')
     )
-    #TODO: check if this works properly once we get the real upload with leading 0s (sample doesn't have them)
+    # TODO: check if this works properly once we get the real upload with leading 0s (sample doesn't have them)
 
     board_contacts['Osteopathic'].uploads_folder = osteo_folder
     board_contacts['Osteopathic'].upload_file_type = osteo_ft
@@ -220,7 +221,8 @@ def update_board_info_with_uploaders(board_contacts:dict) -> dict:
 
     return board_contacts
 
-def add_dfs_to_board_info(service, unreg_presc:pl.LazyFrame, board_info:dict) -> dict:
+
+def add_dfs_to_board_info(service, unreg_presc: pl.LazyFrame, board_info: dict) -> dict:
     unreg_dir = Path('data/unreg_presc/')
     unreg_dir.mkdir(parents=True, exist_ok=True)
     for board, board_dict in board_info.items():
@@ -232,7 +234,7 @@ def add_dfs_to_board_info(service, unreg_presc:pl.LazyFrame, board_info:dict) ->
             lf = latest_file.lf
             now = datetime.now(ZoneInfo('America/Phoenix'))
             age = now - latest_file.created_at
-            age_hours = round(age.seconds/60/60,2) # don't need total_seconds() because of how we handle days below
+            age_hours = round(age.seconds / 60 / 60, 2)  # don't need total_seconds() because of how we handle days below
             if age.days > 1:
                 print(f'warning: {board} file is over a day old! using file created at {latest_file.created_at}, which was {age.days} days and {age_hours} hours ago')
             else:
@@ -282,8 +284,8 @@ def add_dfs_to_board_info(service, unreg_presc:pl.LazyFrame, board_info:dict) ->
             upload_no_match.write_csv(no_match_fp)
             print(f'{no_match_fp} written')
 
-            board_dict.board_df = upload_matches.drop('SSN', 'Tax ID') # , cleaned_lino | drop after testing
-            #TODO: see above todo
+            board_dict.board_df = upload_matches.drop('SSN', 'Tax ID')  # , cleaned_lino | drop after testing
+            # TODO: see above todo
         boards_dir = unreg_dir / 'boards'
         boards_dir.mkdir(parents=True, exist_ok=True)
         board_fp = boards_dir / f'{board.lower()}_unreg.csv'
@@ -306,6 +308,7 @@ def main():
     board_info = update_board_info_with_uploaders(board_contacts)
 
     full_board_info = add_dfs_to_board_info(service, unregistered_w_boards, board_info)
+
 
 if __name__ == '__main__':
     main()

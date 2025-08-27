@@ -1,5 +1,9 @@
 import polars as pl
+
 from utils import deas
+
+# ruff: noqa: PLC1901
+# polars cols with empty string are not falsey
 
 mp = (
     pl.scan_csv('data/pharmacies.csv', infer_schema_length=10000)

@@ -1,14 +1,13 @@
+import calendar
 import os
 import sys
-import calendar
 from datetime import date
 
 import polars as pl
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
-from utils import auth, drive, deas
-
+from utils import auth, deas, drive
 
 TOP_PRESCRIBERS = 20    # number of prescribers with the most dispensations and no searches
 
@@ -29,7 +28,8 @@ def ordinal(n: int):
         suffix = ['th', 'st', 'nd', 'rd', 'th'][min(n % 10, 4)]
     return str(n) + suffix
 
-def input_str_to_date(month_name:str, year_str:str) -> date:
+
+def input_str_to_date(month_name: str, year_str: str) -> date:
     """
     converts the input string into a date at the first of the month
     eg january2024 to date(2024, 1, 1)
@@ -44,7 +44,8 @@ def input_str_to_date(month_name:str, year_str:str) -> date:
     month_num = list(calendar.month_name).index(month_name.title())
     return date(int(year_str), month_num, 1)
 
-def update_appearances(creds, sheet_id:str, update_appearances:pl.LazyFrame):
+
+def update_appearances(creds, sheet_id: str, update_appearances: pl.LazyFrame):
     """
     updates the appearances google sheet with the `new_appearances`
 
@@ -55,7 +56,7 @@ def update_appearances(creds, sheet_id:str, update_appearances:pl.LazyFrame):
     """
     range_name = 'appearances!A:B'
     service = build('sheets', 'v4', credentials=creds)
-    service.spreadsheets().values().clear(spreadsheetId=sheet_id,range=range_name).execute()
+    service.spreadsheets().values().clear(spreadsheetId=sheet_id, range=range_name).execute()
     data = [list(row) for row in update_appearances.collect().rows()]
     data.insert(0, ['final_id', 'appearance_date'])
     body = {
@@ -69,7 +70,8 @@ def update_appearances(creds, sheet_id:str, update_appearances:pl.LazyFrame):
     ).execute()
     print(f"{result.get('updatedCells')} cells updated.")
 
-def process_mu(appearance_month:date, input_file:str):
+
+def process_mu(appearance_month: date, input_file: str):
     """
     processes the mu results to remove prescribers notified as not in violation
     and adds information on how many times the prescriber has appeared on the
@@ -115,7 +117,7 @@ def process_mu(appearance_month:date, input_file:str):
     )
 
     appear = (
-        drive.lazyframe_from_id_and_sheetname(service=service, file_id=os.environ.get('APPEARANCES_FILE'), sheet_name='appearances', engine='xlsx2csv', infer_schema_length=0)
+        drive.lazyframe_from_id_and_sheetname(service=service, file_id=os.environ['APPEARANCES_FILE'], sheet_name='appearances', engine='xlsx2csv', infer_schema_length=0)
         .with_columns(
             pl.col('appearance_date').str.to_date('%Y-%-m-%-d')
         )
@@ -133,7 +135,7 @@ def process_mu(appearance_month:date, input_file:str):
         appear_combine
         .group_by('final_id')
         .len()
-        .rename({'len':'appearance'})
+        .rename({'len': 'appearance'})
     )
 
     # last appearance before this report
@@ -141,7 +143,7 @@ def process_mu(appearance_month:date, input_file:str):
         appear
         .group_by('final_id')
         .max()
-        .rename({'appearance_date':'last_appearance'})
+        .rename({'appearance_date': 'last_appearance'})
     )
 
     appear_stats = (
@@ -177,7 +179,8 @@ def process_mu(appearance_month:date, input_file:str):
 
     print(f'{filepath} written')
 
-    update_appearances(creds, os.environ.get('APPEARANCES_FILE'), update_appearances=appear_combine)
+    update_appearances(creds, os.environ['APPEARANCES_FILE'], update_appearances=appear_combine)
+
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
@@ -199,4 +202,3 @@ if __name__ == '__main__':
 
     appearance_month = input_str_to_date(month_name, year_str)
     process_mu(appearance_month, input_file)
-

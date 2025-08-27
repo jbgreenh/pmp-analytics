@@ -2,18 +2,17 @@ import os
 import sys
 
 import polars as pl
-from utils import tableau, auth, drive
-
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
+
+from utils import auth, drive, tableau
 
 creds = auth.auth()
 service = build('drive', 'v3', credentials=creds)
 
 load_dotenv()
 
-sheet_id = os.environ.get('EXCLUDED_NDCS_FILE')
-assert isinstance(sheet_id, str), 'EXCLUDED_NDCS_FILE not found'
+sheet_id = os.environ['EXCLUDED_NDCS_FILE']
 
 excluded_ndcs = drive.lazyframe_from_id_and_sheetname(service, sheet_id, 'excluded', infer_schema_length=0)
 
@@ -26,7 +25,7 @@ antagonists = (
     lf
     .join(excluded_ndcs, on='NDC', how='anti')
     .rename(
-        {'Generic Name':'drug'}
+        {'Generic Name': 'drug'}
     )
     .select('NDC', 'drug')
 )
@@ -44,12 +43,11 @@ else:
     new_ndcs.write_csv(new_fn)
     print(f'{new_fn} written')
 
-
     new_file = pl.concat([excluded_ndcs.collect(), new_ndcs])
 
     range_name = 'excluded!A:B'
     service = build('sheets', 'v4', credentials=creds)
-    service.spreadsheets().values().clear(spreadsheetId=sheet_id,range=range_name).execute()
+    service.spreadsheets().values().clear(spreadsheetId=sheet_id, range=range_name).execute()
     data = [list(row) for row in new_file.rows()]
     data.insert(0, ['NDC', 'drug'])
     body = {

@@ -1,11 +1,14 @@
 import os
-from datetime import date, timedelta
+import pathlib
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import paramiko
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
 from utils import auth, drive
+
 
 def get_last_sunday() -> date:
     """
@@ -14,16 +17,17 @@ def get_last_sunday() -> date:
     returns:
         a datetime.date for the last sunday
     """
-    today = date.today()
+    today = datetime.now(tz=ZoneInfo('America/Phoenix'))
     days_since_sunday = today.weekday() + 1
     return today - timedelta(days=days_since_sunday)
 
-def remove_oldest_file(sftp:paramiko.SFTPClient):
+
+def remove_oldest_file(sftp: paramiko.SFTPClient) -> None:
     """
     removes the oldest file from the current folder in the sftp
 
     args:
-        `sftp`: paramiko SFTPClient
+        sftp: paramiko SFTPClient
     """
     files = sftp.listdir_attr()
     oldest_file = min(files, key=lambda f: f.st_mtime)
@@ -31,14 +35,15 @@ def remove_oldest_file(sftp:paramiko.SFTPClient):
     sftp.remove(oldest_file.filename)
     print('file removed')
 
-def upload_latest_dhs_file(service, sftp:paramiko.SFTPClient, folder:str):
+
+def upload_latest_dhs_file(service, sftp: paramiko.SFTPClient, folder: str) -> None:
     """
     uploads the latest standard extract to the DHS sftp
 
     args:
-        `service`: google drive service
-        `sftp`: paramiko SFTPClient connected to the DHS sftp
-        `folder`: the google drive folder for the standard extracts
+        service: google drive service
+        sftp: paramiko SFTPClient connected to the DHS sftp
+        folder: the google drive folder for the standard extracts
     """
     last_sunday = get_last_sunday()
     file_name = last_sunday.strftime('AZ_%Y%m%d.csv')
@@ -47,24 +52,25 @@ def upload_latest_dhs_file(service, sftp:paramiko.SFTPClient, folder:str):
     print(f'writing {file_name} to sftp...')
     sftp.put(localpath=file_name, remotepath=file_name)
     print('file uploaded')
-    os.remove(file_name)
+    pathlib.Path(file_name).unlink()
 
-def main():
+
+if __name__ == '__main__':
     load_dotenv()
 
     creds = auth.auth()
     service = build('drive', 'v3', credentials=creds)
 
-    folder = os.environ.get('STANDARD_EXTRACT_FOLDER')
+    folder = os.environ['STANDARD_EXTRACT_FOLDER']
 
-    sftp_host = os.environ.get('SERVU_HOST')
-    sftp_port = os.environ.get('SERVU_PORT')
-    sftp_user = os.environ.get('SERVU_USERNAME')
-    sftp_password = os.environ.get('SERVU_PASSWORD')
+    sftp_host = os.environ['SERVU_HOST']
+    sftp_port = os.environ['SERVU_PORT']
+    sftp_user = os.environ['SERVU_USERNAME']
+    sftp_password = os.environ['SERVU_PASSWORD']
 
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(hostname=sftp_host, port=sftp_port, username=sftp_user, password=sftp_password)
+    ssh.connect(hostname=sftp_host, port=int(sftp_port), username=sftp_user, password=sftp_password)
     sftp = ssh.open_sftp()
 
     upload_latest_dhs_file(service, sftp, folder)
@@ -72,6 +78,3 @@ def main():
 
     sftp.close()
     ssh.close()
-
-if __name__ == '__main__':
-    main()
