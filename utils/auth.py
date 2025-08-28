@@ -13,17 +13,17 @@ def auth() -> google.oauth2.credentials.Credentials | google.auth.external_accou
     returns:
         creds: credentials for building google services
     """
-    # If modifying these scopes, delete the file token.json. scopes here: https://developers.google.com/identity/protocols/oauth2/scopes#drive
+    # if modifying these scopes, delete the file token.json. scopes here: https://developers.google.com/identity/protocols/oauth2/scopes#drive
     scopes = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/spreadsheets',
               'https://www.googleapis.com/auth/documents', 'https://www.googleapis.com/auth/gmail.send']
 
     creds = None
-    # The file token.json stores the user's access and refresh tokens, and is
+    # the file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
     # time.
     if Path('token.json').exists():
         creds = google.oauth2.credentials.Credentials.from_authorized_user_file('token.json', scopes)
-    # If there are no (valid) credentials available, let the user log in.
+    # if there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
@@ -31,6 +31,6 @@ def auth() -> google.oauth2.credentials.Credentials | google.auth.external_accou
             flow = InstalledAppFlow.from_client_secrets_file(
                 'credentials.json', scopes)
             creds = flow.run_local_server(port=0)
-        # Save the credentials for the next run
+        # save the credentials for the next run
         Path('token.json').write_text(creds.to_json(), encoding='utf-8')
     return creds
