@@ -1,5 +1,5 @@
-import datetime
 import os
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import google.auth.external_account_authorized_user
@@ -23,8 +23,8 @@ def pull_inspection_list(service, file_name: str | None = None) -> pl.LazyFrame:
         inspection_list: a LazyFrame with the inspection list to be checked for registration
     """
     if not file_name:
-        today = datetime.datetime.now(tz=ZoneInfo('America/Phoenix')).date()
-        last_month = today.replace(day=1) - datetime.timedelta(days=1)
+        today = datetime.now(tz=ZoneInfo('America/Phoenix')).date()
+        last_month = today.replace(day=1) - timedelta(days=1)
         lm_yr = str(last_month.year)
         lm_mo = str(last_month.month).zfill(2)
 
