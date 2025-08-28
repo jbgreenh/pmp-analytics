@@ -63,7 +63,6 @@ ignore = [
   "EM101",   # raw-string-in-exception
   "FIX002",  # line-contains-todo
   "ISC001",  # Conflicts with formatter ruff
-  "PLR0904", # Too many public methods (... > 20)
   "T201",    # Print found
   "TD002",   # Missing author in TODO `# TODO(<author_name>): ...`
   "TD003",   # missing-todo-link
@@ -72,7 +71,7 @@ ignore = [
 ]
 fixable = ["ALL"]
 unfixable = [
-  "D", # dont fix docstyle from others
+  # "D", # dont fix docstyle from others
 ]
 # allow unused variables when underscore-prefixed.
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
