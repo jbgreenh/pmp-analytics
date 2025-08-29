@@ -51,7 +51,7 @@ def lazyframe_from_view_id(view_id: str, filters: dict | None = None, **kwargs) 
 
 class IDIsNoneError(Exception):
     """custom exception for when `searched_view.id` is none"""
-    def __init__(self, message: str = 'id is None error') -> None:
+    def __init__(self, message: str = 'searched_view.id is empty') -> None:
         """initializes the error"""
         self.message = message
         super().__init__(self.message)
@@ -88,5 +88,5 @@ def find_view_luid(view_name: str, workbook_name: str) -> str:
         views = searched_workbook.views
         searched_view = next(view for view in views if view.name == view_name)
         if searched_view.id is None:
-            raise IDIsNoneError('searched_view.id is empty')
+            raise IDIsNoneError
         return searched_view.id
