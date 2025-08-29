@@ -100,8 +100,9 @@ the date at the beginning should be entered as an argument when running the scri
 python mu_extras.py january2024
 ```
 
-## naloxone
+## naloxone (archived)
 
+note: this script is no longer in use and will not be updated due to statute changes removing the requirement to report naloxone dispensations to the pmp  
 this script sends the weekly naloxone report to ADHS in an email  
 it also saves the weekly file at `data/naloxone_{today}.xlsx`.
 
