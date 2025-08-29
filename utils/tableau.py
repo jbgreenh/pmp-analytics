@@ -93,7 +93,7 @@ def find_view_luid(view_name: str, workbook_name: str) -> str:
         try:
             searched_view = next(view for view in views if view.name == view_name)
         except StopIteration as error:
-            msg = f'{view_name!r} not found in {workbook_name!r}'
+            msg = f'view {view_name!r} not found in workbook {workbook_name!r}'
             raise TableauLUIDNotFoundError(msg) from error
         if searched_view.id is None:
             msg = f'{searched_view} has None for id'
