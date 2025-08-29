@@ -29,7 +29,7 @@ class GoogleDriveNotFoundError(Exception):
         super().__init__(self.message)
 
 
-class InvalidDateError(Exception):
+class InvalidDateError(ValueError):
     """custom exception for early date"""
     def __init__(self, value: datetime.date) -> None:
         """initialize the error"""
