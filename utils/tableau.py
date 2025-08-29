@@ -86,7 +86,7 @@ def find_view_luid(view_name: str, workbook_name: str) -> str:
         try:
             searched_workbook = next(workbook for workbook in all_workbooks if workbook.name == workbook_name)
         except StopIteration as error:
-            msg = f'{workbook_name!r} not found'
+            msg = f'workbook {workbook_name!r} not found'
             raise TableauLUIDNotFoundError(msg) from error
         tableau_server.workbooks.populate_views(searched_workbook)
         views = searched_workbook.views
