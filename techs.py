@@ -8,6 +8,8 @@ from googleapiclient.discovery import build
 
 from utils import auth, email
 
+# TODO: use new emails util
+
 last_mo = date.today().replace(day=1) - timedelta(days=1)
 
 techs = (

@@ -8,6 +8,8 @@ from googleapiclient.discovery import build
 
 from utils import auth, drive, email
 
+# TODO: use new email util
+
 
 def pharm_clean():
     """shape data for final report"""

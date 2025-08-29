@@ -7,6 +7,9 @@ from googleapiclient.discovery import build
 
 from utils import auth, email, tableau
 
+# ruff: noqa: PGH004
+# ruff: noqa
+# this script is archived and no longer used
 
 def naloxone_file():
     luid = tableau.find_view_luid('naloxone', 'Naloxone (2017-Present)')
