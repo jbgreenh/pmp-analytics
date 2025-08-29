@@ -134,8 +134,7 @@ def get_latest_uploaded(service, folder_id: str, drive_ft: DriveFileType, **kwar
 
             file_ct = files[0]['createdTime']
             file_ts = datetime.datetime.strptime(file_ct, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=ZoneInfo('UTC'))
-            phx_tz = ZoneInfo('America/Phoenix')
-            phx_ts = file_ts.astimezone(phx_tz)
+            phx_ts = file_ts.astimezone(ZoneInfo('America/Phoenix'))
 
             try:
                 if drive_ft == 'csv':
