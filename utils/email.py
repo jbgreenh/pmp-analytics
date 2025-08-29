@@ -7,7 +7,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 
-def create_message_with_attachments(sender: str, to: str, subject: str, message_text: str, file_paths: list[str] | None = None, bcc: str | None = None, *, monospace: bool = False) -> dict[str, str]:
+# TODO: convert to class, filepaths should be a list of Path objects
+def create_message_with_attachments(sender: str, to: str, subject: str, message_text: str, *, file_paths: list[str] | None = None, bcc: str | None = None, monospace: bool = False) -> dict[str, str]:
     """
     creates an email message with aoptional attachments
 
@@ -21,10 +22,7 @@ def create_message_with_attachments(sender: str, to: str, subject: str, message_
         monospace: a boolean indicating weather or not to use a monospace font
 
     returns:
-        [TODO:return]
-    """
-    """
-    returns an email message with the provided sender, to, subject, message_text, and attachments at the file_paths
+        returns a message dict for passing to `send_email()`
     """
     message = MIMEMultipart()
     message['to'] = to  # specify the recipients as a comma-separated string
@@ -65,12 +63,14 @@ def create_message_with_attachments(sender: str, to: str, subject: str, message_
     return {'raw': base64.urlsafe_b64encode(message.as_bytes()).decode()}
 
 
-def send_email(service, message: dict[str, str]):
+# TODO: make email service within send_email? maybe optional use if provided make if not? could be good for tons of google drive utils as well
+def send_email(service, message: dict[str, str]):   # noqa:ANN001 | service is dynamically typed
     """sends an email from a message returned from create_message_with_attachment"""
     try:
         message = service.users().messages().send(userId='me', body=message).execute()
-        print('message sent, message id: %s' % message['id'])
-        return message
     except Exception as error:
         print(f'an error occurred: {error}')
         return None
+    else:
+        print(f'message sent, message id: {message['id']}')
+        return message
