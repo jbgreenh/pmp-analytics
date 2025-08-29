@@ -1,76 +1,92 @@
 import base64
 import mimetypes
 import pathlib
+from dataclasses import dataclass, field
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+from googleapiclient.discovery import build
 
-# TODO: convert to class, filepaths should be a list of Path objects
-def create_message_with_attachments(sender: str, to: str, subject: str, message_text: str, *, file_paths: list[str] | None = None, bcc: str | None = None, monospace: bool = False) -> dict[str, str]:
+from utils import auth
+
+
+@dataclass
+class EmailMessage:
     """
-    creates an email message with aoptional attachments
+    a dataclass for passing to `send_email()`
+
+    attributes:
+        sender: email address of the sender
+        to: email address(es) to send to; multiple addresses should be comma separated
+        subject: the email subject
+        bcc: email address(es) to bcc; multiple addresses should be comma separated
+        message_text: the email body
+        file_paths: a list of file paths to attachment(s)
+        monospace: whether to monospace the email
+    """
+    sender: str
+    to: str
+    subject: str
+    message_text: str
+    bcc: str = ''
+    file_paths: list[pathlib.Path] = field(default_factory=list)
+    monospace: bool = False
+
+
+def send_email(email_message: EmailMessage, *, service=None) -> dict:    # noqa: ANN001 | service is dynamically typed
+    """
+    sends an email using the details in `email_message`
 
     args:
-        sender: the sender email address, can also be a comma separated list of emails
-        to: the to email address, can also be a comma separated list of emails
-        subject: the email subject
-        message_text: the email body
-        file_paths: a list of filepaths to attachments
-        bcc: email address(es) to bcc, can also be a comma separated list of emails
-        monospace: a boolean indicating weather or not to use a monospace font
+        email_message: an `EmailMethod` witht he detals for sending the email
+        service: an authorized google email service, generated per email if not provided
 
     returns:
-        returns a message dict for passing to `send_email()`
+        the message json as a dict
     """
+    if service is None:
+        creds = auth.auth()
+        service = build('gmail', 'v1', credentials=creds)
+
     message = MIMEMultipart()
-    message['to'] = to  # specify the recipients as a comma-separated string
-    message['from'] = sender
-    message['subject'] = subject
+    message['to'] = email_message.to
+    message['from'] = email_message.sender
+    message['subject'] = email_message.subject
 
-    if bcc:
-        message['bcc'] = bcc
+    if email_message.bcc:
+        message['bcc'] = email_message.bcc
 
-    if monospace:
+    if email_message.monospace:
         html_message = f"""
         <html>
         <body>
-            <p style="font-family:'Lucida Console','Courier New',monospace; white-space:pre-wrap">{message_text.replace("\n", "<br>")}</p>
+            <p style="font-family:'Lucida Console','Courier New',monospace; white-space:pre-wrap">{email_message.message_text.replace("\n", "<br>")}</p>
         </body>
         </html>
         """
 
         msg = MIMEText(html_message, 'html')
     else:
-        msg = MIMEText(message_text)
+        msg = MIMEText(email_message.message_text)
 
     message.attach(msg)
 
-    if file_paths:
-        for file_path in file_paths:
+    if email_message.file_paths:
+        for file_path in email_message.file_paths:
             content_type, encoding = mimetypes.guess_type(file_path)
             if content_type is None or encoding is not None:
                 content_type = 'application/octet-stream'
             main_type, sub_type = content_type.split('/', 1)
-            with open(file_path, 'rb') as file:
-                msg = MIMEBase(main_type, sub_type)
-                msg.set_payload(file.read())
+            msg = MIMEBase(main_type, sub_type)
+            msg.set_payload(file_path.read_bytes())
             encoders.encode_base64(msg)
             msg.add_header('Content-Disposition', f'attachment; filename={pathlib.Path(file_path).name}')
             message.attach(msg)
 
-    return {'raw': base64.urlsafe_b64encode(message.as_bytes()).decode()}
+    message = {'raw': base64.urlsafe_b64encode(message.as_bytes()).decode()}
 
-
-# TODO: make email service within send_email? maybe optional use if provided make if not? could be good for tons of google drive utils as well
-def send_email(service, message: dict[str, str]):   # noqa:ANN001 | service is dynamically typed
-    """sends an email from a message returned from create_message_with_attachment"""
-    try:
-        message = service.users().messages().send(userId='me', body=message).execute()
-    except Exception as error:
-        print(f'an error occurred: {error}')
-        return None
-    else:
-        print(f'message sent, message id: {message['id']}')
-        return message
+    message = service.users().messages().send(userId='me', body=message).execute()
+    print(f'message sent, message id: {message['id']}')
+    return message
