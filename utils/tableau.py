@@ -50,7 +50,7 @@ def lazyframe_from_view_id(view_id: str, filters: dict | None = None, **kwargs) 
 
 
 class TableauLUIDNotFoundError(Exception):
-    """custom exception for when `searched_view.id` is none"""
+    """custom exception for when luid is not found"""
     def __init__(self, message: str = 'luid not found') -> None:
         """initializes the error"""
         self.message = message
