@@ -29,19 +29,11 @@ class GoogleDriveNotFoundError(Exception):
         super().__init__(self.message)
 
 
-class DateTooEarlyError(Exception):
+class InvalidDateError(Exception):
     """custom exception for early date"""
     def __init__(self, value: datetime.date) -> None:
         """initialize the error"""
-        message = f'{value} is before the minimum awarxe file date of 2022-12-07'
-        super().__init__(message)
-
-
-class FutureDateError(Exception):
-    """custom exception for future date"""
-    def __init__(self, value: datetime.date) -> None:
-        """initialize the error"""
-        message = f'{value} is in the future'
+        message = f'{value} may not be before 2022-12-07 or in the future'
         super().__init__(message)
 
 
@@ -205,7 +197,7 @@ def lazyframe_from_id_and_sheetname(service, file_id: str, sheet_name: str, **kw
     return pl.read_excel(file, sheet_name=sheet_name, **kwargs).lazy()
 
 
-def awarxe(service, day: datetime.date | None = None) -> pl.LazyFrame:   # noqa: ANN001 | service is dynamically typed
+def awarxe(service, day: datetime.date | None = None) -> pl.LazyFrame:   # noqa: ANN001, C901 | ANN001: service is dynamically typed, C901: 11 complexity is neccessary
     """
         return a lazy frame of the most recent awarxe file from the google drive, unless day is specified
 
@@ -214,8 +206,7 @@ def awarxe(service, day: datetime.date | None = None) -> pl.LazyFrame:   # noqa:
         day: the day for the awarxe file
 
     raises:
-        FutureDateError: raised when `day` is in the future
-        DateTooEarlyError: raised when `day` is before the first file available
+        InvalidDateError: raised when `day` is before the first file available or in the future
         GoogleDriveHttpError : raised when accessing google drive leads to an HttpError
         GoogleDriveNotFoundError : raised when the file is not found on the google drive
 
@@ -225,10 +216,8 @@ def awarxe(service, day: datetime.date | None = None) -> pl.LazyFrame:   # noqa:
     today = datetime.datetime.now(tz=ZoneInfo('America/Phoenix')).date()
     if day is None:
         day = today - datetime.timedelta(days=1)
-    if day < datetime.date(year=2022, month=12, day=7):
-        raise DateTooEarlyError(day)
-    if day > today:
-        raise FutureDateError(day)
+    if (day < datetime.date(year=2022, month=12, day=7)) or (day > today):
+        raise InvalidDateError(day)
 
     load_dotenv()
 
@@ -244,7 +233,7 @@ def awarxe(service, day: datetime.date | None = None) -> pl.LazyFrame:   # noqa:
                 year_folder_id = folders[0]['id']
             else:
                 msg = f'folder {day.year!r} not found'
-                if (day.day == 1) and (day.month == 1):
+                if (day.month == 1) and (day.day == 1):
                     print(msg)
                     day -= datetime.timedelta(days=1)
                     continue
@@ -278,7 +267,7 @@ def awarxe(service, day: datetime.date | None = None) -> pl.LazyFrame:   # noqa:
             day -= datetime.timedelta(days=1)
 
         except HttpError as error:
-            msg = f'google drive error: {error!r}'
+            msg = f'error checking google drive: {error!r}'
             raise GoogleDriveHttpError(msg) from error
 
 
