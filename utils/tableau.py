@@ -49,9 +49,9 @@ def lazyframe_from_view_id(view_id: str, filters: dict | None = None, **kwargs) 
         return pl.scan_csv(buffer, **kwargs)
 
 
-class IDIsNoneError(Exception):
+class TableauLUIDNotFoundError(Exception):
     """custom exception for when `searched_view.id` is none"""
-    def __init__(self, message: str = 'searched_view.id is empty') -> None:
+    def __init__(self, message: str = 'luid not found') -> None:
         """initializes the error"""
         self.message = message
         super().__init__(self.message)
@@ -66,7 +66,7 @@ def find_view_luid(view_name: str, workbook_name: str) -> str:
         workbook_name: string name of the workbook the view is in
 
     raises:
-    IDIsNoneError: raised when `searched_view.id` is None
+    TableauLUIDNotFoundError: raised when luid could not be found
 
     returns:
         string luid of the target view
@@ -86,7 +86,12 @@ def find_view_luid(view_name: str, workbook_name: str) -> str:
         searched_workbook = next(workbook for workbook in all_workbooks if workbook.name == workbook_name)
         tableau_server.workbooks.populate_views(searched_workbook)
         views = searched_workbook.views
-        searched_view = next(view for view in views if view.name == view_name)
+        try:
+            searched_view = next(view for view in views if view.name == view_name)
+        except StopIteration as error:
+            msg = f'{view_name!r} not found in {workbook_name!r}'
+            raise TableauLUIDNotFoundError(msg) from error
         if searched_view.id is None:
-            raise IDIsNoneError
+            msg = f'{searched_view} has None for id'
+            raise TableauLUIDNotFoundError(msg)
         return searched_view.id
