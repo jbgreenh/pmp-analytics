@@ -23,7 +23,7 @@ class GoogleDriveHttpError(Exception):
 
 class GoogleDriveNotFoundError(Exception):
     """custom exception for google drive file not found errors"""
-    def __init__(self, message: str = 'google drive file not found error') -> None:
+    def __init__(self, message: str = 'google drive not found error') -> None:
         """initializes the error"""
         self.message = message
         super().__init__(self.message)
@@ -231,21 +231,23 @@ def awarxe(service, day: datetime.date | None = None) -> pl.LazyFrame:   # noqa:
         raise FutureDateError(day)
 
     load_dotenv()
-    awarxe_folder_id = os.environ.get('AWARXE_FOLDER')
 
     while True:
-        day_string = day.strftime('%Y%m%d')
-        file_name = f'AZ_UserEx_{day_string}.csv'
+        file_name = f'AZ_UserEx_{day.strftime('%Y%m%d')}.csv'
         print(f'pulling awarxe file {file_name}...')
 
         try:
-            results_folder = service.files().list(q=f"name = '{day.year}' and '{awarxe_folder_id}' in parents",
+            results_folder = service.files().list(q=f"name = '{day.year}' and '{os.environ.get('AWARXE_FOLDER')}' in parents",
                                         supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
             folders = results_folder.get('files', [])
             if folders:
                 year_folder_id = folders[0]['id']
             else:
                 msg = f'folder {day.year!r} not found'
+                if (day.day == 1) and (day.month == 1):
+                    print(msg)
+                    day -= datetime.timedelta(days=1)
+                    continue
                 raise GoogleDriveNotFoundError(msg)
         except HttpError as error:
             msg = f'error checking google drive: {error!r}'
