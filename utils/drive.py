@@ -10,6 +10,8 @@ from dotenv import load_dotenv
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 
+EARLIEST_AWARXE_DATE = datetime.date(year=2022, month=12, day=7)
+
 type DriveFileType = Literal['sheet', 'csv']
 
 
@@ -27,14 +29,6 @@ class GoogleDriveNotFoundError(Exception):
         """initializes the error"""
         self.message = message
         super().__init__(self.message)
-
-
-class InvalidDateError(ValueError):
-    """custom exception for early date"""
-    def __init__(self, value: datetime.date) -> None:
-        """initialize the error"""
-        message = f'{value} may not be before 2022-12-07 or in the future'
-        super().__init__(message)
 
 
 def lazyframe_from_file_name(service, file_name: str, folder_id: str, drive_ft: DriveFileType, **kwargs) -> pl.LazyFrame:  # noqa: ANN001 | service is dynamically typed
@@ -196,7 +190,7 @@ def lazyframe_from_id_and_sheetname(service, file_id: str, sheet_name: str, **kw
     return pl.read_excel(file, sheet_name=sheet_name, **kwargs).lazy()
 
 
-def awarxe(service, day: datetime.date | None = None) -> pl.LazyFrame:   # noqa: ANN001 | ANN001: service is dynamically typed
+def awarxe(service, day: datetime.date | None = None) -> pl.LazyFrame:   # noqa: ANN001 | service is dynamically typed
     """
         return a lazy frame of the most recent awarxe file from the google drive, unless day is specified
 
@@ -212,8 +206,7 @@ def awarxe(service, day: datetime.date | None = None) -> pl.LazyFrame:   # noqa:
        awarxe: a lazyframe with all active awarxe registrants from the most recent file as of `day` if specified, or yesterday if `day` is not specified
     """
     yesterday = datetime.datetime.now(tz=ZoneInfo('America/Phoenix')).date() - datetime.timedelta(days=1)
-    day = yesterday if day is None else day
-    day = max(min(day, yesterday), datetime.date(year=2022, month=12, day=7))
+    day = max(min(day or yesterday, yesterday), EARLIEST_AWARXE_DATE)
 
     load_dotenv()
 
