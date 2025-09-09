@@ -213,8 +213,7 @@ def awarxe(service, day: datetime.date | None = None) -> pl.LazyFrame:   # noqa:
     """
     yesterday = datetime.datetime.now(tz=ZoneInfo('America/Phoenix')).date() - datetime.timedelta(days=1)
     day = yesterday if day is None else day
-    day = min(day, yesterday)
-    day = max(day, datetime.date(year=2022, month=12, day=7))
+    day = max(min(day, yesterday), datetime.date(year=2022, month=12, day=7))
 
     load_dotenv()
 
