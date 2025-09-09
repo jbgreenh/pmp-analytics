@@ -82,7 +82,7 @@ def send_email(email_message: EmailMessage, *, service=None) -> dict:    # noqa:
             msg = MIMEBase(main_type, sub_type)
             msg.set_payload(file_path.read_bytes())
             encoders.encode_base64(msg)
-            msg.add_header('Content-Disposition', f'attachment; filename={pathlib.Path(file_path).name}')
+            msg.add_header('Content-Disposition', f'attachment; filename={file_path.name}')
             message.attach(msg)
 
     message = {'raw': base64.urlsafe_b64encode(message.as_bytes()).decode()}

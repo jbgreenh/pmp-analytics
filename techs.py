@@ -92,7 +92,6 @@ service.spreadsheets().values().update(
 sheet_link = f'https://docs.google.com/spreadsheets/d/{sup_sheet}'
 email_body = f'hi all,\n\nthe superseded to tech sheet has been updated to include {last_mo.month}/{last_mo.year} data: {sheet_link}.\n\nbelow you can find descriptive statistics for {last_mo.month}/{last_mo.year}:\n\ndays to tech:\n{dtt}\ndays to tech from exp:\n{dttfe}{signature}'
 subject = f'{last_mo.month}/{last_mo.year} superseded to tech update'
-message = email.create_message_with_attachments(sender=sender, to=to, subject=subject, message_text=email_body, monospace=True)
+message = email.EmailMessage(sender=sender, to=to, subject=subject, message_text=email_body, monospace=True)
 
-email_service = build('gmail', 'v1', credentials=creds)
-email.send_email(service=email_service, message=message)
+email.send_email(message)

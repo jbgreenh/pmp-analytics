@@ -114,10 +114,8 @@ def main():
     # leaving links out as requested
     message_txt = 'hello, the weekly delinquent data submitters cleanup is complete\n\nthank you,\n\ndata team'
 
-    message = email.create_message_with_attachments(sender=sender, to=to, subject=subject, message_text=message_txt)
-
-    email_service = build('gmail', 'v1', credentials=creds)
-    email.send_email(service=email_service, message=message)
+    message = email.EmailMessage(sender=sender, to=to, subject=subject, message_text=message_txt)
+    email.send_email(message)
 
 
 if __name__ == '__main__':
