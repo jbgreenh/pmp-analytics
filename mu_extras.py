@@ -117,7 +117,7 @@ def process_mu(appearance_month: date, input_file: str):
     )
 
     appear = (
-        drive.lazyframe_from_id_and_sheetname(service=service, file_id=os.environ['APPEARANCES_FILE'], sheet_name='appearances', engine='xlsx2csv', infer_schema_length=0)
+        drive.lazyframe_from_id_and_sheetname(service=service, file_id=os.environ['APPEARANCES_FILE'], sheet_name='appearances', engine='xlsx2csv', infer_schema=False)
         .with_columns(
             pl.col('appearance_date').str.to_date('%Y-%-m-%-d')
         )

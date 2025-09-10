@@ -24,7 +24,7 @@ def pharm_clean():
     )
 
     igov = (
-        pl.scan_csv('data/List Request.csv', infer_schema_length=0)
+        pl.scan_csv('data/List Request.csv', infer_schema=False)
         .filter(
             pl.col('Type') == 'Pharmacy'
         )
