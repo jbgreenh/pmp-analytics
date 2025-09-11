@@ -30,13 +30,13 @@ def remove_oldest_file(sftp: paramiko.SFTPClient) -> None:
         sftp: paramiko SFTPClient
     """
     files = sftp.listdir_attr()
-    oldest_file = min(files, key=lambda f: f.st_mtime)
+    oldest_file = min(files, key=lambda f: f.st_mtime)  # type:ignore reportArgumentType | these files will have st_mtime
     print(f'removing oldest file: {oldest_file.filename}...')
     sftp.remove(oldest_file.filename)
     print('file removed')
 
 
-def upload_latest_dhs_file(service, sftp: paramiko.SFTPClient, folder: str) -> None:
+def upload_latest_dhs_file(service, sftp: paramiko.SFTPClient, folder: str) -> None:  # noqa: ANN001 | service is dynamically typed
     """
     uploads the latest standard extract to the DHS sftp
 
