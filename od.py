@@ -1,10 +1,13 @@
 import argparse
 from datetime import timedelta
+
 import polars as pl
 import polars_distance as pld
+
 from utils import tableau
 
-def process_ods(input_file:str, days_before:int, ratio:float):
+
+def process_ods(input_file: str, days_before: int, ratio: float) -> None:
     """
     process overdose data by checking dispensation data for matching date of birth and fuzzy matched on name. writes a disp and an odt file to the `data/od/` folder. the input file should be in the following format:
 
@@ -16,9 +19,9 @@ def process_ods(input_file:str, days_before:int, ratio:float):
     | DOB        | date of birth MM/DD/YYYY format    |
 
     args:
-        `input_file`: file name in the `data/od/` folder without the .csv extension
-        `days_before`: the number of days before `DOD` to check for dispensations
-        `ratio`: how similar names should be using a jaro-winkler ratio to consider a dispensation a match
+        input_file: file name in the `data/od/` folder without the .csv extension
+        days_before: the number of days before `DOD` to check for dispensations
+        ratio: how similar names should be using a jaro-winkler ratio to consider a dispensation a match
     """
     ods = (
         pl.read_csv(f'data/od/{input_file}.csv')
@@ -41,9 +44,9 @@ def process_ods(input_file:str, days_before:int, ratio:float):
         end_date = row['DOD'] + timedelta(days=1)
         dob = row['DOB']
         filters = {
-            'start_date':start_date,
-            'end_date':end_date,
-            'search_dob':dob
+            'start_date': start_date,
+            'end_date': end_date,
+            'search_dob': dob
         }
         print(f'pulling disp data for {dob}...')
         disp_df = tableau.lazyframe_from_view_id(od_luid, filters=filters, infer_schema=False)
@@ -138,7 +141,14 @@ def process_ods(input_file:str, days_before:int, ratio:float):
         ods_odt.write_csv(odt_fn)
         print(f'wrote {odt_fn}')
 
-def parse_arguments():
+
+def parse_arguments() -> argparse.Namespace:
+    """
+    parse arguments
+
+    returns:
+        an argparse Namespace with the parsed argument values
+    """
     parser = argparse.ArgumentParser(description='configure constants')
 
     parser.add_argument('-f', '--file', type=str, default='od', help='file name to be inspected; no extension (default: %(default)s)')
@@ -147,10 +157,7 @@ def parse_arguments():
 
     return parser.parse_args()
 
-def main():
-    args = parse_arguments()
-
-    process_ods(args.file, args.days_before, args.ratio)
 
 if __name__ == '__main__':
-    main()
+    args = parse_arguments()
+    process_ods(args.file, args.days_before, args.ratio)

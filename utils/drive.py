@@ -2,6 +2,7 @@ import datetime
 import io
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Literal
 from zoneinfo import ZoneInfo
 
@@ -292,24 +293,24 @@ def folder_id_from_name(service, folder_name: str, parent_id: str) -> str:  # no
         return folder_id
 
 
-def upload_csv_as_sheet(service, file_name: str, folder_id: str) -> None:  # noqa: ANN001 | service is dynamically typed
+def upload_csv_as_sheet(service, file_path: Path, folder_id: str) -> None:  # noqa: ANN001 | service is dynamically typed
     """
         uploads a local csv file as a sheet to the specified folder, `file_name` is the path to the local csv
 
         removes the extension for the name of the sheet
         eg. 'file.csv' -> 'file'
-        you may want to remove the csv after this upload for cleanliness
+        you may want to remove the csv after this upload for cleanliness or use a tempfile
 
     raises:
         GoogleDriveHttpError : raised when accessing google drive leads to an HttpError
 
     args:
         service: an authorized google drive service
-        file_name: the path to the local csv for uploading
+        file_path: the path to the local csv for uploading
         folder_id: the id of the folder to upload to
     """
     try:
-        no_ext = file_name.split('.', maxsplit=1)[0]
+        no_ext = file_path.stem
 
         file_metadata = {
             'name': no_ext,
@@ -317,7 +318,7 @@ def upload_csv_as_sheet(service, file_name: str, folder_id: str) -> None:  # noq
             'mimeType': 'application/vnd.google-apps.spreadsheet'
         }
 
-        media = MediaFileUpload(file_name,
+        media = MediaFileUpload(file_path,
                                 mimetype='text/csv')
 
         print(f'uploading {no_ext} to google drive...')

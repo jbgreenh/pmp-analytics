@@ -1,15 +1,17 @@
-import os
-import polars as pl
 import datetime
-from dotenv import load_dotenv
+import os
 
+import polars as pl
+from dotenv import load_dotenv
 from googleapiclient.discovery import build
+
 from utils import auth, drive
 
+
 def pull_files(service, last_month):
-    '''
+    """
     pull the proper dispensations and request files
-    '''
+    """
     lm_yr = last_month.year
     lm_mo = str(last_month.month).zfill(2)
     file_name = f'AZ_Dispensations_{lm_yr}{lm_mo}.csv'
@@ -31,7 +33,7 @@ def scorecard_new_row(service, last_month):
 
     lookups = (
         requests
-        .select('dea_number','totallookups')
+        .select('dea_number', 'totallookups')
     )
 
     disps = (

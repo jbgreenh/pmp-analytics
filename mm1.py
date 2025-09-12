@@ -3,7 +3,14 @@ from googleapiclient.discovery import build
 
 from utils import auth, drive
 
-def mm1(service):
+
+def mm1(service) -> None:  # noqa: ANN001 | service is dynamically typed
+    """
+    prepares the medical marijuana audit for `mm2.py` and prints instructions for transitioning between the two scripts
+
+    args:
+        service: an authorized google drive service
+    """
     awarxe = (
         drive.awarxe(service=service)
         .filter(
@@ -12,7 +19,7 @@ def mm1(service):
         .with_columns(
             pl.col('last name').str.to_uppercase().str.strip_chars()
         )
-        .with_columns(      # extra with_columns to force uppercase before code creation
+        .with_columns(
             (pl.col('last name').str.slice(-3) + pl.col('professional license number').str.slice(-4)).alias('awarxe_code')
         )
         .select('last name', 'professional license number', 'dea number', 'awarxe_code')
@@ -68,7 +75,7 @@ def mm1(service):
         )
         .join(awarxe, left_on='mm_code', right_on='awarxe_code', how='left', coalesce=True)
         .drop('mm_code', 'DEA Number')
-        .rename({'dea number':'DEA Number'})
+        .rename({'dea number': 'DEA Number'})
     )
     mm_code_match = (
         mm_no_old_match
@@ -90,13 +97,14 @@ def mm1(service):
     mm_match_neither.collect().write_csv('data/mm_manual.csv')
     print('generated data/mm_matches_combined.csv')
     print('generated data/mm_manual.csv')
-    print('''
+    print("""
         --------------------------------------------------
         please manually check all prescribers in mm_manual
         with 20+ application count for DEA numbers
         and save to data/mm_manual.csv, then run mm2.py
         --------------------------------------------------
-    ''')
+    """)
+
 
 if __name__ == '__main__':
     creds = auth.auth()

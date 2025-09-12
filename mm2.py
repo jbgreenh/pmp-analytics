@@ -1,16 +1,21 @@
 import sys
-from datetime import date
+from datetime import date, datetime
+from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import polars as pl
 
 from utils import tableau
 
+JULY = 7
 
-def mm2():
-    year = date.today().year
-    month = date.today().month
-    if month < 7:
-        year = year - 1
+
+def mm2() -> None:
+    """finishes the medical marijuana audit process. run `mm1.py` and follow instructions there first"""
+    today = datetime.now(tz=ZoneInfo('America/Phoenix')).date()
+    year = today.year
+    if today.month < JULY:
+        year -= 1
         start, end = date(year=year, month=7, day=1), date(year=year, month=12, day=31)
     else:
         start, end = date(year=year, month=1, day=1), date(year=year, month=6, day=30)
@@ -34,13 +39,13 @@ def mm2():
         )
         .explode('dea')
         .sort('Active', descending=True)                            # sorting like this and keeping first will favor active accounts
-        .unique(subset=['dea'], keep='first', maintain_order=True) #  but still give search credit for inactive accounts if that's all there is
+        .unique(subset=['dea'], keep='first', maintain_order=True)  # but still give search credit for inactive accounts if that's all there is
         .select('User ID', 'dea')
     )
 
     filters = {
-        'search_start_date':start,
-        'search_end_date':end,
+        'search_start_date': start,
+        'search_end_date': end,
     }
     print('pulling searches data...')
     searches_lf = tableau.lazyframe_from_view_id(searches_luid, filters=filters, infer_schema_length=False)
@@ -50,7 +55,7 @@ def mm2():
         searches_lf
         .select(
             pl.col('TrueID').cast(pl.Int32),
-            pl.col('Distinct count of Search ID').str.replace_all(',','').cast(pl.Int32).alias('totallookups')
+            pl.col('Distinct count of Search ID').str.replace_all(',', '').cast(pl.Int32).alias('totallookups')
         )
     )
 
@@ -74,8 +79,8 @@ def mm2():
         )
         .with_columns(
             (pl.col('totallookups') / pl.col('Application Count')).alias('Lookups/Count'),
-            (pl.col('Application Count') >= 20).alias('>=20'),
-            ((pl.col('totallookups') / pl.col('Application Count')) < 0.8).alias('<80% Lookups')
+            (pl.col('Application Count') >= 20).alias('>=20'),  # noqa: PLR2004 | number is explained in col name
+            ((pl.col('totallookups') / pl.col('Application Count')) < 0.8).alias('<80% Lookups')  # noqa: PLR2004 | number is explained in col name
         )
         .with_columns(
             (pl.col('>=20') & pl.col('<80% Lookups')).alias('test')
@@ -84,43 +89,43 @@ def mm2():
         .sort(['test', 'Application Count'], descending=[True, True])
     )
 
-    file_path = 'data/mmq.xlsx'
+    file_path = Path('data/mmq.xlsx')
     mm_combined.collect().write_excel(
         file_path,
         worksheet='mm phys audit',
         conditional_formats={
-            '>=20':[{
-                'type':'cell',
-                'criteria':'equal to',
-                'value':'TRUE',
-                'format': {'bg_color':'#F4CCCC'}
-            },{
-                'type':'cell',
-                'criteria':'equal to',
-                'value':'FALSE',
-                'format': {'bg_color':'#D9EAD3'}
+            '>=20': [{
+                'type': 'cell',
+                'criteria': 'equal to',
+                'value': 'TRUE',
+                'format': {'bg_color': '#F4CCCC'}
+            }, {
+                'type': 'cell',
+                'criteria': 'equal to',
+                'value': 'FALSE',
+                'format': {'bg_color': '#D9EAD3'}
             }],
-            '<80% Lookups':[{
-                'type':'cell',
-                'criteria':'equal to',
-                'value':'TRUE',
-                'format': {'bg_color':'#F4CCCC'}
-            },{
-                'type':'cell',
-                'criteria':'equal to',
-                'value':'FALSE',
-                'format': {'bg_color':'#D9EAD3'}
+            '<80% Lookups': [{
+                'type': 'cell',
+                'criteria': 'equal to',
+                'value': 'TRUE',
+                'format': {'bg_color': '#F4CCCC'}
+            }, {
+                'type': 'cell',
+                'criteria': 'equal to',
+                'value': 'FALSE',
+                'format': {'bg_color': '#D9EAD3'}
             }],
-            'test':[{
-                'type':'cell',
-                'criteria':'equal to',
-                'value':'TRUE',
-                'format': {'bg_color':'#F4CCCC'}
-            },{
-                'type':'cell',
-                'criteria':'equal to',
-                'value':'FALSE',
-                'format': {'bg_color':'#D9EAD3'}
+            'test': [{
+                'type': 'cell',
+                'criteria': 'equal to',
+                'value': 'TRUE',
+                'format': {'bg_color': '#F4CCCC'}
+            }, {
+                'type': 'cell',
+                'criteria': 'equal to',
+                'value': 'FALSE',
+                'format': {'bg_color': '#D9EAD3'}
             }],
         },
         autofit=True,

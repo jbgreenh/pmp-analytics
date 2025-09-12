@@ -1,6 +1,7 @@
 import os
-import pathlib
-from datetime import date
+from datetime import datetime
+from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import polars as pl
 from dotenv import load_dotenv
@@ -8,12 +9,17 @@ from googleapiclient.discovery import build
 
 from utils import auth, drive, email
 
-# TODO: use new email util
+DAYS_DELINQUENT_THRESHOLD = 7
 
 
-def pharm_clean():
-    """shape data for final report"""
-    today = date.today().strftime("%m-%d-%Y")
+def pharm_clean() -> Path:
+    """
+    shape data for the final report
+
+    returns:
+        the path of the delinquent data submitters report
+    """
+    today_str = datetime.now(tz=ZoneInfo('America/Phoenix')).date().strftime("%m-%d-%Y")
 
     mp = (
         pl.scan_csv('data/pharmacies.csv')
@@ -42,7 +48,7 @@ def pharm_clean():
 
     ddr = (
         pl.scan_csv('data/DelinquentDispenserRequest.csv')
-        .filter((pl.col('Days Delinquent') >= 7) | (pl.col('Days Delinquent').is_null()))
+        .filter((pl.col('Days Delinquent') >= DAYS_DELINQUENT_THRESHOLD) | (pl.col('Days Delinquent').is_null()))
         .with_columns(
             pl.col('DEA').str.strip_chars().str.to_uppercase()
         )
@@ -63,7 +69,7 @@ def pharm_clean():
             ).alias('Street Address').fill_null(pl.col('Pharmacy Address')),
             pl.col('Business Name').fill_null(pl.col('Pharmacy Name')),
             pl.col('Last Compliant').str.to_date('%Y-%m-%d').dt.strftime('%m/%d/%Y'),
-            pl.lit(today).alias('Date List Pulled')
+            pl.lit(today_str).alias('Date List Pulled')
         )
         .rename(
             {
@@ -91,12 +97,12 @@ def pharm_clean():
     else:
         print('no closed pharmacies')
 
-    fname = f'{today}.csv'
+    fname = Path(f'{today_str}.csv')
     ddr.collect().write_csv(fname)
     return fname
 
 
-def main():
+if __name__ == '__main__':
     creds = auth.auth()
     load_dotenv()
     fname = pharm_clean()
@@ -104,9 +110,9 @@ def main():
     service = build('drive', 'v3', credentials=creds)
     folder_id = os.environ['PHARM_CLEAN_FOLDER']
 
-    drive.upload_csv_as_sheet(service=service, file_name=fname, folder_id=folder_id)
+    drive.upload_csv_as_sheet(service=service, file_path=fname, folder_id=folder_id)
 
-    pathlib.Path(fname).unlink()
+    Path(fname).unlink()
 
     sender = os.environ['EMAIL_DATA']
     to = os.environ['EMAIL_COMPLIANCE']
@@ -116,7 +122,3 @@ def main():
 
     message = email.EmailMessage(sender=sender, to=to, subject=subject, message_text=message_txt)
     email.send_email(message)
-
-
-if __name__ == '__main__':
-    main()

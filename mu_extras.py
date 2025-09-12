@@ -1,8 +1,11 @@
 import calendar
 import os
 import sys
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
+import google.auth.external_account_authorized_user
+import google.oauth2.credentials
 import polars as pl
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
@@ -12,31 +15,32 @@ from utils import auth, deas, drive
 TOP_PRESCRIBERS = 20    # number of prescribers with the most dispensations and no searches
 
 
-def ordinal(n: int):
+def ordinal(n: int) -> str:
     """
     converts a number to its ordinal version (eg 1 to 1st, 4 to 4th)
 
     args:
-        `n`: the number to convert
+        n: the number to convert
 
     returns:
         the ordinal string
     """
-    if 11 <= (n % 100) <= 13:
+    if 11 <= (n % 100) <= 13:  # noqa: PLR2004 | not magic
         suffix = 'th'
     else:
         suffix = ['th', 'st', 'nd', 'rd', 'th'][min(n % 10, 4)]
-    return str(n) + suffix
+    return f'{n}{suffix}'
 
 
 def input_str_to_date(month_name: str, year_str: str) -> date:
     """
     converts the input string into a date at the first of the month
+
     eg january2024 to date(2024, 1, 1)
 
     args:
-        `month_name`: the month name in lowercase: `january`
-        `year_str`: the year in YYYY format
+        month_name: the month name in lowercase: `january`
+        year_str: the year in YYYY format
 
     returns:
         a date with the first of the month for the day
@@ -45,14 +49,14 @@ def input_str_to_date(month_name: str, year_str: str) -> date:
     return date(int(year_str), month_num, 1)
 
 
-def update_appearances(creds, sheet_id: str, update_appearances: pl.LazyFrame):
+def update_appearances(creds: google.oauth2.credentials.Credentials | google.auth.external_account_authorized_user.Credentials, sheet_id: str, update_appearances: pl.LazyFrame) -> None:
     """
     updates the appearances google sheet with the `new_appearances`
 
     args:
-        `creds`: google api credentials from auth()
-        `sheet_id`: the id of the appearances sheet to update
-        `new_appearances`: a lazyframe with the new data
+        creds: google api credentials from auth()
+        sheet_id: the id of the appearances sheet to update
+        update_appearances: a lazyframe with the new data
     """
     range_name = 'appearances!A:B'
     service = build('sheets', 'v4', credentials=creds)
@@ -71,15 +75,15 @@ def update_appearances(creds, sheet_id: str, update_appearances: pl.LazyFrame):
     print(f"{result.get('updatedCells')} cells updated.")
 
 
-def process_mu(appearance_month: date, input_file: str):
+def process_mu(appearance_month: date, input_file: str) -> None:
     """
     processes the mu results to remove prescribers notified as not in violation
     and adds information on how many times the prescriber has appeared on the
     mu list
 
     args:
-        `appearance_month`: a `date` with the month of this appearance
-        `input_file`: the name of the mu file to add this information to
+        appearance_month: a `date` with the month of this appearance
+        input_file: the name of the mu file to add this information to
     """
     month_num = appearance_month.month
     year_str = str(appearance_month.year)
@@ -91,14 +95,14 @@ def process_mu(appearance_month: date, input_file: str):
 
     no_violation = (
         drive.lazyframe_from_id_and_sheetname(
-            service=service, file_id=os.environ.get('NO_VIOLATION_FILE'), sheet_name='no_violation', infer_schema_length=10000
+            service=service, file_id=os.environ['NO_VIOLATION_FILE'], sheet_name='no_violation', infer_schema_length=10000
         )
         .with_columns(
             pl.col('exclude until').str.to_date(format='%m/%d/%Y'),
             pl.col('final_id').cast(pl.String)
         )
         .filter(
-            pl.col('exclude until') > date.today()
+            pl.col('exclude until') > datetime.now(tz=ZoneInfo('America/Phoenix')).date()
         )
     )
 
@@ -149,7 +153,7 @@ def process_mu(appearance_month: date, input_file: str):
     appear_stats = (
         appear_counts.join(last_appear, on='final_id', how='left', coalesce=True)
         .with_columns(
-            pl.col('appearance').map_elements(lambda x: ordinal(x), return_dtype=pl.String),
+            pl.col('appearance').map_elements(ordinal, return_dtype=pl.String),
             pl.col('last_appearance').dt.strftime('%B %Y')
         )
     )
@@ -183,7 +187,7 @@ def process_mu(appearance_month: date, input_file: str):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
+    if len(sys.argv) != 2:  # noqa: PLR2004 | checking for arg
         print('please provide an argument')
         print('python mu_extras.py january2024')
         sys.exit(1)
@@ -194,7 +198,7 @@ if __name__ == '__main__':
             month_name += c
         if c.isnumeric():
             year_str += c
-    if (month_name.title() not in calendar.month_name) or (len(year_str) != 4):
+    if (month_name.title() not in calendar.month_name) or (len(year_str) != 4):  # noqa: PLR2004 | checking for YYYY year format
         print('please follow the below format')
         sys.exit('python mu_extras.py january2024')
 

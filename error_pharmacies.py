@@ -2,6 +2,8 @@ import os
 import pathlib
 from typing import Any
 
+import google.auth.external_account_authorized_user
+import google.oauth2.credentials
 import polars as pl
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
@@ -118,7 +120,7 @@ def row_for_sheet(top_pharmacy: pl.LazyFrame, folder_id: str) -> list[Any]:
     )
 
 
-def update_error_sheet(creds, row_for_updating: list[Any], file_id: str) -> None:
+def update_error_sheet(creds: google.oauth2.credentials.Credentials | google.auth.external_account_authorized_user.Credentials, row_for_updating: list[Any], file_id: str) -> None:
     """
     adds a given row to the end of the pharmacy error sheet
 
