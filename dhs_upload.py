@@ -1,6 +1,6 @@
 import os
-import pathlib
 from datetime import date, datetime, timedelta
+from io import BytesIO
 from zoneinfo import ZoneInfo
 
 import paramiko
@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
 from utils import auth, drive
+
+MAX_SERVU_FILE_COUNT = 5
 
 
 def get_last_sunday() -> date:
@@ -24,17 +26,19 @@ def get_last_sunday() -> date:
 
 def remove_oldest_file(sftp: paramiko.SFTPClient) -> None:
     """
-    removes the oldest file from the current folder in the sftp
+    removes the oldest file from the current folder in the sftp; maintains the `MAX_SERVU_FILE_COUNT` on the server
 
     args:
         sftp: paramiko SFTPClient
     """
-    # TODO: check that a file needs deleting first
     files = sftp.listdir_attr()
-    oldest_file = min(files, key=lambda f: f.st_mtime)  # type:ignore reportArgumentType | these files will have st_mtime
-    print(f'removing oldest file: {oldest_file.filename}...')
-    sftp.remove(oldest_file.filename)
-    print('file removed')
+    if len(files) > MAX_SERVU_FILE_COUNT:
+        oldest_file = min(files, key=lambda f: f.st_mtime)  # type:ignore reportArgumentType | these files will have st_mtime
+        print(f'removing oldest file: {oldest_file.filename}...')
+        sftp.remove(oldest_file.filename)
+        print('file removed')
+    else:
+        print(f'{MAX_SERVU_FILE_COUNT} files on servu, none removed')
 
 
 def upload_latest_dhs_file(service, sftp: paramiko.SFTPClient, folder: str) -> None:  # noqa: ANN001 | service is dynamically typed
@@ -46,15 +50,21 @@ def upload_latest_dhs_file(service, sftp: paramiko.SFTPClient, folder: str) -> N
         sftp: paramiko SFTPClient connected to the DHS sftp
         folder: the google drive folder for the standard extracts
     """
-    # TODO: check that a file needs uploading first
     last_sunday = get_last_sunday()
     file_name = last_sunday.strftime('AZ_%Y%m%d.csv')
-    extract = drive.lazyframe_from_file_name(service, file_name=file_name, folder_id=folder, drive_ft='csv', separator='|', infer_schema=False)
-    extract.collect().write_csv(file_name, separator='|')
-    print(f'writing {file_name} to sftp...')
-    sftp.put(localpath=file_name, remotepath=file_name)
-    print('file uploaded')
-    pathlib.Path(file_name).unlink()
+    files = sftp.listdir()
+
+    if file_name not in files:
+        print(f'{file_name} not found, uploading...')
+        extract = drive.lazyframe_from_file_name(service, file_name=file_name, folder_id=folder, drive_ft='csv', separator='|', infer_schema=False)
+        csv_buffer = BytesIO()
+        extract.collect().write_csv(csv_buffer, separator='|')
+        csv_buffer.seek(0)
+        print(f'writing {file_name} to sftp...')
+        sftp.putfo(csv_buffer, remotepath=file_name)
+        print('file uploaded')
+    else:
+        print(f'{file_name} found, no upload yet')
 
 
 if __name__ == '__main__':
