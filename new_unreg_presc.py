@@ -3,7 +3,7 @@ import sys
 
 # import io
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import Literal
 from zoneinfo import ZoneInfo
@@ -15,6 +15,9 @@ from googleapiclient.discovery import build
 from utils import auth, deas, drive  # , email
 
 # from PyPDF2 import PdfReader, PdfWriter
+
+# ruff: noqa: PLC1901
+# polars cols with empty string are not falsey
 
 type UploadFileType = Literal['sheet', 'csv', 'none']
 
@@ -50,7 +53,7 @@ class BoardInfo:
     board_df: pl.DataFrame = field(default_factory=pl.DataFrame)
 
 
-def get_board_contacts(service) -> dict:
+def get_board_contacts(service) -> dict:    # noqa: ANN001 | service is dynamically typed
     """
     pulls board names and emails from the `BOARD_CONTACTS_FILE`
 
@@ -61,20 +64,21 @@ def get_board_contacts(service) -> dict:
         a dictionary with a board name as the key and BoardInfo (with default uploads_folder, cleaned_license_expr, and board_df) as the value
     """
     contacts_file = os.environ['BOARD_CONTACTS_FILE']
-    assert isinstance(contacts_file, str), 'BOARD_CONTACTS_FILE not found'
     board_contacts = drive.lazyframe_from_id_and_sheetname(service=service, file_id=contacts_file, sheet_name='registration', infer_schema_length=100).collect()
     boards = board_contacts['Board'].to_list()
     boards_dict = {}
     for board in boards:
         bn = board_contacts.filter(pl.col('Board') == board)['Board Name'].first()
-        assert isinstance(bn, str), 'Board Name not found'
+        if bn is not str:
+            sys.exit(f'board name not found for {board}')
         be = board_contacts.filter(pl.col('Board') == board)['Email'].first()
-        assert isinstance(be, str), 'Board Email not found'
+        if be is not str:
+            sys.exit(f'board email not found {board}')
         boards_dict[board] = BoardInfo(board_name=bn, board_emails=be)
     return boards_dict
 
 
-def check_deas_for_registration(service) -> pl.LazyFrame:
+def check_deas_for_registration(service) -> pl.LazyFrame:   # noqa: ANN001 | service is dynamically typed
     """
     return a lazyframe with DEA registrations that are not also registered in awarxe
 
@@ -98,7 +102,7 @@ def check_deas_for_registration(service) -> pl.LazyFrame:
         ['dea number'].to_list()
     )
 
-    today = date.today()
+    today = datetime.now(tz=ZoneInfo('America/Phoenix')).date()
     az_presc = (
         deas.deas('presc')
         .with_columns(pl.col(['Date of Original Registration', 'Expiration Date']).str.to_date('%Y%m%d', strict=False))
@@ -115,7 +119,7 @@ def check_deas_for_registration(service) -> pl.LazyFrame:
     )
 
 
-def infer_board(service, unreg_deas: pl.LazyFrame) -> pl.LazyFrame:
+def infer_board(service, unreg_deas: pl.LazyFrame) -> pl.LazyFrame:  # noqa: ANN001 | service is dynamically typed
     """
     infer degrees and then board, prints the number of deas for which a board was unable to be inferred
 
@@ -170,10 +174,10 @@ def update_board_info_with_uploaders(board_contacts: dict) -> dict:
     add uploader information to the board contacts to allow for custom handling of boards that provide an upload
 
     args:
-        `board_contacts`: a dict of board contacts returned by `get_board_contacts()`
+        board_contacts: a dict of board contacts returned by `get_board_contacts()`
 
     returns:
-        a dict of board contacts with added infor for uploaders
+        a dict of board contacts with added info for uploaders
     """
     opto_folder = os.environ['OPTOMETRY_UPLOADS_FOLDER']
     opto_select = (
@@ -222,7 +226,19 @@ def update_board_info_with_uploaders(board_contacts: dict) -> dict:
     return board_contacts
 
 
-def add_dfs_to_board_info(service, unreg_presc: pl.LazyFrame, board_info: dict) -> dict:
+def add_dfs_to_board_info(service, unreg_presc: pl.LazyFrame, board_info: dict) -> dict:    # noqa: ANN001 | service is dynamically typed
+    """
+    adds the dataframes of unregistered prescribers to the boardinfo and prepares them for emailing
+    also writes the dataframes for double checking at `data/unreg_presc/`
+
+    args:
+        service: an authorized google drive service
+        unreg_presc: a LazyFrame of all unregistered prescribers
+        board_info: the boardinfo dict
+
+    returns:
+        an updated boardinfo dict with a dataframe for attaching to the final email
+    """
     unreg_dir = Path('data/unreg_presc/')
     unreg_dir.mkdir(parents=True, exist_ok=True)
     for board, board_dict in board_info.items():
@@ -232,8 +248,7 @@ def add_dfs_to_board_info(service, unreg_presc: pl.LazyFrame, board_info: dict) 
         else:
             latest_file = drive.get_latest_uploaded(service, folder_id=board_dict.uploads_folder, drive_ft=board_dict.upload_file_type, skip_rows=board_dict.upload_skip_rows, infer_schema=False)
             lf = latest_file.lf
-            now = datetime.now(ZoneInfo('America/Phoenix'))
-            age = now - latest_file.created_at
+            age = datetime.now(ZoneInfo('America/Phoenix')) - latest_file.created_at
             age_hours = round(age.seconds / 60 / 60, 2)  # don't need total_seconds() because of how we handle days below
             if age.days > 1:
                 print(f'warning: {board} file is over a day old! using file created at {latest_file.created_at}, which was {age.days} days and {age_hours} hours ago')
@@ -294,7 +309,10 @@ def add_dfs_to_board_info(service, unreg_presc: pl.LazyFrame, board_info: dict) 
     return board_info
 
 
-def main():
+# TODO: emails
+
+
+if __name__ == '__main__':
     load_dotenv()
     creds = auth.auth()
     service = build('drive', 'v3', credentials=creds)
@@ -308,7 +326,3 @@ def main():
     board_info = update_board_info_with_uploaders(board_contacts)
 
     full_board_info = add_dfs_to_board_info(service, unregistered_w_boards, board_info)
-
-
-if __name__ == '__main__':
-    main()

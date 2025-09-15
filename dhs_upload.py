@@ -33,7 +33,7 @@ def remove_oldest_file(sftp: paramiko.SFTPClient) -> None:
     """
     files = sftp.listdir_attr()
     if len(files) > MAX_SERVU_FILE_COUNT:
-        oldest_file = min(files, key=lambda f: f.st_mtime)  # type:ignore reportArgumentType | these files will have st_mtime
+        oldest_file = min(files, key=lambda f: f.st_mtime)  # type: ignore[reportArgumentType] | these files will have st_mtime
         print(f'removing oldest file: {oldest_file.filename}...')
         sftp.remove(oldest_file.filename)
         print('file removed')

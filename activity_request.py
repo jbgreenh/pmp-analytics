@@ -35,7 +35,39 @@ class SearchParameters:
 type RequestType = Literal['prescriber', 'dispenser', 'audit_trail']
 
 
+def parse_daterange(date_range: list) -> tuple[date, date]:
+    """
+    parse a daterange and return `start_date` and `end_date`
+
+    args:
+        date_range: a list of dates using `re.findall`
+
+    returns:
+        start_date, end_date
+    """
+    if len(date_range[0][0].split('/')[2]) == 2:    # noqa: PLR2004 | checking if year is 2 or 4 chars
+        start_date = datetime.strptime(date_range[0][0], '%m/%d/%y').astimezone(tz=PHX_TZ).date()
+    else:
+        start_date = datetime.strptime(date_range[0][0], '%m/%d/%Y').astimezone(tz=PHX_TZ).date()
+
+    seven_years_ago = datetime.now(tz=PHX_TZ).date() - relativedelta(years=7)
+    start_date = max(start_date, seven_years_ago)
+
+    if len(date_range[0][1].split('/')[2]) == 2:    # noqa: PLR2004
+        end_date = datetime.strptime(date_range[0][1], '%m/%d/%y').astimezone(tz=PHX_TZ).date()
+    else:
+        end_date = datetime.strptime(date_range[0][1], '%m/%d/%Y').astimezone(tz=PHX_TZ).date()
+    return start_date, end_date
+
+
 def process_pdf(request_type: RequestType) -> None:
+    """
+    process the input pdf(s) for DEA numbers and the daterange of the request
+    globs the relevant folder for all pdfs and runs `activity_request()` for each
+
+    args:
+        request_type: a `RequestType` with the type of request
+    """
     log_fp = Path('data/activity_request_log.txt')
     with log_fp.open('w', encoding='utf-8') as file:
         pass  # clear logs
@@ -54,13 +86,15 @@ def process_pdf(request_type: RequestType) -> None:
         print('reading pdf(s)')
         for pdf in pdfs:
             page = pymupdf.open(pdf).load_page(0)
-            page_text = page.get_text()
+            page_text = page.get_text()  # type: ignore[reportAttributeAccessIssue] | pymupdf does not support static type checkers at this time
+
             if not page_text:
                 print('---')
                 print(f'{pdf} does not have readable text')
                 print('attempting ocr...')
-                pdfocr = page.get_pixmap(matrix=pymupdf.Matrix(2, 2)).pdfocr_tobytes()
-                page_text = pymupdf.open('pdf', pdfocr).load_page(0).get_text()
+                pdfocr = page.get_pixmap(matrix=pymupdf.Matrix(2, 2)).pdfocr_tobytes()  # type: ignore[reportAttributeAccessIssue] | pymupdf does not support static type checkers at this time
+                page_text = pymupdf.open('pdf', pdfocr).load_page(0).get_text()  # type: ignore[reportAttributeAccessIssue] | pymupdf does not support static type checkers at this time
+
                 if not page_text:
                     print(f'{pdf} could not be read through ocr')
                     continue
@@ -80,30 +114,25 @@ def process_pdf(request_type: RequestType) -> None:
                 with log_fp.open('a', encoding='utf-8') as file:
                     file.write(f'---\ncould not find a daterange in {pdf}\n:::\npage text:\n:::\n{page_text}\n---')
                 continue
-            if len(date_range[0][0].split('/')[2]) == 2:    # noqa: PLR2004 checking if year is 2 or 4 chars
-                start_date = datetime.strptime(date_range[0][0], '%m/%d/%y').astimezone(tz=PHX_TZ).date()
-            else:
-                start_date = datetime.strptime(date_range[0][0], '%m/%d/%Y').astimezone(tz=PHX_TZ).date()
-
-            seven_years_ago = datetime.now(tz=PHX_TZ).date() - relativedelta(years=7)
-            start_date = max(start_date, seven_years_ago)
-
-            if len(date_range[0][1].split('/')[2]) == 2:    # noqa: PLR2004
-                end_date = datetime.strptime(date_range[0][1], '%m/%d/%y').astimezone(tz=PHX_TZ).date()
-            else:
-                end_date = datetime.strptime(date_range[0][1], '%m/%d/%Y').astimezone(tz=PHX_TZ).date()
 
             print('---')
+            start_date, end_date = parse_daterange(date_range)
             print(pdf)
             print(deas)
-            print(f'{start_date} - {end_date}')
-            print('\n')
+            print(f'{start_date} - {end_date}\n')
             activity_request(request_type, SearchParameters(deas, start_date, end_date))
     else:
         sys.exit(f'no pdfs in data/{request_type}/ folder')
 
 
-def activity_request(request_type: RequestType, params: SearchParameters):
+def activity_request(request_type: RequestType, params: SearchParameters) -> None:  # noqa: PLR0912, PLR0914, PLR0915, C901 | neccessary complexity to handle the different request types in one function
+    """
+    processes activity requests
+
+    args:
+        request_type: a `RequestType`
+        params: `SearchParameters` returned by `process_pdf()`
+    """
     if request_type == 'audit_trail':
         workbook_name = f'dea_{request_type}'
         print(f'finding luid for {workbook_name} report...')
@@ -127,7 +156,6 @@ def activity_request(request_type: RequestType, params: SearchParameters):
 
             print(f'pulling userids file for {dea}...')
             user_ids_lf = tableau.lazyframe_from_view_id(user_ids_luid, filters, infer_schema=False)
-
             if user_ids_lf is None:
                 print(f'found no user ids for {dea}')
                 continue
@@ -293,11 +321,8 @@ def activity_request(request_type: RequestType, params: SearchParameters):
             try:
                 df = lf.collect()
             except pl.exceptions.NoDataError:
-                msg_dict = {'message': f'no results found for {file_name}'}
-                pl.DataFrame(msg_dict).write_csv(file_path)
-                print(f'{file_path} was empty, empty file written')
-            except Exception as e:
-                print(e)
+                pl.DataFrame({'message': f'no results found for {file_name}'}).write_csv(file_path)
+                print(f'{file_path} was empty, empty file written with message')
             else:
                 df.write_csv(file_path)
                 print(f'{file_path} written')

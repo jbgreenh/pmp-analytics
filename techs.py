@@ -1,5 +1,6 @@
 import os
-from datetime import date, timedelta
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import polars as pl
@@ -8,9 +9,7 @@ from googleapiclient.discovery import build
 
 from utils import auth, email
 
-# TODO: use new emails util
-
-last_mo = date.today().replace(day=1) - timedelta(days=1)
+last_mo = datetime.now(tz=ZoneInfo('America/Phoenix')).date().replace(day=1) - timedelta(days=1)
 
 techs = (
     pl.from_pandas(pd.read_html('data/techs.xls', header=1)[0])
