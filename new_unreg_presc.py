@@ -319,6 +319,7 @@ def send_emails(board_dict: dict[str, BoardInfo], creds: google.oauth2.credentia
         drive_service: a google drive service
     """
     def remove_first_page(export: BytesIO, file_path: Path) -> None:
+        """this removes the broken header first page google drive exports create for some reason"""
         pdf = pymupdf.open(stream=export)
         if pdf.page_count > 1:
             pdf.delete_page(0)
