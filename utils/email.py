@@ -1,11 +1,11 @@
 import base64
 import mimetypes
-import pathlib
 from dataclasses import dataclass, field
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from pathlib import Path
 
 from googleapiclient.discovery import build
 
@@ -31,7 +31,7 @@ class EmailMessage:
     subject: str
     message_text: str
     bcc: str = ''
-    file_paths: list[pathlib.Path] = field(default_factory=list)
+    file_paths: list[Path] = field(default_factory=list)
     monospace: bool = False
 
 
