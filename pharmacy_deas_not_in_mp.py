@@ -1,5 +1,11 @@
+from pathlib import Path
+
 import polars as pl
+
 from utils import deas
+
+# ruff: noqa: PLC1901
+# polars cols with empty string are not falsey
 
 mp = (
     pl.scan_csv('data/pharmacies.csv', infer_schema_length=10000)
@@ -7,7 +13,7 @@ mp = (
 ).collect()['DEA'].to_list()
 
 igov = (
-    pl.scan_csv('data/List Request.csv', infer_schema_length=0)
+    pl.scan_csv('data/List Request.csv', infer_schema=False)
     .filter(
         pl.col('Type') == 'Pharmacy'
     )
@@ -35,5 +41,6 @@ dea = (
     )
 )
 
-dea.collect().write_csv('data/pharmacy_deas_not_in_mp.csv')
-print('data/pharmacy_deas_not_in_mp.csv updated')
+file_path = Path('data/pharmacy_deas_not_in_mp.csv')
+dea.collect().write_csv(file_path)
+print(f'{file_path} updated')

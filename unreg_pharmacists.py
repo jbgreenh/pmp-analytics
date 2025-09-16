@@ -1,25 +1,30 @@
 import os
-import polars as pl
-import datetime
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
+import google.auth.external_account_authorized_user
+import google.oauth2.credentials
+import polars as pl
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
-from utils import auth
-from utils import drive
 
-def pull_inspection_list(file_name:str|None=None) -> pl.LazyFrame:
+from utils import auth, drive
+
+
+def pull_inspection_list(service, file_name: str | None = None) -> pl.LazyFrame:    # noqa: ANN001 | service is dynamically typed
     """
     pull the proper inspection list
 
     args:
+        service: an authorized google drive service
         file_name: a string with the exact name of the file; '09/2023 Unregistered Pharmacists Report'
-        
+
     returns:
         inspection_list: a LazyFrame with the inspection list to be checked for registration
     """
     if not file_name:
-        today = datetime.datetime.now()
-        last_month = today.replace(day=1) - datetime.timedelta(days=1)
+        today = datetime.now(tz=ZoneInfo('America/Phoenix')).date()
+        last_month = today.replace(day=1) - timedelta(days=1)
         lm_yr = str(last_month.year)
         lm_mo = str(last_month.month).zfill(2)
 
@@ -27,24 +32,25 @@ def pull_inspection_list(file_name:str|None=None) -> pl.LazyFrame:
     else:
         lm_yr = file_name.split(' ')[0].split('/')[1]
 
-    folder_id = os.environ.get('PHARMACIST_REG_FOLDER')
+    folder_id = os.environ['PHARMACIST_REG_FOLDER']
 
     folder_id = drive.folder_id_from_name(service=service, folder_name=lm_yr, parent_id=folder_id)
-    return drive.lazyframe_from_file_name_sheet(service=service, file_name=file_name, folder_id=folder_id, infer_schema_length=10000)
+    return drive.lazyframe_from_file_name(service=service, file_name=file_name, folder_id=folder_id, drive_ft='sheet', infer_schema_length=10000)
 
 
-def registration(inspection_list:pl.LazyFrame) -> pl.LazyFrame:
+def registration(service, inspection_list: pl.LazyFrame) -> pl.LazyFrame:   # noqa: ANN001 | service is dynamically typed
     """
     check the `inspection list` for registration in awarxe
 
     args:
+        service: an authorized google drive service
         inspection_list: a LazyFrame with the inspection list for to check for registration
 
     returns:
-       final_list: the `inspection_list` checked for registration 
+       final_list: the `inspection_list` checked for registration
     """
     aw = (
-        drive.awarxe(service=service)
+        drive.awarxe(service)
         .with_columns(
             pl.col('professional license number').str.to_uppercase().str.strip_chars()
         )
@@ -61,14 +67,14 @@ def registration(inspection_list:pl.LazyFrame) -> pl.LazyFrame:
             pl.col('DEA').str.to_uppercase().str.strip_chars()
         )
         .rename(
-            {'DEA':'PharmacyDEA'}
+            {'DEA': 'PharmacyDEA'}
         )
         .select(
             'Pharmacy License Number', 'PharmacyDEA'
         )
     )
 
-    igov = pl.scan_csv('data/List Request.csv', infer_schema_length=0)
+    igov = pl.scan_csv('data/List Request.csv', infer_schema=False)
 
     pharmacies = (
         igov
@@ -120,10 +126,10 @@ def registration(inspection_list:pl.LazyFrame) -> pl.LazyFrame:
         )
     )
 
-    final_sheet = (
+    return (
         inspection_list
         .with_columns(
-            pl.col('License #').is_in(aw['professional license number'].to_list()).replace_strict({True:'YES', False:'NO'}).alias('awarxe')
+            pl.col('License #').is_in(aw['professional license number'].to_list()).replace_strict({True: 'YES', False: 'NO'}).alias('awarxe')
         )
         .filter(pl.col('awarxe') == 'NO')
         .join(
@@ -141,26 +147,22 @@ def registration(inspection_list:pl.LazyFrame) -> pl.LazyFrame:
         )
     )
 
-    return final_sheet
 
-
-def update_unreg_sheet(registration:pl.LazyFrame):
+def update_unreg_sheet(creds: google.oauth2.credentials.Credentials | google.auth.external_account_authorized_user.Credentials, registration: pl.LazyFrame) -> None:
     """
     update the unregistered pharmacists sheet with the `registration` list
 
     args:
+        creds: google drive credentials from `auth.auth()`
         registration: a LazyFrame with the registration status of this month's `inspection list`
     """
-    sheet_id = os.environ.get('UNREG_PHARMACISTS_FILE')
+    sheet_id = os.environ['UNREG_PHARMACISTS_FILE']
     range_name = 'pharmacists!B:B'
     service = build('sheets', 'v4', credentials=creds)
     result = service.spreadsheets().values().get(spreadsheetId=sheet_id, range=range_name).execute()
     values = result.get('values', [])
 
-    if values:
-        last_row = len(values)
-    else:
-        last_row = 1
+    last_row = len(values) if values else 1
 
     data = [list(row) for row in registration.collect().rows()]
 
@@ -207,6 +209,7 @@ if __name__ == '__main__':
 
     creds = auth.auth()
     service = build('drive', 'v3', credentials=creds)
-    inspection_list = pull_inspection_list()
-    reg = registration(inspection_list)
-    update_unreg_sheet(reg)
+
+    inspection_list = pull_inspection_list(service)
+    reg = registration(service, inspection_list)
+    update_unreg_sheet(creds, reg)

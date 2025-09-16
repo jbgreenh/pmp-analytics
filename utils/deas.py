@@ -1,17 +1,31 @@
-import sys
+from datetime import datetime
+from pathlib import Path
+from typing import Literal
+from zoneinfo import ZoneInfo
 
 import polars as pl
 
+# ruff: noqa: ERA001
+# commented code is for alternate dea file formats
 
-def deas(p:str='all') -> pl.LazyFrame:
-    '''
+PHX_TZ = ZoneInfo('America/Phoenix')
+
+type DeaSelector = Literal['all', 'presc', 'pharm', 'az']
+
+
+def deas(p: DeaSelector = 'all') -> pl.LazyFrame:  # noqa: RET503 | function returns for all possible p values
+    """
     returns a lazyframe from the full dea fixed width file
+
     p:
     for az prescribers: presc
     for az pharmacies: pharm
     for all az registrants: az
     for all registrants: all
-    '''
+
+    returns:
+    a lazyframe filtered as indicated through `p`
+    """
     # widths and names according to the file format specifications provided by the DEA
     # dea_widths = [9, 1, 16, 8, 40, 40, 40, 40, 33, 2, 5, 2, 1, 8, 10, 20, 20]
     dea_widths = [9, 1, 2, 40, 40, 40, 40, 33, 2, 9, 8, 8, 12, 3, 9, 13, 15, 15]
@@ -35,13 +49,20 @@ def deas(p:str='all') -> pl.LazyFrame:
         slice_tuples.append((offset, w))
         offset += w
 
+    cs_active_path = Path('data/cs_active.txt')
+    file_age = datetime.now(tz=PHX_TZ) - datetime.fromtimestamp(cs_active_path.stat().st_mtime, tz=PHX_TZ)
+    if file_age.days > 1:
+        print(f'warning: `{cs_active_path}` has not been updated recently!')
+        print(f'the file is {file_age.days} days and {round(file_age.seconds / 60 / 60, 2)} hours old')
+        print('please consider updating it and running this script again')
+
     # using unit separator '\x1F' to trick pyarrow into only making one col, unlikely to make its way into this latin-1 file
-    deas = pl.read_csv('data/cs_active.txt', encoding='latin-1', has_header=False, new_columns=['full_str'], use_pyarrow=True, separator='\x1F')
+    deas = pl.read_csv(cs_active_path, encoding='latin-1', has_header=False, new_columns=['full_str'], use_pyarrow=True, separator='\x1F')
 
     deas = (
         deas
         .with_columns(
-            [pl.col('full_str').str.slice(slice_tuple[0], slice_tuple[1]).str.strip_chars().alias(col) for slice_tuple, col in zip(slice_tuples, dea_names)]
+            [pl.col('full_str').str.slice(slice_tuple[0], slice_tuple[1]).str.strip_chars().alias(col) for slice_tuple, col in zip(slice_tuples, dea_names, strict=False)]
         )
         .drop('full_str')
     )
@@ -56,27 +77,26 @@ def deas(p:str='all') -> pl.LazyFrame:
         )
         print(deas_pharm.head())
         return deas_pharm.lazy()
-    elif p == 'presc':
+    if p == 'presc':
+        sub_codes = ['5', '6', '7', '8', 'A', 'B', 'C', 'D', 'J']
         deas_presc = (
             deas
             .filter(
                 (pl.col('State') == 'AZ') &
-                ((pl.col('Business Activity Code') == 'C') | (pl.col('Business Activity Code') == 'M'))
+                ((pl.col('Business Activity Code') == 'C') | ((pl.col('Business Activity Code') == 'M') & pl.col('Business Activity Sub Code').is_in(sub_codes)))
             )
         )
         print(deas_presc.head())
         return deas_presc.lazy()
-    elif p == 'az':
+    if p == 'az':
         deas_az = (
             deas
             .filter(
-                (pl.col('State') == 'AZ')
+                pl.col('State') == 'AZ'
             )
         )
         print(deas_az.head())
         return deas_az.lazy()
-    elif p == 'all':
+    if p == 'all':
         print(deas.head())
         return deas.lazy()
-    else:
-        sys.exit('use one of presc, pharm, az, all')

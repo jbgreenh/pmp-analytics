@@ -1,6 +1,5 @@
 import os
 from io import BytesIO
-from typing import Any
 
 import polars as pl
 from dotenv import load_dotenv
@@ -10,18 +9,18 @@ from tableauserverclient.server.request_options import CSVRequestOptions
 from tableauserverclient.server.server import Server
 
 
-def lazyframe_from_view_id(view_id:str, filters:dict|None=None, **kwargs:Any) -> pl.LazyFrame|None:
+def lazyframe_from_view_id(view_id: str, filters: dict | None = None, **kwargs) -> pl.LazyFrame | None:
     """
-    pulls a lazyframe from the specified view in tableau    
+    pulls a lazyframe from the specified view in tableau
 
     args:
         view_id: a string, luid of the target view, can be found with `find_luid()`
         filters: optional filters to apply before pulling the lazyframe
-        kwargs:  optional kwargs to pass to polars `read_csv()`
+        kwargs:  optional kwargs to pass to polars `scan_csv()`
 
     returns:
-        a LazyFrame containing the data from the specified view, filtered if 
-        filters are specified 
+        a LazyFrame containing the data from the specified view, filtered if
+        filters are specified
     """
     load_dotenv()
 
@@ -31,13 +30,13 @@ def lazyframe_from_view_id(view_id:str, filters:dict|None=None, **kwargs:Any) ->
     token_value = os.environ.get('TABLEAU_TOKEN_VALUE', 'TABLEAU_TOKEN_VALUE missing from .env file')
 
     tableau_auth = PersonalAccessTokenAuth(token_name, token_value, site)
-    tableau_server = Server(server, use_server_version=True, http_options={'verify':False})
+    tableau_server = Server(server, use_server_version=True, http_options={'verify': False})
 
     with tableau_server.auth.sign_in(tableau_auth):
         if filters:
             options = CSVRequestOptions()
-            for k,v in filters.items():
-                options.vf(k,v)
+            for k, v in filters.items():
+                options.vf(k, v)
         else:
             options = None
         view = tableau_server.views.get_by_id(view_id)
@@ -46,10 +45,19 @@ def lazyframe_from_view_id(view_id:str, filters:dict|None=None, **kwargs:Any) ->
         buffer.write(b''.join(view.csv))
         buffer.seek(0)
         if len(buffer.getvalue()) <= 1:
-            return
+            return None
         return pl.scan_csv(buffer, **kwargs)
 
-def find_view_luid(view_name:str, workbook_name:str) -> str:
+
+class TableauLUIDNotFoundError(Exception):
+    """custom exception for when luid is not found"""
+    def __init__(self, message: str = 'luid not found') -> None:
+        """initializes the error"""
+        self.message = message
+        super().__init__(self.message)
+
+
+def find_view_luid(view_name: str, workbook_name: str) -> str:
     """
     gets the luid from the `view_name` in `workbook_name`
 
@@ -57,23 +65,37 @@ def find_view_luid(view_name:str, workbook_name:str) -> str:
         view_name: string name of the target view
         workbook_name: string name of the workbook the view is in
 
+    raises:
+    TableauLUIDNotFoundError: raised when luid could not be found
+
     returns:
         string luid of the target view
     """
     load_dotenv()
 
-    server = os.environ.get('TABLEAU_SERVER', 'TABLEAU_SERVER missing from .env file')
-    site = os.environ.get('TABLEAU_SITE', 'TABLEAU_SITE missing from .env file')
-    token_name = os.environ.get('TABLEAU_TOKEN_NAME', 'TABLEAU_TOKEN_NAME missing from .env file')
-    token_value = os.environ.get('TABLEAU_TOKEN_VALUE', 'TABLEAU_TOKEN_VALUE missing from .env file')
+    server = os.environ['TABLEAU_SERVER']
+    site = os.environ['TABLEAU_SITE']
+    token_name = os.environ['TABLEAU_TOKEN_NAME']
+    token_value = os.environ['TABLEAU_TOKEN_VALUE']
 
     tableau_auth = PersonalAccessTokenAuth(token_name, token_value, site)
-    tableau_server = Server(server, use_server_version=True, http_options={'verify':False})
+    tableau_server = Server(server, use_server_version=True, http_options={'verify': False})
 
     with tableau_server.auth.sign_in(tableau_auth):
         all_workbooks = list(Pager(tableau_server.workbooks))
-        searched_workbook = [workbook for workbook in all_workbooks if workbook.name==workbook_name][0]
+        try:
+            searched_workbook = next(workbook for workbook in all_workbooks if workbook.name == workbook_name)
+        except StopIteration as error:
+            msg = f'workbook {workbook_name!r} not found'
+            raise TableauLUIDNotFoundError(msg) from error
         tableau_server.workbooks.populate_views(searched_workbook)
         views = searched_workbook.views
-        searched_view = [view for view in views if view.name==view_name][0]
+        try:
+            searched_view = next(view for view in views if view.name == view_name)
+        except StopIteration as error:
+            msg = f'view {view_name!r} not found in workbook {workbook_name!r}'
+            raise TableauLUIDNotFoundError(msg) from error
+        if searched_view.id is None:
+            msg = f'{searched_view} has None for id'
+            raise TableauLUIDNotFoundError(msg)
         return searched_view.id

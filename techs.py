@@ -1,14 +1,15 @@
 import os
-from datetime import date, timedelta
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import polars as pl
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
-from utils import email, auth
+from utils import auth, email
 
-last_mo = date.today().replace(day=1) - timedelta(days=1)
+last_mo = datetime.now(tz=ZoneInfo('America/Phoenix')).date().replace(day=1) - timedelta(days=1)
 
 techs = (
     pl.from_pandas(pd.read_html('data/techs.xls', header=1)[0])
@@ -50,10 +51,10 @@ dtt = s_to_t.select('days_to_tech').describe()
 dttfe = s_to_t.select('days_to_tech_from_exp').describe()
 
 load_dotenv()
-sup_sheet = os.environ.get('SUPERSEDED_FILE')
-to = os.environ.get('EMAIL_SUP')
-sender = os.environ.get('EMAIL_DATA')
-signature = os.environ.get('EMAIL_DATA_SIG').replace(r'\n', '\n')
+sup_sheet = os.environ['SUPERSEDED_FILE']
+to = os.environ['EMAIL_SUP']
+sender = os.environ['EMAIL_DATA']
+signature = os.environ['EMAIL_DATA_SIG'].replace(r'\n', '\n')
 
 s_to_t = (
     s_to_t
@@ -90,8 +91,6 @@ service.spreadsheets().values().update(
 sheet_link = f'https://docs.google.com/spreadsheets/d/{sup_sheet}'
 email_body = f'hi all,\n\nthe superseded to tech sheet has been updated to include {last_mo.month}/{last_mo.year} data: {sheet_link}.\n\nbelow you can find descriptive statistics for {last_mo.month}/{last_mo.year}:\n\ndays to tech:\n{dtt}\ndays to tech from exp:\n{dttfe}{signature}'
 subject = f'{last_mo.month}/{last_mo.year} superseded to tech update'
-message = email.create_message_with_attachments(sender=sender, to=to, subject=subject, message_text=email_body, monospace=True)
+message = email.EmailMessage(sender=sender, to=to, subject=subject, message_text=email_body, monospace=True)
 
-email_service = build('gmail', 'v1', credentials=creds)
-email.send_email(service=email_service, message=message)
-
+email.send_email(message)

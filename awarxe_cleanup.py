@@ -17,10 +17,10 @@ def pull_awarxe() -> pl.DataFrame:
     creds = auth.auth()
     service = build('drive', 'v3', credentials=creds)
 
-    awarxe = drive.awarxe(service).collect()
-    return awarxe
+    return drive.awarxe(service).collect()
 
-def tab_awarxe():
+
+def tab_awarxe() -> pl.Lazyframe:
     """
     pulls active awarxe registrants from tableau. this file differs from the one `pull_awarxe()` returns because each row is one registrant with all of their dea numbers rather than each row being one dea number.
 
@@ -28,12 +28,12 @@ def tab_awarxe():
         a lazyframe with the tableau version of active awarxe registrants
     """
     print('pulling awarxe from tableau...')
-    luid = tableau.find_view_luid('active_approved','tab_awarxe')
+    luid = tableau.find_view_luid('active_approved', 'tab_awarxe')
     tab_awarxe = tableau.lazyframe_from_view_id(luid, infer_schema_length=10000)
     if tab_awarxe is not None:
         return tab_awarxe
-    else:
-        sys.exit('no data in tableau awarxe')
+    sys.exit('no data in tableau awarxe')
+
 
 def read_all_deas() -> pl.LazyFrame:
     """
@@ -44,12 +44,13 @@ def read_all_deas() -> pl.LazyFrame:
     """
     return deas.deas()
 
-def bad_deas(awarxe:pl.DataFrame):
+
+def bad_deas(awarxe: pl.DataFrame) -> None:
     """
     writes csv files with awarxe registrations that have incorrect dea numbers (those that fail a pattern match for the first and those that do not pass the checksum for the second)
 
     args:
-        `awarxe`: a dataframe with active awarxe registrations
+        awarxe: a dataframe with active awarxe registrations
     """
     pattern = r'^[ABCFGHMPRabcfghmpr][A-Za-z](?:[0-9]{6}[1-9]|[0-9]{5}[1-9][0-9]|[0-9]{4}[1-9][0-9]{2}|[0-9]{3}[1-9][0-9]{3}|[0-9]{2}[1-9][0-9]{4}|[0-9][1-9][0-9]{5}|[1-9][0-9]{6})$'
     pattern_match = (
@@ -66,8 +67,8 @@ def bad_deas(awarxe:pl.DataFrame):
         awarxe
         .filter(pl.col('dea number').str.contains(pattern))
         .with_columns(
-            pl.col('dea number').str.slice(2,6).str.split('').cast(pl.List(pl.Int64)).alias('numbers'),
-            pl.col('dea number').str.slice(8,1).str.to_integer(strict=False).alias('check'),
+            pl.col('dea number').str.slice(2, 6).str.split('').cast(pl.List(pl.Int64)).alias('numbers'),
+            pl.col('dea number').str.slice(8, 1).str.to_integer(strict=False).alias('check'),
         )
         .with_columns(
             (
@@ -85,12 +86,13 @@ def bad_deas(awarxe:pl.DataFrame):
     checksum.write_csv(checksum_fp)
     print(f'wrote {checksum_fp}')
 
-def suffix_not_res(awarxe:pl.DataFrame):
+
+def suffix_not_res(awarxe: pl.DataFrame) -> None:
     """
     writes a csv with all active awarxe registrants not in the resident or fellow roles that still have a dea suffix
 
     args:
-        `awarxe`: a dataframe with active awarxe registrations
+        awarxe: a dataframe with active awarxe registrations
     """
     bad_suffix = (
         awarxe
@@ -104,12 +106,12 @@ def suffix_not_res(awarxe:pl.DataFrame):
     print(f'wrote {bs_fn}')
 
 
-def inactive_deas(dea_list:pl.LazyFrame):
+def inactive_deas(dea_list: pl.LazyFrame) -> None:
     """
     writes csvs with all inactive deas associated to active awarxe registrations (one file with some but not all deas inactive and one file with all deas inactive)
 
     args:
-        `dea_list`: lazyframe of all dea registrants
+        dea_list: lazyframe of all dea registrants
     """
     dea_nums = dea_list.collect()['DEA Number'].to_list()
     inactive = (
@@ -163,18 +165,19 @@ def inactive_deas(dea_list:pl.LazyFrame):
     all_inactive.write_csv(ai_fn)
     print(f'wrote {ai_fn}')
 
-def bad_npis(awarxe:pl.DataFrame):
+
+def bad_npis(awarxe: pl.DataFrame) -> None:
     """
     writes csvs for awarxe registrations that have bad npi numbers (are not 10 digits for the 1st and do not pass the checksum for the 2nd)
 
     args:
-        `awarxe`: a dataframe with active awarxe registrations
+        awarxe: a dataframe with active awarxe registrations
     """
     pattern = r'^\d{10}$'
     npi_pattern_match = (
         awarxe
         .with_columns(
-            pl.col('npi number').str.replace_all(r'[‭|‬]', '')
+            pl.col('npi number').str.replace_all(r'[‭|‬]', '')  # noqa: PLE2502
         )
         .filter(
             pl.col('npi number').str.contains(pattern).not_() & pl.col('npi number').is_not_null()
@@ -210,12 +213,13 @@ def bad_npis(awarxe:pl.DataFrame):
     npi_checksum.write_csv(checksum_fp)
     print(f'wrote {checksum_fp}')
 
-def multiple_roles(awarxe:pl.DataFrame):
+
+def multiple_roles(awarxe: pl.DataFrame) -> None:
     """
     writes a csv with awarxe registrations that have multiple roles
 
     args:
-        `awarxe`: a dataframe with active awarxe registrations
+        awarxe: a dataframe with active awarxe registrations
     """
     mult = (
         awarxe
@@ -230,13 +234,14 @@ def multiple_roles(awarxe:pl.DataFrame):
     mult.write_csv(mult_fp)
     print(f'wrote {mult_fp}')
 
-def multiple_deas(awarxe:pl.DataFrame, dea_list:pl.LazyFrame):
+
+def multiple_deas(awarxe: pl.DataFrame, dea_list: pl.LazyFrame) -> None:
     """
     writes a csv with az prescribers with multiple dea numbers and at least one of those dea numbers not registered in awarxe
 
     args:
-        `awarxe`: a dataframe with active awarxe registrations
-        `dea_list`: lazyframe of all dea registrants
+        awarxe: a dataframe with active awarxe registrations
+        dea_list: lazyframe of all dea registrants
     """
     awarxe_deas = awarxe['dea number'].to_list()
 
@@ -257,7 +262,7 @@ def multiple_deas(awarxe:pl.DataFrame, dea_list:pl.LazyFrame):
     names = (
         prescribers
         .filter(
-            (pl.col('SSN') != '')
+            pl.col('SSN') != ''  # noqa: PLC1901
         )
         .with_columns(
             pl.col('Name').str.split(' ').list.get(1).alias('fname'),
@@ -289,7 +294,7 @@ def multiple_deas(awarxe:pl.DataFrame, dea_list:pl.LazyFrame):
     print(f'wrote {mdfname}')
 
 
-def main():
+if __name__ == '__main__':
     Path('data/awarxe_cleanup').mkdir(parents=True, exist_ok=True)
     awarxe = pull_awarxe()
     dea_list = read_all_deas()
@@ -299,6 +304,3 @@ def main():
     inactive_deas(dea_list)
     bad_npis(awarxe)
     multiple_roles(awarxe)
-
-if __name__ == '__main__':
-    main()

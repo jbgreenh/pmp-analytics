@@ -1,60 +1,92 @@
-import os
 import base64
 import mimetypes
+from dataclasses import dataclass, field
+from email import encoders
+from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.mime.base import MIMEBase
-from email import encoders
-from typing import Dict, List, Optional
+from pathlib import Path
 
-def create_message_with_attachments(sender: str, to: str, subject: str, message_text: str, file_paths: Optional[List[str]] = None, bcc: Optional[str] = None, monospace: bool=False) -> Dict[str, str]:
-    '''
-    returns an email message with the provided sender, to, subject, message_text, and attachments at the file_paths
-    '''
+from googleapiclient.discovery import build
+
+from utils import auth
+
+
+@dataclass
+class EmailMessage:
+    """
+    a dataclass for passing to `send_email()`
+
+    attributes:
+        sender: email address of the sender
+        to: email address(es) to send to; multiple addresses should be comma separated
+        subject: the email subject
+        bcc: email address(es) to bcc; multiple addresses should be comma separated
+        message_text: the email body
+        file_paths: a list of file paths to attachment(s)
+        monospace: whether to monospace the email
+    """
+    sender: str
+    to: str
+    subject: str
+    message_text: str
+    bcc: str = ''
+    file_paths: list[Path] = field(default_factory=list)
+    monospace: bool = False
+
+
+def send_email(email_message: EmailMessage, *, service=None) -> dict:    # noqa: ANN001 | service is dynamically typed
+    """
+    sends an email using the details in `email_message`
+
+    args:
+        email_message: an `EmailMethod` witht he detals for sending the email
+        service: an authorized google email service, generated per email if not provided
+
+    returns:
+        the message json as a dict
+    """
+    if service is None:
+        creds = auth.auth()
+        service = build('gmail', 'v1', credentials=creds)
+
     message = MIMEMultipart()
-    message['to'] = to  # specify the recipients as a comma-separated string
-    message['from'] = sender
-    message['subject'] = subject
+    message['to'] = email_message.to
+    message['from'] = email_message.sender
+    message['subject'] = email_message.subject
 
-    if bcc:
-        message['bcc'] = bcc
+    if email_message.bcc:
+        message['bcc'] = email_message.bcc
 
-    if monospace:
+    if email_message.monospace:
         html_message = f"""
         <html>
         <body>
-            <p style="font-family:'Lucida Console','Courier New',monospace; white-space:pre-wrap">{message_text.replace("\n", "<br>")}</p>
+            <p style="font-family:'Lucida Console','Courier New',monospace; white-space:pre-wrap">{email_message.message_text.replace("\n", "<br>")}</p>
         </body>
         </html>
         """
 
         msg = MIMEText(html_message, 'html')
     else:
-        msg = MIMEText(message_text)
+        msg = MIMEText(email_message.message_text)
 
     message.attach(msg)
 
-    if file_paths:
-        for file_path in file_paths:
+    if email_message.file_paths:
+        for file_path in email_message.file_paths:
             content_type, encoding = mimetypes.guess_type(file_path)
             if content_type is None or encoding is not None:
                 content_type = 'application/octet-stream'
             main_type, sub_type = content_type.split('/', 1)
-            with open(file_path, 'rb') as file:
-                msg = MIMEBase(main_type, sub_type)
-                msg.set_payload(file.read())
+            msg = MIMEBase(main_type, sub_type)
+            msg.set_payload(file_path.read_bytes())
             encoders.encode_base64(msg)
-            msg.add_header('Content-Disposition', f'attachment; filename={os.path.basename(file_path)}')
+            msg.add_header('Content-Disposition', f'attachment; filename={file_path.name}')
             message.attach(msg)
 
-    return {'raw': base64.urlsafe_b64encode(message.as_bytes()).decode()}
+    message = {'raw': base64.urlsafe_b64encode(message.as_bytes()).decode()}
 
-def send_email(service, message:Dict[str,str]):
-    '''sends an email from a message returned from create_message_with_attachment'''
-    try:
-        message = service.users().messages().send(userId='me', body=message).execute()
-        print('message sent, message id: %s' % message['id'])
-        return message
-    except Exception as error:
-        print(f'an error occurred: {error}')
-        return None
+    message = service.users().messages().send(userId='me', body=message).execute()
+    print(f'message sent, message id: {message['id']}')
+    return message

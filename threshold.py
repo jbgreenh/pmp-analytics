@@ -1,24 +1,29 @@
 import os
-import polars as pl
-import datetime
-from dotenv import load_dotenv
 import sys
 from dataclasses import dataclass
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+
+import google.auth.external_account_authorized_user
+import google.oauth2.credentials
+import polars as pl
+from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
 from utils import auth
+
 
 @dataclass
 class ThresholdInfo:
     """
     class with everything needed to update the 3x3 threshold report
 
-    attributes: 
-        `date_str`: a `str` for the date of the report in %y-%B format
-        `patient_number`: an `int` with the number of patients on the 3x3 list
-        `success`: an `int` with the number of emails succesfully sent by the vendor
-        `failed_to_send`: an `int` with the number of emails that failed to send
-        `perc`: a `str` with the percent of succesful emails sent: (success/(success + failed_to_send)) * 100
+    attributes:
+        date_str: a `str` for the date of the report in %y-%B format
+        patient_number: an `int` with the number of patients on the 3x3 list
+        success: an `int` with the number of emails succesfully sent by the vendor
+        failed_to_send: an `int` with the number of emails that failed to send
+        perc: a `str` with the percent of succesful emails sent: (success/(success + failed_to_send)) * 100
     """
     date_str: str
     patient_number: int
@@ -26,17 +31,17 @@ class ThresholdInfo:
     failed_to_send: int
     perc: str
 
-def threshold_report(patient_number:int) -> ThresholdInfo:
+
+def threshold_report(patient_number: int) -> ThresholdInfo:
     """
     takes the number of patients and prints the date, patinet number, successful and failed email attempts
 
     args:
-        `patient_number`: the number of patients from awarxe
+        patient_number: the number of patients from awarxe
 
     returns:
-        `update_row`: a `ThresholdInfo` which includes all the information for adding a new row to the 3x3 report
+        update_row: a `ThresholdInfo` which includes all the information for adding a new row to the 3x3 report
     """
-
     thresh_file = (
         pl.read_csv('data/AZ 3x3.csv')
         .with_columns(
@@ -58,16 +63,16 @@ def threshold_report(patient_number:int) -> ThresholdInfo:
     print(f'fail = {failed_to_send.height}')
     print(thresh_file.height)
 
-    today = datetime.date.today()
+    today = datetime.now(tz=ZoneInfo('America/Phoenix')).date()
     first = today.replace(day=1)
-    last_month_date = first - datetime.timedelta(days=1)
+    last_month_date = first - timedelta(days=1)
     date_str = last_month_date.strftime('%y-%B')
     perc = round(((success / (success + failed_to_send.height)) * 100), 2)
     perc = f'{perc}%'
-    update_row = ThresholdInfo(date_str, patient_number, success, failed_to_send.height, perc)
-    return update_row
+    return ThresholdInfo(date_str, patient_number, success, failed_to_send.height, perc)
 
-def update_sheet(creds, thresh:ThresholdInfo, file_id:str):
+
+def update_sheet(creds: google.oauth2.credentials.Credentials | google.auth.external_account_authorized_user.Credentials, thresh: ThresholdInfo, file_id: str) -> None:
     """
     updates the threshold google sheet with the '3x3' list
 
@@ -91,17 +96,15 @@ def update_sheet(creds, thresh:ThresholdInfo, file_id:str):
     _response = request.execute()
     print(f'3x3 Threshold sheet is updated at https://docs.google.com/spreadsheets/d/{file_id}')
 
-def main():
-    if len(sys.argv) != 2 or not (sys.argv[1].isdigit()):
-        print('please insert the number of patients from the threshold request in awarxe')
-        sys.exit('eg: python threshold.py 678')
+
+if __name__ == '__main__':
+    if len(sys.argv) != 2 or not (sys.argv[1].isdigit()):  # noqa: PLR2004 | checking for required arg
+        print('please provide the number of patients from the threshold request in awarxe as an arg')
+        sys.exit('eg: uv run threshold.py 678')
     else:
         load_dotenv()
-        threshold_sheet_id = os.environ.get('THRESHOLD_SHEET_FILE')
+        threshold_sheet_id = os.environ['THRESHOLD_SHEET_FILE']
 
         creds = auth.auth()
         thresh = threshold_report(int(sys.argv[1]))
         update_sheet(creds, thresh, threshold_sheet_id)
-
-if __name__ == '__main__':
-    main()
