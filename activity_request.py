@@ -72,14 +72,9 @@ def process_pdf(request_type: RequestType) -> None:
     with log_fp.open('w', encoding='utf-8') as file:
         pass  # clear logs
 
-    if request_type == 'audit_trail':
-        pdfs = Path(f'data/{request_type}')
-        pdfs.mkdir(parents=True, exist_ok=True)
-        pdfs = pdfs.glob('*.pdf')
-    else:
-        pdfs = Path(f'data/{request_type}_activity_request')
-        pdfs.mkdir(parents=True, exist_ok=True)
-        pdfs = pdfs.glob('*.pdf')
+    pdfs = Path(f'data/{request_type}') if request_type == 'audit_trail' else Path(f'data/{request_type}_activity_request')
+    pdfs.mkdir(parents=True, exist_ok=True)
+    pdfs = pdfs.glob('*.pdf')
 
     if pdfs:
         print('---')
@@ -120,212 +115,223 @@ def process_pdf(request_type: RequestType) -> None:
             print(pdf)
             print(deas)
             print(f'{start_date} - {end_date}\n')
-            activity_request(request_type, SearchParameters(deas, start_date, end_date))
+            search_params = SearchParameters(deas, start_date, end_date)
+            if request_type == 'audit_trail':
+                audit_trail(search_params)
+            else:
+                activity_request(request_type, search_params)
     else:
         sys.exit(f'no pdfs in data/{request_type}/ folder')
 
 
-def activity_request(request_type: RequestType, params: SearchParameters) -> None:  # noqa: PLR0912, PLR0914, PLR0915, C901 | neccessary complexity to handle the different request types in one function
+def audit_trail(params: SearchParameters) -> None:
     """
-    processes activity requests
+    perform an audit trail report
 
     args:
-        request_type: a `RequestType`
-        params: `SearchParameters` returned by `process_pdf()`
+        params: SearchParameters for the request
     """
-    if request_type == 'audit_trail':
-        workbook_name = f'dea_{request_type}'
-        print(f'finding luid for {workbook_name} report...')
-        user_ids_luid = tableau.find_view_luid('UserIDs', workbook_name)
-        print(f'luid found: {user_ids_luid}')
-        searches_luid = tableau.find_view_luid('Searches', workbook_name)
-        print(f'luid found: {searches_luid}')
-        users_luid = tableau.find_view_luid('users', workbook_name)
-        print(f'luid found: {users_luid}')
+    request_type = 'audit_trail'
+    workbook_name = f'dea_{request_type}'
+    print(f'finding luid for {workbook_name} report...')
+    user_ids_luid = tableau.find_view_luid('UserIDs', workbook_name)
+    print(f'luid found: {user_ids_luid}')
+    searches_luid = tableau.find_view_luid('Searches', workbook_name)
+    print(f'luid found: {searches_luid}')
+    users_luid = tableau.find_view_luid('users', workbook_name)
+    print(f'luid found: {users_luid}')
 
-        print('pulling users file...')
-        users_lf = tableau.lazyframe_from_view_id(users_luid, infer_schema=False)
-        if users_lf is None:
-            sys.exit('users file not found in tableau')
+    print('pulling users file...')
+    users_lf = tableau.lazyframe_from_view_id(users_luid, infer_schema=False)
+    if users_lf is None:
+        sys.exit('users file not found in tableau')
 
-        user_ids = []
-        for dea in params.deas:
-            filters = {
-                'search_dea': dea
-            }
+    user_ids = []
+    for dea in params.deas:
+        filters = {
+            'search_dea': dea
+        }
 
-            print(f'pulling userids file for {dea}...')
-            user_ids_lf = tableau.lazyframe_from_view_id(user_ids_luid, filters, infer_schema=False)
-            if user_ids_lf is None:
-                print(f'found no user ids for {dea}')
-                continue
-            user_ids_df = user_ids_lf.collect()
+        print(f'pulling userids file for {dea}...')
+        user_ids_lf = tableau.lazyframe_from_view_id(user_ids_luid, filters, infer_schema=False)
+        if user_ids_lf is None:
+            print(f'found no user ids for {dea}')
+            continue
+        user_ids_df = user_ids_lf.collect()
 
-            if user_ids_df.height > 1:
-                user_ids_df = user_ids_df.filter(pl.col('Active') == 'Y')
-                if user_ids_df.height < 1:
-                    sys.exit(f'{dea} has multiple associated user ids, but none are active')
-                elif user_ids_df.height > 1:
-                    sys.exit(f'{dea} has multiple associated active user ids')
+        if user_ids_df.height > 1:
+            user_ids_df = user_ids_df.filter(pl.col('Active') == 'Y')
+            if user_ids_df.height < 1:
+                sys.exit(f'{dea} has multiple associated user ids, but none are active')
+            elif user_ids_df.height > 1:
+                sys.exit(f'{dea} has multiple associated active user ids')
 
-            user_ids.append(user_ids_df['User ID'].first())
+        user_ids.append(user_ids_df['User ID'].first())
 
-        for user_id in set(user_ids):
-            filters = {
-                'search_trueid': user_id, 'search_start_date': params.start_date, 'search_end_date': params.end_date
-            }
-            user_name = users_lf.filter(pl.col('User ID') == user_id).collect()['User Full Name'].first()
+    for user_id in set(user_ids):
+        filters = {
+            'search_trueid': user_id, 'search_start_date': params.start_date, 'search_end_date': params.end_date
+        }
+        user_name = users_lf.filter(pl.col('User ID') == user_id).collect()['User Full Name'].first()
 
-            print(f'pulling searches for {user_id}...')
-            searches_lf = tableau.lazyframe_from_view_id(searches_luid, filters, infer_schema=False)
-            if searches_lf is None:
-                print(f'{user_id} had no searches from {params.start_date} to {params.end_date}')
-                continue
+        print(f'pulling searches for {user_id}...')
+        searches_lf = tableau.lazyframe_from_view_id(searches_luid, filters, infer_schema=False)
+        if searches_lf is None:
+            print(f'{user_id} had no searches from {params.start_date} to {params.end_date}')
+            continue
 
-            searches_lf = (
-                searches_lf
-                .join(users_lf, how='left', left_on='Requestor ID', right_on='User ID', coalesce=True)
-                .drop('Requestor ID')
-                .select(
-                    'Search ID',
-                    'Searched First Name',
-                    'Searched Last Name',
-                    pl.col('Month, Day, Year of Searched DOB').str.to_date('%B %d, %Y').alias('Searched DOB'),
-                    'User Full Name',
-                    'User Role',
-                    'delegate?',
-                    'Is Gateway Request?',
-                    'Request Status',
-                    pl.col('Month, Day, Year of Search Creation Date').str.to_date('%B %d, %Y').alias('Search Creation Date'),
-                )
-                .sort('Search Creation Date')
+        searches_lf = (
+            searches_lf
+            .join(users_lf, how='left', left_on='Requestor ID', right_on='User ID', coalesce=True)
+            .drop('Requestor ID')
+            .select(
+                'Search ID',
+                'Searched First Name',
+                'Searched Last Name',
+                pl.col('Month, Day, Year of Searched DOB').str.to_date('%B %d, %Y').alias('Searched DOB'),
+                'User Full Name',
+                'User Role',
+                'delegate?',
+                'Is Gateway Request?',
+                'Request Status',
+                pl.col('Month, Day, Year of Search Creation Date').str.to_date('%B %d, %Y').alias('Search Creation Date'),
             )
-            fn = f'data/{request_type}/{user_name}_audit_trail_{params.start_date}_-_{params.end_date}.csv'
-            searches_lf.collect().write_csv(fn)
-            print(f'{fn} written')
+            .sort('Search Creation Date')
+        )
+        fn = f'data/{request_type}/{user_name}_audit_trail_{params.start_date}_-_{params.end_date}.csv'
+        searches_lf.collect().write_csv(fn)
+        print(f'{fn} written')
 
-    else:  # prescriber or dispenser activity request
-        print(f'finding luid for {request_type} activity report...')
-        luid = tableau.find_view_luid(f'{request_type}_activity_request', 'DEA Records Request')
-        print(f'luid found: {luid}')
 
-        for dea in params.deas:
-            filters = {
-                'dea': dea, 'start_date': params.start_date, 'end_date': params.end_date
-            }
-            if request_type == 'prescriber':
-                lf = tableau.lazyframe_from_view_id(luid, filters=filters, infer_schema=False)
-                if lf is None:
-                    print(f'no records found for {dea}')
-                    continue
+def activity_request(request_type: RequestType, params: SearchParameters) -> None:
+    """
+    perform a prescriber or dispenser activity request
 
-                lf = (
-                    lf
-                    .select(
-                        pl.col('Prescriber DEA'),
-                        pl.col('Prescriber NPI'),
-                        pl.col('Prescriber First Name'),
-                        pl.col('Prescriber Last Name'),
-                        pl.col('Orig Prescriber Address Line One').alias('Prescriber Address'),
-                        pl.col('Orig Prescriber Address Line Two').alias('Prescriber Address 2'),
-                        pl.col('Orig Prescriber City').alias('Prescriber City'),
-                        pl.col('Orig Prescriber State Abbr').alias('Prescriber State'),
-                        pl.col('Orig Prescriber Zip').alias('Prescriber ZIP'),
-                        pl.col('Pharmacy DEA'),
-                        pl.col('Pharmacy NPI'),
-                        pl.col('Pharmacy Retail Name').alias('Pharmacy Name'),
-                        pl.col('Orig Pharmacy Address Line One').alias('Pharmacy Address'),
-                        pl.col('Orig Pharmacy Address Line Two').alias('Pharmacy Address 2'),
-                        pl.col('Orig Pharmacy City').alias('Pharmacy City'),
-                        pl.col('Orig Pharmacy State Abbr').alias('Pharmacy State'),
-                        pl.col('Orig Pharmacy Zip').alias('Pharmacy ZIP'),
-                        pl.col('Pharmacy Chain Site Id'),
-                        pl.col('Prescription Number').alias('Rx Number'),
-                        pl.col('Day of Filled At').alias('Rx Fill Date'),
-                        pl.col('Day of Written At').alias('Rx Written Date'),
-                        pl.col('Refills Authorized').alias('Authorized Refills'),
-                        pl.col('Refill Y/N'),
-                        pl.col('Payment Type'),
-                        pl.col('Drug Schedule'),
-                        pl.col('AHFS Description').alias('AHFS Drug Category'),
-                        pl.col('Brand Name').alias('Drug Name'),
-                        pl.col('Quantity'),
-                        pl.col('Strength'),
-                        pl.col('Dosage Type'),
-                        pl.col('Days Supply'),
-                        pl.col('Daily MME'),
-                        pl.col('Orig Patient First Name'),
-                        pl.col('Orig Patient Last Name'),
-                        pl.col('Day of Patient Birthdate').alias('Patient DOB'),
-                        pl.col('Orig Patient Address Line One').alias('Patient Address'),
-                        pl.col('Orig Patient Address Line Two').alias('Patient Address 2'),
-                        pl.col('Orig Patient City').alias('Patient City'),
-                        pl.col('Orig Patient State Abbr').alias('Patient State'),
-                        pl.col('Orig Patient Zip').alias('Patient ZIP'),
-                        pl.col('Veterinarian Prescription Y/N')
-                    )
+    args:
+        request_type: RequestType for the activity request
+        params: SearchParameters for the request
+    """
+    print(f'finding luid for {request_type} activity report...')
+    luid = tableau.find_view_luid(f'{request_type}_activity_request', 'DEA Records Request')
+    print(f'luid found: {luid}')
+
+    for dea in params.deas:
+        filters = {
+            'dea': dea, 'start_date': params.start_date, 'end_date': params.end_date
+        }
+        if request_type == 'prescriber':
+            lf = tableau.lazyframe_from_view_id(luid, filters=filters, infer_schema=False)
+            if lf is None:
+                print(f'no records found for {dea}')
+                continue
+
+            lf = (
+                lf
+                .select(
+                    pl.col('Prescriber DEA'),
+                    pl.col('Prescriber NPI'),
+                    pl.col('Prescriber First Name'),
+                    pl.col('Prescriber Last Name'),
+                    pl.col('Orig Prescriber Address Line One').alias('Prescriber Address'),
+                    pl.col('Orig Prescriber Address Line Two').alias('Prescriber Address 2'),
+                    pl.col('Orig Prescriber City').alias('Prescriber City'),
+                    pl.col('Orig Prescriber State Abbr').alias('Prescriber State'),
+                    pl.col('Orig Prescriber Zip').alias('Prescriber ZIP'),
+                    pl.col('Pharmacy DEA'),
+                    pl.col('Pharmacy NPI'),
+                    pl.col('Pharmacy Retail Name').alias('Pharmacy Name'),
+                    pl.col('Orig Pharmacy Address Line One').alias('Pharmacy Address'),
+                    pl.col('Orig Pharmacy Address Line Two').alias('Pharmacy Address 2'),
+                    pl.col('Orig Pharmacy City').alias('Pharmacy City'),
+                    pl.col('Orig Pharmacy State Abbr').alias('Pharmacy State'),
+                    pl.col('Orig Pharmacy Zip').alias('Pharmacy ZIP'),
+                    pl.col('Pharmacy Chain Site Id'),
+                    pl.col('Prescription Number').alias('Rx Number'),
+                    pl.col('Day of Filled At').alias('Rx Fill Date'),
+                    pl.col('Day of Written At').alias('Rx Written Date'),
+                    pl.col('Refills Authorized').alias('Authorized Refills'),
+                    pl.col('Refill Y/N'),
+                    pl.col('Payment Type'),
+                    pl.col('Drug Schedule'),
+                    pl.col('AHFS Description').alias('AHFS Drug Category'),
+                    pl.col('Brand Name').alias('Drug Name'),
+                    pl.col('Quantity'),
+                    pl.col('Strength'),
+                    pl.col('Dosage Type'),
+                    pl.col('Days Supply'),
+                    pl.col('Daily MME'),
+                    pl.col('Orig Patient First Name'),
+                    pl.col('Orig Patient Last Name'),
+                    pl.col('Day of Patient Birthdate').alias('Patient DOB'),
+                    pl.col('Orig Patient Address Line One').alias('Patient Address'),
+                    pl.col('Orig Patient Address Line Two').alias('Patient Address 2'),
+                    pl.col('Orig Patient City').alias('Patient City'),
+                    pl.col('Orig Patient State Abbr').alias('Patient State'),
+                    pl.col('Orig Patient Zip').alias('Patient ZIP'),
+                    pl.col('Veterinarian Prescription Y/N')
                 )
-            else:   # dispenser
-                lf = tableau.lazyframe_from_view_id(luid, filters=filters, infer_schema=False)
-                if lf is None:
-                    print(f'no records found for {dea}')
-                    continue
-                lf = (
-                    lf
-                    .select(
-                        pl.col('Pharmacy DEA'),
-                        pl.col('Pharmacy NPI'),
-                        pl.col('Pharmacy Retail Name').alias('Pharmacy Name'),
-                        pl.col('Orig Pharmacy Address Line One').alias('Pharmacy Address'),
-                        pl.col('Orig Pharmacy Address Line Two').alias('Pharmacy Address 2'),
-                        pl.col('Orig Pharmacy City').alias('Pharmacy City'),
-                        pl.col('Orig Pharmacy State Abbr').alias('Pharmacy State'),
-                        pl.col('Orig Pharmacy Zip').alias('Pharmacy ZIP'),
-                        pl.col('Pharmacy Chain Site Id'),
-                        pl.col('Orig Patient First Name'),
-                        pl.col('Orig Patient Last Name'),
-                        pl.col('Day of Patient Birthdate').alias('Patient DOB'),
-                        pl.col('Orig Patient Address Line One').alias('Patient Address'),
-                        pl.col('Orig Patient Address Line Two').alias('Patient Address 2'),
-                        pl.col('Orig Patient City').alias('Patient City'),
-                        pl.col('Orig Patient State Abbr').alias('Patient State'),
-                        pl.col('Orig Patient Zip').alias('Patient ZIP'),
-                        pl.col('Prescription Number').alias('Rx Number'),
-                        pl.col('Day of Filled At').alias('Rx Fill Date'),
-                        pl.col('Day of Written At').alias('Rx Written Date'),
-                        pl.col('Refills Authorized').alias('Authorized Refills'),
-                        pl.col('Refill Y/N'),
-                        pl.col('Payment Type'),
-                        pl.col('Drug Schedule'),
-                        pl.col('AHFS Description').alias('AHFS Drug Category'),
-                        pl.col('Brand Name').alias('Drug Name'),
-                        pl.col('Quantity'),
-                        pl.col('Strength'),
-                        pl.col('Dosage Type'),
-                        pl.col('Days Supply'),
-                        pl.col('Daily MME'),
-                        pl.col('Prescriber DEA'),
-                        pl.col('Prescriber NPI'),
-                        pl.col('Prescriber First Name'),
-                        pl.col('Prescriber Last Name'),
-                        pl.col('Orig Prescriber Address Line One').alias('Prescriber Address'),
-                        pl.col('Orig Prescriber Address Line Two').alias('Prescriber Address 2'),
-                        pl.col('Orig Prescriber City').alias('Prescriber City'),
-                        pl.col('Orig Prescriber State Abbr').alias('Prescriber State'),
-                        pl.col('Orig Prescriber Zip').alias('Prescriber ZIP'),
-                        pl.col('Veterinarian Prescription Y/N'))
-                    )
+            )
+        else:   # dispenser
+            lf = tableau.lazyframe_from_view_id(luid, filters=filters, infer_schema=False)
+            if lf is None:
+                print(f'no records found for {dea}')
+                continue
+            lf = (
+                lf
+                .select(
+                    pl.col('Pharmacy DEA'),
+                    pl.col('Pharmacy NPI'),
+                    pl.col('Pharmacy Retail Name').alias('Pharmacy Name'),
+                    pl.col('Orig Pharmacy Address Line One').alias('Pharmacy Address'),
+                    pl.col('Orig Pharmacy Address Line Two').alias('Pharmacy Address 2'),
+                    pl.col('Orig Pharmacy City').alias('Pharmacy City'),
+                    pl.col('Orig Pharmacy State Abbr').alias('Pharmacy State'),
+                    pl.col('Orig Pharmacy Zip').alias('Pharmacy ZIP'),
+                    pl.col('Pharmacy Chain Site Id'),
+                    pl.col('Orig Patient First Name'),
+                    pl.col('Orig Patient Last Name'),
+                    pl.col('Day of Patient Birthdate').alias('Patient DOB'),
+                    pl.col('Orig Patient Address Line One').alias('Patient Address'),
+                    pl.col('Orig Patient Address Line Two').alias('Patient Address 2'),
+                    pl.col('Orig Patient City').alias('Patient City'),
+                    pl.col('Orig Patient State Abbr').alias('Patient State'),
+                    pl.col('Orig Patient Zip').alias('Patient ZIP'),
+                    pl.col('Prescription Number').alias('Rx Number'),
+                    pl.col('Day of Filled At').alias('Rx Fill Date'),
+                    pl.col('Day of Written At').alias('Rx Written Date'),
+                    pl.col('Refills Authorized').alias('Authorized Refills'),
+                    pl.col('Refill Y/N'),
+                    pl.col('Payment Type'),
+                    pl.col('Drug Schedule'),
+                    pl.col('AHFS Description').alias('AHFS Drug Category'),
+                    pl.col('Brand Name').alias('Drug Name'),
+                    pl.col('Quantity'),
+                    pl.col('Strength'),
+                    pl.col('Dosage Type'),
+                    pl.col('Days Supply'),
+                    pl.col('Daily MME'),
+                    pl.col('Prescriber DEA'),
+                    pl.col('Prescriber NPI'),
+                    pl.col('Prescriber First Name'),
+                    pl.col('Prescriber Last Name'),
+                    pl.col('Orig Prescriber Address Line One').alias('Prescriber Address'),
+                    pl.col('Orig Prescriber Address Line Two').alias('Prescriber Address 2'),
+                    pl.col('Orig Prescriber City').alias('Prescriber City'),
+                    pl.col('Orig Prescriber State Abbr').alias('Prescriber State'),
+                    pl.col('Orig Prescriber Zip').alias('Prescriber ZIP'),
+                    pl.col('Veterinarian Prescription Y/N'))
+                )
 
-            file_name = f'{dea}_{params.start_date}_-_{params.end_date}'
-            file_path = f'data/{request_type}_activity_request/{file_name}.csv'
-            try:
-                df = lf.collect()
-            except pl.exceptions.NoDataError:
-                pl.DataFrame({'message': f'no results found for {file_name}'}).write_csv(file_path)
-                print(f'{file_path} was empty, empty file written with message')
-            else:
-                df.write_csv(file_path)
-                print(f'{file_path} written')
+        file_name = f'{dea}_{params.start_date}_-_{params.end_date}'
+        file_path = f'data/{request_type}_activity_request/{file_name}.csv'
+        try:
+            df = lf.collect()
+        except pl.exceptions.NoDataError:
+            pl.DataFrame({'message': f'no results found for {file_name}'}).write_csv(file_path)
+            print(f'{file_path} was empty, empty file written with message')
+        else:
+            df.write_csv(file_path)
+            print(f'{file_path} written')
 
 
 if __name__ == '__main__':
