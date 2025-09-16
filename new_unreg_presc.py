@@ -383,6 +383,7 @@ def send_emails(board_dict: dict[str, BoardInfo], creds: google.oauth2.credentia
             file_paths=[report_file, rrn_path, flyer_path],
             bcc=os.environ['EMAIL_COMPLIANCE']
         )
+
         if send:
             email.send_email(message)
         else:
