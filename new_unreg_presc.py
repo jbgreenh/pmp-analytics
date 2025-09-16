@@ -406,15 +406,10 @@ if __name__ == '__main__':
     service = build('drive', 'v3', credentials=creds)
 
     unreg_deas = check_deas_for_registration(service)
-
     unregistered_w_boards = infer_board(service, unreg_deas)
-
     board_contacts = get_board_contacts(service)
-
     board_info = update_board_info_with_uploaders(board_contacts)
-
     full_board_info = add_dfs_to_board_info(service, unregistered_w_boards, board_info)
-
     send_emails(full_board_info, creds, service, send=args.no_email)
 
     board_counts = unregistered_w_boards.collect()['board'].value_counts(sort=True)
