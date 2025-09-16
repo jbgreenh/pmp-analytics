@@ -6,7 +6,7 @@
 **/*.json
 **/*.pdf
 **/__pycache__
-*test*
+*xx*
 build
 dist
 *.egg-info
