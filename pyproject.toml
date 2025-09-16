@@ -21,7 +21,6 @@ dependencies = [
     "polars-distance>=0.5.3",
     "pyarrow>=18.1.0",
     "pymupdf>=1.25.5",
-    "pypdf2>=3.0.1",
     "pyperclip>=1.9.0",
     "python-dotenv>=1.0.1",
     "tableauserverclient>=0.35",
