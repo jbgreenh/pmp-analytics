@@ -142,22 +142,13 @@ def process_ods(input_file: str, days_before: int, ratio: float) -> None:
         print(f'wrote {odt_fn}')
 
 
-def parse_arguments() -> argparse.Namespace:
-    """
-    parse arguments
-
-    returns:
-        an argparse Namespace with the parsed argument values
-    """
+if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='configure constants')
 
     parser.add_argument('-f', '--file', type=str, default='od', help='file name to be inspected; no extension (default: %(default)s)')
     parser.add_argument('-d', '--days-before', type=int, default=90, help='max number of days before DOD to consider a dispensation a match (default: %(default)s)')
     parser.add_argument('-r', '--ratio', type=float, default=0.8, help='patient name similarity ratio for dispensation to be considered a match (default: %(default)s)')
 
-    return parser.parse_args()
+    args = parser.parse_args()
 
-
-if __name__ == '__main__':
-    args = parse_arguments()
     process_ods(args.file, args.days_before, args.ratio)
