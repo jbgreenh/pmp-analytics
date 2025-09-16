@@ -1,9 +1,14 @@
+from datetime import datetime
+from pathlib import Path
 from typing import Literal
+from zoneinfo import ZoneInfo
 
 import polars as pl
 
 # ruff: noqa: ERA001
 # commented code is for alternate dea file formats
+
+PHX_TZ = ZoneInfo('America/Phoenix')
 
 type DeaSelector = Literal['all', 'presc', 'pharm', 'az']
 
@@ -44,8 +49,15 @@ def deas(p: DeaSelector = 'all') -> pl.LazyFrame:  # noqa: RET503 | function ret
         slice_tuples.append((offset, w))
         offset += w
 
+    cs_active_path = Path('data/cs_active.txt')
+    file_age = datetime.now(tz=PHX_TZ) - datetime.fromtimestamp(cs_active_path.stat().st_mtime, tz=PHX_TZ)
+    if file_age.days > 1:
+        print(f'warning: `{cs_active_path}` has not been updated recently!')
+        print(f'the file is {file_age.days} days and {round(file_age.seconds / 60 / 60, 2)} hours old')
+        print('please consider updating it and running this script again')
+
     # using unit separator '\x1F' to trick pyarrow into only making one col, unlikely to make its way into this latin-1 file
-    deas = pl.read_csv('data/cs_active.txt', encoding='latin-1', has_header=False, new_columns=['full_str'], use_pyarrow=True, separator='\x1F')
+    deas = pl.read_csv(cs_active_path, encoding='latin-1', has_header=False, new_columns=['full_str'], use_pyarrow=True, separator='\x1F')
 
     deas = (
         deas
