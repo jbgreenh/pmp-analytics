@@ -1,8 +1,11 @@
-import datetime
 import os
 import sys
 from dataclasses import dataclass
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
+import google.auth.external_account_authorized_user
+import google.oauth2.credentials
 import polars as pl
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
@@ -60,16 +63,16 @@ def threshold_report(patient_number: int) -> ThresholdInfo:
     print(f'fail = {failed_to_send.height}')
     print(thresh_file.height)
 
-    today = datetime.date.today()
+    today = datetime.now(tz=ZoneInfo('America/Phoenix')).date()
     first = today.replace(day=1)
-    last_month_date = first - datetime.timedelta(days=1)
+    last_month_date = first - timedelta(days=1)
     date_str = last_month_date.strftime('%y-%B')
     perc = round(((success / (success + failed_to_send.height)) * 100), 2)
     perc = f'{perc}%'
     return ThresholdInfo(date_str, patient_number, success, failed_to_send.height, perc)
 
 
-def update_sheet(creds, thresh: ThresholdInfo, file_id: str) -> None:
+def update_sheet(creds: google.oauth2.credentials.Credentials | google.auth.external_account_authorized_user.Credentials, thresh: ThresholdInfo, file_id: str) -> None:
     """
     updates the threshold google sheet with the '3x3' list
 
@@ -95,9 +98,9 @@ def update_sheet(creds, thresh: ThresholdInfo, file_id: str) -> None:
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2 or not (sys.argv[1].isdigit()):
-        print('please insert the number of patients from the threshold request in awarxe')
-        sys.exit('eg: python threshold.py 678')
+    if len(sys.argv) != 2 or not (sys.argv[1].isdigit()):  # noqa: PLR2004 | checking for required arg
+        print('please provide the number of patients from the threshold request in awarxe as an arg')
+        sys.exit('eg: uv run threshold.py 678')
     else:
         load_dotenv()
         threshold_sheet_id = os.environ['THRESHOLD_SHEET_FILE']
