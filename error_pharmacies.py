@@ -1,5 +1,6 @@
 import os
-import pathlib
+import sys
+from pathlib import Path
 from typing import Any
 
 import google.auth.external_account_authorized_user
@@ -19,9 +20,14 @@ def pull_file() -> pl.LazyFrame:
         top_pharmacy: a LazyFrame containing the top pharmacies errors
     """
     print('pulling error file from tableau...')
-    luid = tableau.find_view_luid(view_name="Errors by Pharmacy", workbook_name="Pharmacy Compliance")
+    luid = tableau.find_view_luid(view_name='Errors by Pharmacy', workbook_name='Pharmacy Compliance')
+    errors_lf = tableau.lazyframe_from_view_id(view_id=luid, infer_schema_length=10000)
+    if errors_lf is None:
+        sys.exit('could not find Errors By Pharmacy view or Pharmacy Compliance workbook')
+
     errors_by_pharmacy = (
-        tableau.lazyframe_from_view_id(view_id=luid, infer_schema_length=10000).drop("blank")
+        errors_lf
+        .drop('blank')
         .rename({
             'DEA Number': 'dea', 'Pharmacy Name': 'pharmacy', 'License Number': 'license', 'File Name': 'file_name', 'Dispensation ID': 'dispensation_ID', 'Error': 'error',
             'Submission Date': 'submission_date', 'RX Number': 'rx_number', 'Pharmacist Phone': 'pharm_phone',
@@ -157,9 +163,9 @@ if __name__ == '__main__':
     top_pharmacy = pull_file()
     top_pharmacy_name = (top_pharmacy.select(pl.col('pharmacy')).collect().head(1).item())
     folder_id = drive.find_or_create_folder(service, top_pharmacy_name, error_folder_id)
-    file_name = f'{top_pharmacy_name}.csv'
+    file_name = Path(f'{top_pharmacy_name}.csv')
     drive.upload_csv_as_sheet(service, file_name, folder_id)
-    pathlib.Path(file_name).unlink()
+    Path(file_name).unlink()
     print(f'{file_name} removed')
     row_for_updating = row_for_sheet(top_pharmacy, folder_id)
     update_error_sheet(creds, row_for_updating, error_sheet_id)
