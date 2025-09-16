@@ -1,20 +1,20 @@
 import os
 import sys
-
-# import io
 from dataclasses import dataclass, field
 from datetime import datetime
+from io import BytesIO
 from pathlib import Path
 from typing import Literal
 from zoneinfo import ZoneInfo
 
+import google.auth.external_account_authorized_user
+import google.oauth2.credentials
 import polars as pl
+import pymupdf
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
-from utils import auth, deas, drive  # , email
-
-# from PyPDF2 import PdfReader, PdfWriter
+from utils import auth, deas, drive, email
 
 # ruff: noqa: PLC1901
 # polars cols with empty string are not falsey
@@ -309,7 +309,74 @@ def add_dfs_to_board_info(service, unreg_presc: pl.LazyFrame, board_info: dict) 
     return board_info
 
 
-# TODO: emails
+def send_emails(board_dict: dict[str, BoardInfo], creds: google.oauth2.credentials.Credentials | google.auth.external_account_authorized_user.Credentials, drive_service) -> None:    # noqa: ANN001 | service is dynamically typed
+    """
+    sends emails to each board with their unregistered prescribers
+
+    args:
+        board_dict: the `board_dict` returned by `add_dfs_to_board_info()`
+        creds: google api credentials
+        drive_service: a google drive service
+    """
+    def remove_first_page(export: BytesIO, file_path: Path) -> None:
+        pdf = pymupdf.open(stream=export)
+        if pdf.page_count > 1:
+            pdf.delete_page(0)
+        pdf.save(file_path)
+        print(f'{file_path} updated')
+
+    print('pulling RegistrationRequirementsNotice...')
+    reg_req_notice = os.environ['UNREG_PRESCRIBERS_FILE']
+    docs_service = build('docs', 'v1', credentials=creds)
+
+    today_str = datetime.now(tz=ZoneInfo('America/Phoenix')).date().strftime('%B %d, %Y')
+
+    copy_doc_id = drive_service.files().copy(fileId=reg_req_notice, body={'name': 'copy'}, supportsAllDrives=True).execute()['id']
+
+    requests = [
+        {
+            'replaceAllText': {
+                'containsText': {
+                    'text': '{{date}}',
+                    'matchCase': True
+                },
+                'replaceText': f'{today_str}'
+            }
+        }
+    ]
+
+    docs_service.documents().batchUpdate(documentId=copy_doc_id, body={'requests': requests}).execute()
+
+    export_response = drive_service.files().export(fileId=copy_doc_id, mimeType='application/pdf').execute()
+
+    rrn_path = Path('data/RegistrationRequirementsNotice.pdf')
+    remove_first_page(export_response, rrn_path)
+
+    drive_service.files().delete(fileId=copy_doc_id, supportsAllDrives=True).execute()
+
+    print('pulling unregistered prescriber flyer...')
+    reg_flyer = os.environ['UNREG_PRESC_FLYER_FILE']
+    flyer_export = drive_service.files().export(fileId=reg_flyer, mimeType='application/pdf').execute()
+
+    flyer_path = Path('data/UnregisteredPrescriberFlyer.pdf')
+    remove_first_page(flyer_export, flyer_path)
+
+    signature = os.environ['EMAIL_COMP_SIG'].replace(r'\n', '\n')
+
+    for board, info in board_dict.items():
+        report_file = Path(f'{board}_unregistered_prescribers_{today_str}.csv')
+        info.board_df.write_csv(report_file)
+
+        message = email.EmailMessage(
+            sender=os.environ['EMAIL_COMPLIANCE'],
+            to=info.board_emails,
+            subject=f'CSPMP Unregistered Prescribers {info.board_name}',
+            message_text=f'The CSPMP sends biannual compliance reports to Arizona regulatory licensing boards regarding prescribers who have been identified as non-compliant in registering for the CSPMP, pursuant to A.R.S § 36-2606 (A). This list is generated every six months.\n\nAttached you will find the list of licensed providers with the {info.board_name} that are not registered with the Arizona CSPMP, as well as detailed information pertaining to the registration requirements.\n\nIf you have any questions please feel free to contact us.{signature}',
+            file_paths=[report_file, rrn_path, flyer_path],
+            bcc=os.environ['EMAIL_COMPLIANCE']
+        )
+        email.send_email(message)
+        Path(report_file).unlink()
 
 
 if __name__ == '__main__':
