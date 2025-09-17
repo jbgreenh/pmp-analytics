@@ -252,7 +252,7 @@ def awarxe(service, day: datetime.date | None = None) -> pl.LazyFrame:   # noqa:
                 while done is False:
                     _status, done = downloader.next_chunk()
                 file.seek(0)  # after writing, pointer is at the end of the stream
-                return pl.scan_csv(file, separator='|', infer_schema_length=100000)
+                return pl.scan_csv(file, separator='|', infer_schema=False)
             print(f'{file_name} not found')
             day -= datetime.timedelta(days=1)
 

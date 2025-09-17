@@ -27,7 +27,7 @@ def mm2() -> None:
     print(f'luid found: {searches_luid}')
 
     print('pulling user ids...')
-    user_ids_lf = tableau.lazyframe_from_view_id(user_ids_luid, infer_schema_length=False)
+    user_ids_lf = tableau.lazyframe_from_view_id(user_ids_luid, infer_schema=False)
     if user_ids_lf is None:
         sys.exit('no user ids data found, check the mm_audit workbook in tableau')
     users_explode = (
@@ -48,7 +48,7 @@ def mm2() -> None:
         'search_end_date': end,
     }
     print('pulling searches data...')
-    searches_lf = tableau.lazyframe_from_view_id(searches_luid, filters=filters, infer_schema_length=False)
+    searches_lf = tableau.lazyframe_from_view_id(searches_luid, filters=filters, infer_schema=False)
     if searches_lf is None:
         sys.exit('no searches data found, check the mm_audit workbook in tableau')
     searches_lf = (

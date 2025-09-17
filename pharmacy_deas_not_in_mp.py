@@ -8,7 +8,7 @@ from utils import deas
 # polars cols with empty string are not falsey
 
 mp = (
-    pl.scan_csv('data/pharmacies.csv', infer_schema_length=10000)
+    pl.scan_csv('data/pharmacies.csv', infer_schema=False)
     .select('DEA')
 ).collect()['DEA'].to_list()
 

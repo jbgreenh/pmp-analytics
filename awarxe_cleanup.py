@@ -29,7 +29,7 @@ def tab_awarxe() -> pl.Lazyframe:
     """
     print('pulling awarxe from tableau...')
     luid = tableau.find_view_luid('active_approved', 'tab_awarxe')
-    tab_awarxe = tableau.lazyframe_from_view_id(luid, infer_schema_length=10000)
+    tab_awarxe = tableau.lazyframe_from_view_id(luid, infer_schema=False)
     if tab_awarxe is not None:
         return tab_awarxe
     sys.exit('no data in tableau awarxe')
