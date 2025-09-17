@@ -35,7 +35,7 @@ def pull_inspection_list(service, file_name: str | None = None) -> pl.LazyFrame:
     folder_id = os.environ['PHARMACIST_REG_FOLDER']
 
     folder_id = drive.folder_id_from_name(service=service, folder_name=lm_yr, parent_id=folder_id)
-    return drive.lazyframe_from_file_name(service=service, file_name=file_name, folder_id=folder_id, drive_ft='sheet', infer_schema_length=10000)
+    return drive.lazyframe_from_file_name(service=service, file_name=file_name, folder_id=folder_id, drive_ft='sheet', infer_schema=False)
 
 
 def registration(service, inspection_list: pl.LazyFrame) -> pl.LazyFrame:   # noqa: ANN001 | service is dynamically typed
