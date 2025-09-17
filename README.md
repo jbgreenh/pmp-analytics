@@ -206,7 +206,3 @@ this script checks the dea list for prescriber registration and emails unregiste
 ### required files
 
 updated `data/cs_active.txt`
-
-```
-
-```
