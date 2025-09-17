@@ -87,3 +87,8 @@ convention = "google"
   "PLR2004", # Magic value used in comparison, ...
   "S311",    # Standard pseudo-random generators are not suitable for cryptographic purposes
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+]
