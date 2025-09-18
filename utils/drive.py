@@ -11,6 +11,8 @@ from dotenv import load_dotenv
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 
+from utils.constants import PHX_TZ
+
 EARLIEST_AWARXE_DATE = datetime.date(year=2022, month=12, day=7)
 
 type DriveFileType = Literal['sheet', 'csv']
@@ -129,7 +131,7 @@ def get_latest_uploaded(service, folder_id: str, drive_ft: DriveFileType, **kwar
 
             file_ct = files[0]['createdTime']
             file_ts = datetime.datetime.strptime(file_ct, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=ZoneInfo('UTC'))
-            phx_ts = file_ts.astimezone(ZoneInfo('America/Phoenix'))
+            phx_ts = file_ts.astimezone(PHX_TZ)
 
             try:
                 if drive_ft == 'csv':
@@ -206,7 +208,7 @@ def awarxe(service, day: datetime.date | None = None) -> pl.LazyFrame:   # noqa:
     returns:
        awarxe: a lazyframe with all active awarxe registrants from the most recent file as of `day` if specified, or yesterday if `day` is not specified
     """
-    yesterday = datetime.datetime.now(tz=ZoneInfo('America/Phoenix')).date() - datetime.timedelta(days=1)
+    yesterday = datetime.datetime.now(tz=PHX_TZ).date() - datetime.timedelta(days=1)
     day = max(min(day or yesterday, yesterday), EARLIEST_AWARXE_DATE)
 
     load_dotenv()

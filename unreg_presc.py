@@ -6,7 +6,6 @@ from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from typing import Literal
-from zoneinfo import ZoneInfo
 
 import google.auth.external_account_authorized_user
 import google.oauth2.credentials
@@ -16,6 +15,7 @@ from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
 from utils import auth, deas, drive, email
+from utils.constants import PHX_TZ
 
 # ruff: noqa: PLC1901
 # polars cols with empty string are not falsey
@@ -103,7 +103,7 @@ def check_deas_for_registration(service) -> pl.LazyFrame:   # noqa: ANN001 | ser
         ['dea number'].to_list()
     )
 
-    today = datetime.now(tz=ZoneInfo('America/Phoenix')).date()
+    today = datetime.now(tz=PHX_TZ).date()
     az_presc = (
         deas.deas('presc')
         .with_columns(pl.col(['Date of Original Registration', 'Expiration Date']).str.to_date('%Y%m%d', strict=False))
@@ -249,7 +249,7 @@ def add_dfs_to_board_info(service, unreg_presc: pl.LazyFrame, board_info: dict) 
         else:
             latest_file = drive.get_latest_uploaded(service, folder_id=board_dict.uploads_folder, drive_ft=board_dict.upload_file_type, skip_rows=board_dict.upload_skip_rows, infer_schema=False)
             lf = latest_file.lf
-            age = datetime.now(ZoneInfo('America/Phoenix')) - latest_file.created_at
+            age = datetime.now(PHX_TZ) - latest_file.created_at
             age_hours = round(age.seconds / 60 / 60, 2)  # don't need total_seconds() because of how we handle days below
             if age.days > 1:
                 print(f'warning: {board} file is over a day old! using file created at {latest_file.created_at}, which was {age.days} days and {age_hours} hours ago')
@@ -332,7 +332,7 @@ def send_emails(board_dict: dict[str, BoardInfo], creds: google.oauth2.credentia
     reg_req_notice = os.environ['UNREG_PRESCRIBERS_FILE']
     docs_service = build('docs', 'v1', credentials=creds)
 
-    today_str = datetime.now(tz=ZoneInfo('America/Phoenix')).date().strftime('%B %d, %Y')
+    today_str = datetime.now(tz=PHX_TZ).date().strftime('%B %d, %Y')
 
     copy_doc_id = drive_service.files().copy(fileId=reg_req_notice, body={'name': 'copy'}, supportsAllDrives=True).execute()['id']
 

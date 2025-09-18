@@ -1,6 +1,5 @@
 import os
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
 
 import pandas as pd
 import polars as pl
@@ -8,8 +7,9 @@ from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
 from utils import auth, email
+from utils.constants import PHX_TZ
 
-last_mo = datetime.now(tz=ZoneInfo('America/Phoenix')).date().replace(day=1) - timedelta(days=1)
+last_mo = datetime.now(tz=PHX_TZ).date().replace(day=1) - timedelta(days=1)
 
 techs = (
     pl.from_pandas(pd.read_html('data/techs.xls', header=1)[0])

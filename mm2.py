@@ -1,20 +1,18 @@
 import sys
 from datetime import date, datetime
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 import polars as pl
 
 from utils import tableau
-
-JULY = 7
+from utils.constants import JULY_MONTH_NUMBER, PHX_TZ
 
 
 def mm2() -> None:
     """finishes the medical marijuana audit process. run `mm1.py` and follow instructions there first"""
-    today = datetime.now(tz=ZoneInfo('America/Phoenix')).date()
+    today = datetime.now(tz=PHX_TZ).date()
     year = today.year
-    if today.month < JULY:
+    if today.month < JULY_MONTH_NUMBER:
         year -= 1
         start, end = date(year=year, month=7, day=1), date(year=year, month=12, day=31)
     else:

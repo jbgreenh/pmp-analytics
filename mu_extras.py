@@ -2,7 +2,6 @@ import calendar
 import os
 import sys
 from datetime import date, datetime
-from zoneinfo import ZoneInfo
 
 import google.auth.external_account_authorized_user
 import google.oauth2.credentials
@@ -11,8 +10,7 @@ from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
 from utils import auth, deas, drive
-
-TOP_PRESCRIBERS = 20    # number of prescribers with the most dispensations and no searches
+from utils.constants import PHX_TZ, TOP_PRESCRIBERS
 
 
 def ordinal(n: int) -> str:
@@ -102,7 +100,7 @@ def process_mu(appearance_month: date, input_file: str) -> None:
             pl.col('final_id').cast(pl.String)
         )
         .filter(
-            pl.col('exclude until') > datetime.now(tz=ZoneInfo('America/Phoenix')).date()
+            pl.col('exclude until') > datetime.now(tz=PHX_TZ).date()
         )
     )
 

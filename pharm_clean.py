@@ -1,15 +1,13 @@
 import os
 from datetime import datetime
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 import polars as pl
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
 from utils import auth, drive, email
-
-DAYS_DELINQUENT_THRESHOLD = 7
+from utils.constants import DAYS_DELINQUENT_THRESHOLD, PHX_TZ
 
 
 def pharm_clean() -> Path:
@@ -19,7 +17,7 @@ def pharm_clean() -> Path:
     returns:
         the path of the delinquent data submitters report
     """
-    today_str = datetime.now(tz=ZoneInfo('America/Phoenix')).date().strftime("%m-%d-%Y")
+    today_str = datetime.now(tz=PHX_TZ).date().strftime("%m-%d-%Y")
 
     mp = (
         pl.scan_csv('data/pharmacies.csv')

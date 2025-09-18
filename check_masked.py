@@ -1,18 +1,18 @@
 import os
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
 
 from df_compare_pl import df_compare
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
 from utils import auth, drive
+from utils.constants import PHX_TZ
 
 load_dotenv()
 creds = auth.auth()
 service = build('drive', 'v3', credentials=creds)
 
-last_month_date = datetime.now(tz=ZoneInfo('America/Phoenix')).replace(day=1) - timedelta(days=1)
+last_month_date = datetime.now(tz=PHX_TZ).replace(day=1) - timedelta(days=1)
 mask_month = last_month_date.month
 mask_year = last_month_date.year - 7
 prev_file_m_d = last_month_date.replace(day=1, year=mask_year) - timedelta(days=1)

@@ -1,7 +1,6 @@
 import os
 from datetime import datetime, timedelta
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 import google.auth.external_account_authorized_user
 import google.oauth2.credentials
@@ -10,6 +9,7 @@ from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
 from utils import auth, drive, files
+from utils.constants import PHX_TZ
 
 
 def pull_inspection_list(service, file_name: str | None = None) -> pl.LazyFrame:    # noqa: ANN001 | service is dynamically typed
@@ -24,7 +24,7 @@ def pull_inspection_list(service, file_name: str | None = None) -> pl.LazyFrame:
         inspection_list: a LazyFrame with the inspection list to be checked for registration
     """
     if not file_name:
-        today = datetime.now(tz=ZoneInfo('America/Phoenix')).date()
+        today = datetime.now(tz=PHX_TZ).date()
         last_month = today.replace(day=1) - timedelta(days=1)
         lm_yr = str(last_month.year)
         lm_mo = str(last_month.month).zfill(2)
