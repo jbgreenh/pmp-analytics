@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timedelta
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import google.auth.external_account_authorized_user
@@ -8,7 +9,7 @@ import polars as pl
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
-from utils import auth, drive
+from utils import auth, drive, files
 
 
 def pull_inspection_list(service, file_name: str | None = None) -> pl.LazyFrame:    # noqa: ANN001 | service is dynamically typed
@@ -49,7 +50,7 @@ def registration(service, inspection_list: pl.LazyFrame) -> pl.LazyFrame:   # no
     returns:
        final_list: the `inspection_list` checked for registration
     """
-    aw = (
+    awarxe_license_numbers = (
         drive.awarxe(service)
         .with_columns(
             pl.col('professional license number').str.to_uppercase().str.strip_chars()
@@ -60,8 +61,10 @@ def registration(service, inspection_list: pl.LazyFrame) -> pl.LazyFrame:   # no
         .collect()
     )
 
+    mp_path = Path('data/pharmacies.csv')
+    files.warn_file_age(mp_path)
     manage_pharmacies = (
-        pl.scan_csv('data/pharmacies.csv')
+        pl.scan_csv(mp_path)
         .with_columns(
             pl.col('Pharmacy License Number').str.to_uppercase().str.strip_chars(),
             pl.col('DEA').str.to_uppercase().str.strip_chars()
@@ -74,7 +77,9 @@ def registration(service, inspection_list: pl.LazyFrame) -> pl.LazyFrame:   # no
         )
     )
 
-    igov = pl.scan_csv('data/List Request.csv', infer_schema=False)
+    lr_path = Path('data/List Request.csv')
+    files.warn_file_age(lr_path)
+    igov = pl.scan_csv(lr_path, infer_schema=False)
 
     pharmacies = (
         igov
@@ -129,7 +134,7 @@ def registration(service, inspection_list: pl.LazyFrame) -> pl.LazyFrame:   # no
     return (
         inspection_list
         .with_columns(
-            pl.col('License #').is_in(aw['professional license number'].to_list()).replace_strict({True: 'YES', False: 'NO'}).alias('awarxe')
+            pl.col('License #').is_in(awarxe_license_numbers['professional license number'].to_list()).replace_strict({True: 'YES', False: 'NO'}).alias('awarxe')
         )
         .filter(pl.col('awarxe') == 'NO')
         .join(
