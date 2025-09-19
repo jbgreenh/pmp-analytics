@@ -1,6 +1,5 @@
 import datetime
 import os
-from zoneinfo import ZoneInfo
 
 import google.auth.external_account_authorized_user
 import google.oauth2.credentials
@@ -9,6 +8,7 @@ from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
 from utils import auth, drive
+from utils.constants import PHX_TZ
 
 
 def pull_files(service) -> pl.DataFrame:  # noqa: ANN001 | service is dynamically typed
@@ -21,7 +21,7 @@ def pull_files(service) -> pl.DataFrame:  # noqa: ANN001 | service is dynamicall
     returns:
         scorecard_new_row: the new row for adding to the scorecard tracking sheet
     """
-    last_month = datetime.datetime.now(tz=ZoneInfo('America/Phoenix')).date().replace(day=1) - datetime.timedelta(days=1)
+    last_month = datetime.datetime.now(tz=PHX_TZ).date().replace(day=1) - datetime.timedelta(days=1)
     lm_ym = f'{last_month.year}{str(last_month.month).zfill(2)}'
     disp_file_name = f'AZ_Dispensations_{lm_ym}.csv'
     ob_file_name = f'AZ_Dispensations_{lm_ym}_opioid_benzo.csv'

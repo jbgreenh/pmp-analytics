@@ -13,8 +13,6 @@ from googleapiclient.http import MediaIoBaseUpload
 
 from utils import auth
 
-UTC_NOW = datetime.now(tz=ZoneInfo('UTC'))
-
 
 def upload_file(service, sftp: paramiko.SFTPClient, remote_file_path: str, drive_folder_id: str) -> None:  # noqa: ANN001 | service is dynamically typed
     """
@@ -31,7 +29,7 @@ def upload_file(service, sftp: paramiko.SFTPClient, remote_file_path: str, drive
 
     st_mtime = sftp.lstat(remote_file_path).st_mtime
     remote_file_mtime = datetime.fromtimestamp(float(st_mtime)).astimezone(tz=ZoneInfo('UTC')) if isinstance(st_mtime, int) else datetime(year=2001, month=1, day=1, tzinfo=ZoneInfo('UTC'))
-    time_dif = UTC_NOW - remote_file_mtime
+    time_dif = datetime.now(tz=ZoneInfo('UTC')) - remote_file_mtime
     print(f'{remote_file} is {round(time_dif.total_seconds() / 60 / 60, 2)} hours old')
 
     if time_dif <= timedelta(hours=24):

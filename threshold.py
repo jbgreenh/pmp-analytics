@@ -2,7 +2,6 @@ import os
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
 
 import google.auth.external_account_authorized_user
 import google.oauth2.credentials
@@ -11,6 +10,7 @@ from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
 from utils import auth
+from utils.constants import PHX_TZ
 
 
 @dataclass
@@ -63,7 +63,7 @@ def threshold_report(patient_number: int) -> ThresholdInfo:
     print(f'fail = {failed_to_send.height}')
     print(thresh_file.height)
 
-    today = datetime.now(tz=ZoneInfo('America/Phoenix')).date()
+    today = datetime.now(tz=PHX_TZ).date()
     first = today.replace(day=1)
     last_month_date = first - timedelta(days=1)
     date_str = last_month_date.strftime('%y-%B')

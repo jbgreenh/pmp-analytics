@@ -1,20 +1,18 @@
 import sys
 from datetime import date, datetime
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 import polars as pl
 
 from utils import tableau
-
-JULY = 7
+from utils.constants import JULY_MONTH_NUMBER, PHX_TZ
 
 
 def mm2() -> None:
     """finishes the medical marijuana audit process. run `mm1.py` and follow instructions there first"""
-    today = datetime.now(tz=ZoneInfo('America/Phoenix')).date()
+    today = datetime.now(tz=PHX_TZ).date()
     year = today.year
-    if today.month < JULY:
+    if today.month < JULY_MONTH_NUMBER:
         year -= 1
         start, end = date(year=year, month=7, day=1), date(year=year, month=12, day=31)
     else:
@@ -27,7 +25,7 @@ def mm2() -> None:
     print(f'luid found: {searches_luid}')
 
     print('pulling user ids...')
-    user_ids_lf = tableau.lazyframe_from_view_id(user_ids_luid, infer_schema_length=False)
+    user_ids_lf = tableau.lazyframe_from_view_id(user_ids_luid, infer_schema=False)
     if user_ids_lf is None:
         sys.exit('no user ids data found, check the mm_audit workbook in tableau')
     users_explode = (
@@ -48,7 +46,7 @@ def mm2() -> None:
         'search_end_date': end,
     }
     print('pulling searches data...')
-    searches_lf = tableau.lazyframe_from_view_id(searches_luid, filters=filters, infer_schema_length=False)
+    searches_lf = tableau.lazyframe_from_view_id(searches_luid, filters=filters, infer_schema=False)
     if searches_lf is None:
         sys.exit('no searches data found, check the mm_audit workbook in tableau')
     searches_lf = (

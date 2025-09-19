@@ -6,7 +6,6 @@ from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from typing import Literal
-from zoneinfo import ZoneInfo
 
 import google.auth.external_account_authorized_user
 import google.oauth2.credentials
@@ -16,6 +15,7 @@ from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
 from utils import auth, deas, drive, email
+from utils.constants import PHX_TZ
 
 # ruff: noqa: PLC1901
 # polars cols with empty string are not falsey
@@ -65,7 +65,7 @@ def get_board_contacts(service) -> dict:    # noqa: ANN001 | service is dynamica
         a dictionary with a board name as the key and BoardInfo (with default uploads_folder, cleaned_license_expr, and board_df) as the value
     """
     contacts_file = os.environ['BOARD_CONTACTS_FILE']
-    board_contacts = drive.lazyframe_from_id_and_sheetname(service=service, file_id=contacts_file, sheet_name='registration', infer_schema_length=100).collect()
+    board_contacts = drive.lazyframe_from_id_and_sheetname(service=service, file_id=contacts_file, sheet_name='registration', infer_schema=False).collect()
     boards = board_contacts['Board'].to_list()
     boards_dict = {}
     for board in boards:
@@ -103,7 +103,7 @@ def check_deas_for_registration(service) -> pl.LazyFrame:   # noqa: ANN001 | ser
         ['dea number'].to_list()
     )
 
-    today = datetime.now(tz=ZoneInfo('America/Phoenix')).date()
+    today = datetime.now(tz=PHX_TZ).date()
     az_presc = (
         deas.deas('presc')
         .with_columns(pl.col(['Date of Original Registration', 'Expiration Date']).str.to_date('%Y%m%d', strict=False))
@@ -134,9 +134,9 @@ def infer_board(service, unreg_deas: pl.LazyFrame) -> pl.LazyFrame:  # noqa: ANN
     ex_degs_file = os.environ['EXCLUDE_DEGS_FILE']
     deg_board_file = os.environ['DEG_BOARD_FILE']
 
-    exclude_degs = drive.lazyframe_from_id_and_sheetname(service=service, file_id=ex_degs_file, sheet_name='exclude_degs', infer_schema_length=100)
+    exclude_degs = drive.lazyframe_from_id_and_sheetname(service=service, file_id=ex_degs_file, sheet_name='exclude_degs', infer_schema=False)
     deg_exclude = exclude_degs.collect()['deg'].to_list()
-    boards = drive.lazyframe_from_id_and_sheetname(service=service, file_id=deg_board_file, sheet_name='deg_board', infer_schema_length=100)
+    boards = drive.lazyframe_from_id_and_sheetname(service=service, file_id=deg_board_file, sheet_name='deg_board', infer_schema=False)
 
     with_deg = unreg_deas.filter(pl.col('Degree').is_not_null() & (pl.col('Degree') != ''))
     without_deg = unreg_deas.filter(pl.col('Degree').is_null() | (pl.col('Degree') == ''))
@@ -249,7 +249,7 @@ def add_dfs_to_board_info(service, unreg_presc: pl.LazyFrame, board_info: dict) 
         else:
             latest_file = drive.get_latest_uploaded(service, folder_id=board_dict.uploads_folder, drive_ft=board_dict.upload_file_type, skip_rows=board_dict.upload_skip_rows, infer_schema=False)
             lf = latest_file.lf
-            age = datetime.now(ZoneInfo('America/Phoenix')) - latest_file.created_at
+            age = datetime.now(PHX_TZ) - latest_file.created_at
             age_hours = round(age.seconds / 60 / 60, 2)  # don't need total_seconds() because of how we handle days below
             if age.days > 1:
                 print(f'warning: {board} file is over a day old! using file created at {latest_file.created_at}, which was {age.days} days and {age_hours} hours ago')
@@ -332,7 +332,7 @@ def send_emails(board_dict: dict[str, BoardInfo], creds: google.oauth2.credentia
     reg_req_notice = os.environ['UNREG_PRESCRIBERS_FILE']
     docs_service = build('docs', 'v1', credentials=creds)
 
-    today_str = datetime.now(tz=ZoneInfo('America/Phoenix')).date().strftime('%B %d, %Y')
+    today_str = datetime.now(tz=PHX_TZ).date().strftime('%B %d, %Y')
 
     copy_doc_id = drive_service.files().copy(fileId=reg_req_notice, body={'name': 'copy'}, supportsAllDrives=True).execute()['id']
 

@@ -1,15 +1,13 @@
 import os
 from datetime import date, datetime, timedelta
 from io import BytesIO
-from zoneinfo import ZoneInfo
 
 import paramiko
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
 from utils import auth, drive
-
-MAX_SERVU_FILE_COUNT = 5
+from utils.constants import MAX_SERVU_FILE_COUNT, PHX_TZ
 
 
 def get_last_sunday() -> date:
@@ -19,7 +17,7 @@ def get_last_sunday() -> date:
     returns:
         a datetime.date for the last sunday
     """
-    today = datetime.now(tz=ZoneInfo('America/Phoenix')).date()
+    today = datetime.now(tz=PHX_TZ).date()
     days_since_sunday = today.weekday() + 1
     return today - timedelta(days=days_since_sunday)
 

@@ -1,15 +1,13 @@
 import os
 from datetime import datetime
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 import polars as pl
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
-from utils import auth, drive, email
-
-DAYS_DELINQUENT_THRESHOLD = 7
+from utils import auth, drive, email, files
+from utils.constants import DAYS_DELINQUENT_THRESHOLD, PHX_TZ
 
 
 def pharm_clean() -> Path:
@@ -19,18 +17,22 @@ def pharm_clean() -> Path:
     returns:
         the path of the delinquent data submitters report
     """
-    today_str = datetime.now(tz=ZoneInfo('America/Phoenix')).date().strftime("%m-%d-%Y")
+    today_str = datetime.now(tz=PHX_TZ).date().strftime("%m-%d-%Y")
 
+    mp_path = Path('data/pharmacies.csv')
+    files.warn_file_age(mp_path)
     mp = (
-        pl.scan_csv('data/pharmacies.csv')
+        pl.scan_csv(mp_path)
         .with_columns(
             pl.col('DEA').str.strip_chars().str.to_uppercase()
         )
         .select('DEA', 'Pharmacy License Number')
     )
 
+    lr_path = Path('data/List Request.csv')
+    files.warn_file_age(lr_path)
     igov = (
-        pl.scan_csv('data/List Request.csv', infer_schema=False)
+        pl.scan_csv(lr_path, infer_schema=False)
         .filter(
             pl.col('Type') == 'Pharmacy'
         )
@@ -46,8 +48,10 @@ def pharm_clean() -> Path:
         )
     )
 
+    ddr_path = Path('data/DelinquentDispenserRequest.csv')
+    files.warn_file_age(ddr_path)
     ddr = (
-        pl.scan_csv('data/DelinquentDispenserRequest.csv')
+        pl.scan_csv(ddr_path)
         .filter((pl.col('Days Delinquent') >= DAYS_DELINQUENT_THRESHOLD) | (pl.col('Days Delinquent').is_null()))
         .with_columns(
             pl.col('DEA').str.strip_chars().str.to_uppercase()

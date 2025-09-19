@@ -87,3 +87,11 @@ convention = "google"
   "PLR2004", # Magic value used in comparison, ...
   "S311",    # Standard pseudo-random generators are not suitable for cryptographic purposes
 ]
+"xx_*.py" = [
+  "ERA001",  # commented out code ok in scratch files
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+]

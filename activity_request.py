@@ -5,15 +5,13 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
 from typing import Literal
-from zoneinfo import ZoneInfo
 
 import polars as pl
 import pymupdf
 from dateutil.relativedelta import relativedelta
 
 from utils import tableau
-
-PHX_TZ = ZoneInfo('America/Phoenix')
+from utils.constants import PHX_TZ
 
 
 @dataclass
