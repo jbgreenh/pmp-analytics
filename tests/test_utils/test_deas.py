@@ -26,7 +26,7 @@ def test_deas() -> None:
     for zip_code in set(deas_df['Zip Code']):
         assert zip_code.isnumeric()
 
-    valid_schedule_characters = {'5', 'N', ' ', '3', '4', '2', 'L', '1'}
+    valid_schedule_characters = {' ', '1', '2', '3', '4', '5', 'L', 'N'}
     for schedules in set(deas_df['Drug Schedules']):
         for c in schedules:
             assert c in valid_schedule_characters
