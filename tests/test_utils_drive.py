@@ -26,12 +26,12 @@ AWARXE_SCHEMA = pl.Schema({
     'registration review date': str
 })
 
+creds = auth.auth()
+service = build('drive', 'v3', credentials=creds)
+
 
 def test_awarxe() -> None:
     """test awarxe function"""
-    creds = auth.auth()
-    service = build('drive', 'v3', credentials=creds)
-
     awarxe_24_nye = drive.awarxe(service, day=date(year=2024, month=12, day=31))
     assert isinstance(awarxe_24_nye, pl.LazyFrame)
     awarxe_24_nye_df = awarxe_24_nye.collect()
