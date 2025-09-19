@@ -6,7 +6,7 @@ from utils import deas
 
 
 def test_deas() -> None:
-    """tests that deas util leads to a non-empty lazyframe for all valid p values"""
+    """tests that deas returns a lazyframe with expected data types in key fields"""
     deas_lf = deas.deas('all', az=False)
     assert isinstance(deas_lf, pl.LazyFrame)
 
