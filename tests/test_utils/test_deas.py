@@ -20,8 +20,16 @@ def test_deas() -> None:
     for ac in set(deas_df['Business Activity Code']):
         assert ac.isalpha()
 
+    for state in set(deas_df['State']):
+        assert state.isalpha()
+
     for zip_code in set(deas_df['Zip Code']):
         assert zip_code.isnumeric()
+
+    valid_schedule_characters = {'5', 'N', ' ', '3', '4', '2', 'L', '1'}
+    for schedules in set(deas_df['Drug Schedules']):
+        for c in schedules:
+            assert c in valid_schedule_characters
 
     for ssn in set(deas_df['SSN']):
         assert ssn.isnumeric() or not ssn
