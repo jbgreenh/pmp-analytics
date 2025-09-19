@@ -11,9 +11,7 @@ from dotenv import load_dotenv
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 
-from utils.constants import PHX_TZ
-
-EARLIEST_AWARXE_DATE = datetime.date(year=2022, month=12, day=7)
+from utils.constants import EARLIEST_AWARXE_DATE, PHX_TZ
 
 type DriveFileType = Literal['sheet', 'csv']
 
