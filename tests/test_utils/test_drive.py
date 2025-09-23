@@ -9,8 +9,6 @@ from googleapiclient.discovery import build
 
 from utils import auth, drive
 
-# TODO: create test folder with test files on drive that never change for checking
-
 AWARXE_SCHEMA = pl.Schema({
     'email address': str,
     'dea number': str,
