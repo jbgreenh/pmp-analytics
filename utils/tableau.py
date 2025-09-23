@@ -9,7 +9,15 @@ from tableauserverclient.server.request_options import CSVRequestOptions
 from tableauserverclient.server.server import Server
 
 
-def lazyframe_from_view_id(view_id: str, filters: dict | None = None, **kwargs) -> pl.LazyFrame | None:
+class TableauNoDataError(Exception):
+    """custom exception for when there is no data in the view"""
+    def __init__(self, message: str = 'no data in view') -> None:
+        """initializes the error"""
+        self.message = message
+        super().__init__(self.message)
+
+
+def lazyframe_from_view_id(view_id: str, filters: dict | None = None, **kwargs) -> pl.LazyFrame:
     """
     pulls a lazyframe from the specified view in tableau
 
@@ -18,16 +26,19 @@ def lazyframe_from_view_id(view_id: str, filters: dict | None = None, **kwargs) 
         filters: optional filters to apply before pulling the lazyframe
         kwargs:  optional kwargs to pass to polars `scan_csv()`
 
+    raises:
+        TableauNoDataError: for when the result is an empty LazyFrame
+
     returns:
         a LazyFrame containing the data from the specified view, filtered if
         filters are specified
     """
     load_dotenv()
 
-    server = os.environ.get('TABLEAU_SERVER', 'TABLEAU_SERVER missing from .env file')
-    site = os.environ.get('TABLEAU_SITE', 'TABLEAU_SITE missing from .env file')
-    token_name = os.environ.get('TABLEAU_TOKEN_NAME', 'TABLEAU_TOKEN_NAME missing from .env file')
-    token_value = os.environ.get('TABLEAU_TOKEN_VALUE', 'TABLEAU_TOKEN_VALUE missing from .env file')
+    server = os.environ['TABLEAU_SERVER']
+    site = os.environ['TABLEAU_SITE']
+    token_name = os.environ['TABLEAU_TOKEN_NAME']
+    token_value = os.environ['TABLEAU_TOKEN_VALUE']
 
     tableau_auth = PersonalAccessTokenAuth(token_name, token_value, site)
     tableau_server = Server(server, use_server_version=True, http_options={'verify': False})
@@ -45,7 +56,8 @@ def lazyframe_from_view_id(view_id: str, filters: dict | None = None, **kwargs) 
         buffer.write(b''.join(view.csv))
         buffer.seek(0)
         if len(buffer.getvalue()) <= 1:
-            return None
+            msg = f'{view_id} with {filters} has no data'
+            raise TableauNoDataError(msg)
         return pl.scan_csv(buffer, **kwargs)
 
 

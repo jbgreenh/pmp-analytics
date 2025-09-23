@@ -1,5 +1,4 @@
 import os
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -22,8 +21,6 @@ def pull_file() -> pl.LazyFrame:
     print('pulling error file from tableau...')
     luid = tableau.find_view_luid(view_name='Errors by Pharmacy', workbook_name='Pharmacy Compliance')
     errors_lf = tableau.lazyframe_from_view_id(view_id=luid, infer_schema_length=10000)
-    if errors_lf is None:
-        sys.exit('could not find Errors By Pharmacy view or Pharmacy Compliance workbook')
 
     errors_by_pharmacy = (
         errors_lf

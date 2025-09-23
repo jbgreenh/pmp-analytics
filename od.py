@@ -49,20 +49,22 @@ def process_ods(input_file: str, days_before: int, ratio: float) -> None:
             'search_dob': dob
         }
         print(f'pulling disp data for {dob}...')
-        disp_df = tableau.lazyframe_from_view_id(od_luid, filters=filters, infer_schema=False)
-        if disp_df is not None:
+        try:
+            disp_df = tableau.lazyframe_from_view_id(od_luid, filters=filters, infer_schema=False)
+        except tableau.TableauNoDataError:
+            print(f'no disp data found for {start_date} - {end_date} with dob: {dob}')
+        else:
             disp_data = pl.concat([disp_data, disp_df.collect()])
             print('disp data pulled')
-        else:
-            print(f'no disp data found for {start_date} - {end_date} with dob: {dob}')
 
         print(f'pulling odt data for {dob}...')
-        odt_df = tableau.lazyframe_from_view_id(odt_luid, filters=filters)
-        if odt_df is not None:
+        try:
+            odt_df = tableau.lazyframe_from_view_id(odt_luid, filters=filters)
+        except tableau.TableauNoDataError:
+            print(f'no odt data found for dob: {dob}')
+        else:
             odt_data = pl.concat([odt_data, odt_df.collect()])
             print('odt data pulled')
-        else:
-            print(f'no odt data found for dob: {dob}')
 
     print(disp_data)
     print(odt_data)

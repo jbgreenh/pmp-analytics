@@ -141,8 +141,6 @@ def audit_trail(params: SearchParameters) -> None:
 
     print('pulling users file...')
     users_lf = tableau.lazyframe_from_view_id(users_luid, infer_schema=False)
-    if users_lf is None:
-        sys.exit('users file not found in tableau')
 
     user_ids = []
     for dea in params.deas:
@@ -151,8 +149,9 @@ def audit_trail(params: SearchParameters) -> None:
         }
 
         print(f'pulling userids file for {dea}...')
-        user_ids_lf = tableau.lazyframe_from_view_id(user_ids_luid, filters, infer_schema=False)
-        if user_ids_lf is None:
+        try:
+            user_ids_lf = tableau.lazyframe_from_view_id(user_ids_luid, filters, infer_schema=False)
+        except tableau.TableauNoDataError:
             print(f'found no user ids for {dea}')
             continue
         user_ids_df = user_ids_lf.collect()
@@ -173,8 +172,9 @@ def audit_trail(params: SearchParameters) -> None:
         user_name = users_lf.filter(pl.col('User ID') == user_id).collect()['User Full Name'].first()
 
         print(f'pulling searches for {user_id}...')
-        searches_lf = tableau.lazyframe_from_view_id(searches_luid, filters, infer_schema=False)
-        if searches_lf is None:
+        try:
+            searches_lf = tableau.lazyframe_from_view_id(searches_luid, filters, infer_schema=False)
+        except tableau.TableauNoDataError:
             print(f'{user_id} had no searches from {params.start_date} to {params.end_date}')
             continue
 
@@ -218,8 +218,9 @@ def activity_request(request_type: RequestType, params: SearchParameters) -> Non
             'dea': dea, 'start_date': params.start_date, 'end_date': params.end_date
         }
         if request_type == 'prescriber':
-            lf = tableau.lazyframe_from_view_id(luid, filters=filters, infer_schema=False)
-            if lf is None:
+            try:
+                lf = tableau.lazyframe_from_view_id(luid, filters=filters, infer_schema=False)
+            except tableau.TableauNoDataError:
                 print(f'no records found for {dea}')
                 continue
 
@@ -270,8 +271,9 @@ def activity_request(request_type: RequestType, params: SearchParameters) -> Non
                 )
             )
         else:   # dispenser
-            lf = tableau.lazyframe_from_view_id(luid, filters=filters, infer_schema=False)
-            if lf is None:
+            try:
+                lf = tableau.lazyframe_from_view_id(luid, filters=filters, infer_schema=False)
+            except tableau.TableauNoDataError:
                 print(f'no records found for {dea}')
                 continue
             lf = (
