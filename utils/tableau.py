@@ -56,7 +56,7 @@ def lazyframe_from_view_id(view_id: str, filters: dict | None = None, **kwargs) 
         buffer.write(b''.join(view.csv))
         buffer.seek(0)
         if len(buffer.getvalue()) <= 1:
-            msg = f'{view_id} with {filters} has no data'
+            msg = f'{view_id} with filters:{filters} has no data'
             raise TableauNoDataError(msg)
         return pl.scan_csv(buffer, **kwargs)
 
