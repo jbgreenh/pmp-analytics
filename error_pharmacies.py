@@ -162,7 +162,7 @@ if __name__ == '__main__':
     service = build('drive', 'v3', credentials=creds)
     top_pharmacy = pull_file()
     top_pharmacy_name = (top_pharmacy.select(pl.col('pharmacy')).collect().head(1).item())
-    folder_id = drive.find_or_create_folder(service, top_pharmacy_name, error_folder_id)
+    folder_id = drive.folder_id_from_name(service, top_pharmacy_name, error_folder_id, create=True)
     file_name = Path(f'{top_pharmacy_name}.csv')
     drive.upload_csv_as_sheet(service, file_name, folder_id)
     Path(file_name).unlink()
