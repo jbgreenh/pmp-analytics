@@ -2,6 +2,7 @@ import os
 from datetime import date, datetime
 
 import polars as pl
+import pytest
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
@@ -75,6 +76,9 @@ def test_lazyframe_from_filename() -> None:
     assert test_csv_df['c'].last() == 1
     assert test_csv_df['c'].sum() == 5
 
+    with pytest.raises(drive.GoogleDriveNotFoundError):
+        _fake_file = drive.lazyframe_from_file_name(service, 'this_file_doesnt_exist', folder_id=test_folder, drive_ft='sheet')
+
 
 def test_get_latest_upload() -> None:
     """test the get_latest_upload function"""
@@ -88,3 +92,16 @@ def test_get_latest_upload() -> None:
     latest_df = latest_file.lf.collect()
     assert latest_df.columns == ['new']
     assert latest_df['new'].first() == 2
+
+
+def test_folder_id_from_name() -> None:
+    """test folder_id_from_name function"""
+    folder_id = drive.folder_id_from_name(service, folder_name='test uploads', parent_folder_id=os.environ['TEST_FOLDER'])
+    assert folder_id == os.environ['TEST_UPLOADS_FOLDER']
+
+    make_folder = drive.folder_id_from_name(service, folder_name='make folder', parent_folder_id=os.environ['TEST_FOLDER'], create=True)
+    assert make_folder == drive.folder_id_from_name(service, folder_name='make folder', parent_folder_id=os.environ['TEST_FOLDER'])
+
+    _response = service.files().delete(fileId=make_folder, supportsAllDrives=True).execute()
+    with pytest.raises(drive.GoogleDriveNotFoundError):
+        _fake_folder = drive.folder_id_from_name(service, folder_name='make folder', parent_folder_id=os.environ['TEST_FOLDER'])
