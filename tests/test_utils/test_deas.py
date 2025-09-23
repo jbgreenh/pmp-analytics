@@ -2,11 +2,12 @@ import io
 import re
 
 import polars as pl
+import pytest
 
 from utils import deas
 
 
-def test_deas(monkeypatch) -> None:  # noqa:ANN001 | monkeypatch
+def test_deas(monkeypatch: pytest.MonkeyPatch) -> None:
     """tests that deas returns a lazyframe with expected data types in key fields"""
     monkeypatch.setattr('sys.stdin', io.StringIO('y'))
     deas_lf = deas.deas('all', az=False)
