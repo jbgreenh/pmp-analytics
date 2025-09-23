@@ -20,8 +20,7 @@ def test_find_view_luid() -> None:
 
 def test_lazyframe_from_view_id() -> None:
     """test lazyframe_from_view_id"""
-    luid = tableau.find_view_luid(view_name='testdisp', workbook_name='testing')
-    lf = tableau.lazyframe_from_view_id(luid)
+    lf = tableau.lazyframe_from_view_id(os.environ['TEST_LUID'])
     assert isinstance(lf, pl.LazyFrame)
     df = lf.collect()
     assert df.columns == ['test_var']
