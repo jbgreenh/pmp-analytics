@@ -174,3 +174,19 @@ def test_update_sheet() -> None:
     assert test_sheet['c'].last() == 1
     assert test_sheet['c'].sum() == 5
     fp.unlink()
+
+
+def test_lazyframe_from_id_and_sheetname() -> None:
+    """test lazyframe_from_id_and_sheetname function"""
+    test_sheet = drive.lazyframe_from_id_and_sheetname(service, file_id=os.environ['TEST_SHEET'], sheet_name='test sheet')
+    assert isinstance(test_sheet, pl.LazyFrame)
+    test_sheet_df = test_sheet.collect()
+    assert test_sheet_df['a'].first() == 1
+    assert test_sheet_df['a'].sum() == 6
+    assert test_sheet_df['a'].last() == 2
+    assert test_sheet_df['b'].first() == 2
+    assert test_sheet_df['b'].last() == 3
+    assert test_sheet_df['b'].sum() == 7
+    assert test_sheet_df['c'].first() == 3
+    assert test_sheet_df['c'].last() == 1
+    assert test_sheet_df['c'].sum() == 5
