@@ -345,7 +345,7 @@ def upload_csv_as_sheet(service, file_path: Path, folder_id: str) -> None:  # no
         raise GoogleDriveHttpError(msg) from error
 
 
-def update_sheet(service, file_name: str, file_id: str) -> None:    # noqa: ANN001 | service is dynamically typed
+def update_sheet(service, file_path: Path, file_id: str) -> None:    # noqa: ANN001 | service is dynamically typed
     """
         uses the contents of a local csv file to update the sheet at the specified `file_id`
 
@@ -353,17 +353,17 @@ def update_sheet(service, file_name: str, file_id: str) -> None:    # noqa: ANN0
 
     args:
         service: an authorized google drive service
-        file_name: the path to the local csv file to use for updating
+        file_path: the path to the local csv file to use for updating
         file_id: the id of the file to be updated
 
     raises:
         GoogleDriveHttpError : raised when accessing google drive leads to an HttpError
     """
     try:
-        media = MediaFileUpload(file_name,
+        media = MediaFileUpload(file_path,
                                 mimetype='text/csv')
 
-        print(f'updating {file_id} with {file_name}...')
+        print(f'updating {file_id} with {file_path}...')
 
         file = service.files().update(fileId=file_id,
                                       media_body=media,
