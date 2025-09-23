@@ -30,7 +30,7 @@ def pull_files(service) -> pl.DataFrame:  # noqa: ANN001 | service is dynamicall
     ob_disp = drive.lazyframe_from_file_name(service=service, file_name=ob_file_name, folder_id=os.environ['DISPENSATIONS_47_FOLDER'], drive_ft='csv', separator='|', infer_schema_length=10000)
 
     patient_req_id = os.environ['PATIENT_REQUESTS_FOLDER']
-    requests_folder_id = drive.folder_id_from_name(service=service, folder_name=f'AZ_PtReqByProfile_{lm_ym}', parent_id=patient_req_id)
+    requests_folder_id = drive.folder_id_from_name(service=service, folder_name=f'AZ_PtReqByProfile_{lm_ym}', parent_folder_id=patient_req_id)
     requests = drive.lazyframe_from_file_name(service=service, file_name='Prescriber.csv', folder_id=requests_folder_id, drive_ft='csv', separator='|', infer_schema_length=10000)
 
     def add_lookups(dispensations: pl.LazyFrame, *, ob: bool = False) -> pl.DataFrame:

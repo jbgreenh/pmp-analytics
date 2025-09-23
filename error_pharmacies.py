@@ -1,5 +1,4 @@
 import os
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -22,8 +21,6 @@ def pull_file() -> pl.LazyFrame:
     print('pulling error file from tableau...')
     luid = tableau.find_view_luid(view_name='Errors by Pharmacy', workbook_name='Pharmacy Compliance')
     errors_lf = tableau.lazyframe_from_view_id(view_id=luid, infer_schema_length=10000)
-    if errors_lf is None:
-        sys.exit('could not find Errors By Pharmacy view or Pharmacy Compliance workbook')
 
     errors_by_pharmacy = (
         errors_lf
@@ -162,7 +159,7 @@ if __name__ == '__main__':
     service = build('drive', 'v3', credentials=creds)
     top_pharmacy = pull_file()
     top_pharmacy_name = (top_pharmacy.select(pl.col('pharmacy')).collect().head(1).item())
-    folder_id = drive.find_or_create_folder(service, top_pharmacy_name, error_folder_id)
+    folder_id = drive.folder_id_from_name(service, top_pharmacy_name, error_folder_id, create=True)
     file_name = Path(f'{top_pharmacy_name}.csv')
     drive.upload_csv_as_sheet(service, file_name, folder_id)
     Path(file_name).unlink()

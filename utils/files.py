@@ -1,4 +1,5 @@
 import sys
+import warnings
 from datetime import datetime
 from pathlib import Path
 
@@ -15,10 +16,12 @@ def warn_file_age(file: Path, max_age_days: int = 1) -> None:
     """
     file_age = datetime.now(tz=PHX_TZ) - datetime.fromtimestamp(file.stat().st_mtime, tz=PHX_TZ)
     if file_age.days > max_age_days:
-        print(f'warning: `{file}` has not been updated recently!')
-        print(f'the file is {file_age.days} days and {round(file_age.seconds / 60 / 60, 2)} hours old')
-        print('please consider updating it and running this script again')
-        print()
+        msg = (
+            f'`{file}` has not been updated recently!\n'
+            f'the file is {file_age.days} days and {round(file_age.seconds / 60 / 60, 2)} hours old\n'
+            f'please consider updating it and running this script again\n'
+        )
+        warnings.warn(msg, UserWarning, stacklevel=2)
         answer = input('proceed? (y to continue with old file): ')
         if answer != 'y':
             sys.exit('update files and run again')

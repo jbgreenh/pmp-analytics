@@ -1,4 +1,3 @@
-import sys
 from pathlib import Path
 
 import polars as pl
@@ -29,10 +28,7 @@ def tab_awarxe() -> pl.Lazyframe:
     """
     print('pulling awarxe from tableau...')
     luid = tableau.find_view_luid('active_approved', 'tab_awarxe')
-    tab_awarxe = tableau.lazyframe_from_view_id(luid, infer_schema=False)
-    if tab_awarxe is not None:
-        return tab_awarxe
-    sys.exit('no data in tableau awarxe')
+    return tableau.lazyframe_from_view_id(luid, infer_schema=False)
 
 
 def read_all_deas() -> pl.LazyFrame:

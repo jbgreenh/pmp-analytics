@@ -261,14 +261,15 @@ def awarxe(service, day: datetime.date | None = None) -> pl.LazyFrame:   # noqa:
             raise GoogleDriveHttpError(msg) from error
 
 
-def folder_id_from_name(service, folder_name: str, parent_id: str) -> str:  # noqa: ANN001 | service is dynamically typed
+def folder_id_from_name(service, folder_name: str, parent_folder_id: str, *, create: bool = False) -> str:  # noqa: ANN001 | service is dynamically typed
     """
         returns the `folder_id` of the `folder_name` in the parent folder
 
     args:
         service: an authorized google drive service
         folder_name: the name of the folder
-        parent_id: the id of the parent folder
+        parent_folder_id: the id of the parent folder
+        create: whether to create the folder or not if it doesn't exist
 
     raises:
         GoogleDriveHttpError : raised when accessing google drive leads to an HttpError
@@ -278,13 +279,23 @@ def folder_id_from_name(service, folder_name: str, parent_id: str) -> str:  # no
        folder_id: the id of the folder with `folder_name`
     """
     try:
-        results_folder = service.files().list(q=f"name = '{folder_name}' and '{parent_id}' in parents",
+        results_folder = service.files().list(q=f"name = '{folder_name}' and '{parent_folder_id}' in parents",
                                     supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
         folders = results_folder.get('files', [])
         if folders:
             folder_id = folders[0]['id']
         else:
             msg = f'folder {folder_name!r} not found'
+            if create:
+                file_metadata = {
+                    'name': folder_name,
+                    'parents': [parent_folder_id],
+                    'mimeType': 'application/vnd.google-apps.folder',
+                }
+                folder = service.files().create(supportsAllDrives=True, body=file_metadata).execute()
+                folder_url = f"https://drive.google.com/drive/folders/{folder['id']}"
+                print(f'folder created at {folder_url}')
+                return folder['id']
             raise GoogleDriveNotFoundError(msg)
     except HttpError as error:
         msg = f'error checking google drive: {error!r}'
@@ -334,7 +345,7 @@ def upload_csv_as_sheet(service, file_path: Path, folder_id: str) -> None:  # no
         raise GoogleDriveHttpError(msg) from error
 
 
-def update_sheet(service, file_name: str, file_id: str) -> None:    # noqa: ANN001 | service is dynamically typed
+def update_sheet(service, file_path: Path, file_id: str) -> None:    # noqa: ANN001 | service is dynamically typed
     """
         uses the contents of a local csv file to update the sheet at the specified `file_id`
 
@@ -342,17 +353,17 @@ def update_sheet(service, file_name: str, file_id: str) -> None:    # noqa: ANN0
 
     args:
         service: an authorized google drive service
-        file_name: the path to the local csv file to use for updating
+        file_path: the path to the local csv file to use for updating
         file_id: the id of the file to be updated
 
     raises:
         GoogleDriveHttpError : raised when accessing google drive leads to an HttpError
     """
     try:
-        media = MediaFileUpload(file_name,
+        media = MediaFileUpload(file_path,
                                 mimetype='text/csv')
 
-        print(f'updating {file_id} with {file_name}...')
+        print(f'updating {file_id} with {file_path}...')
 
         file = service.files().update(fileId=file_id,
                                       media_body=media,
@@ -362,46 +373,4 @@ def update_sheet(service, file_name: str, file_id: str) -> None:    # noqa: ANN0
 
     except HttpError as error:
         msg = f'an error occurred: {error!r}'
-        raise GoogleDriveHttpError(msg) from error
-
-
-def find_or_create_folder(service, folder_name: str, parent_folder_id: str) -> str:  # noqa: ANN001 | service is dynamically typed
-    """
-        goes into the google drive to find a folder with the pharmacy name, if it is not there it will create a new folder
-
-        function will also convert the top_pharmacy csv into a google sheet and transfer it into the correct folder and provide a url link for the folder
-
-    args:
-        service: an authorized google drive service
-        folder_name: the name of the new folder
-        parent_folder_id: the id of the folder where the new folder should go
-
-    raises:
-        GoogleDriveHttpError : raised when accessing google drive leads to an HttpError
-
-    returns:
-        folder_id: a string that will contain the id of the folder created
-    """
-    folder_id = None
-    try:
-        print(f'searching for folder: {folder_name}...')
-        results = service.files().list(q=f"name = '{folder_name}' and '{parent_folder_id}' in parents", supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
-        files = results.get('files', [])
-        if files:
-            folder_id = files[0]['id']
-            folder_url = f"https://drive.google.com/drive/folders/{folder_id}"
-            print(f'folder exists at {folder_url}')
-            return folder_id
-        file_metadata = {
-            'name': folder_name,
-            'parents': [parent_folder_id],
-            'mimeType': 'application/vnd.google-apps.folder',
-        }
-        folder = service.files().create(supportsAllDrives=True, body=file_metadata).execute()
-        folder_url = f"https://drive.google.com/drive/folders/{folder['id']}"
-        print(f'folder created at {folder_url}')
-        return folder['id']
-
-    except HttpError as error:
-        msg = f'error checking google drive: {error!r}'
         raise GoogleDriveHttpError(msg) from error

@@ -1,4 +1,3 @@
-import sys
 from datetime import date, datetime
 from pathlib import Path
 
@@ -26,8 +25,6 @@ def mm2() -> None:
 
     print('pulling user ids...')
     user_ids_lf = tableau.lazyframe_from_view_id(user_ids_luid, infer_schema=False)
-    if user_ids_lf is None:
-        sys.exit('no user ids data found, check the mm_audit workbook in tableau')
     users_explode = (
         user_ids_lf
         .drop_nulls('Associated DEA Number(s)')
@@ -47,8 +44,6 @@ def mm2() -> None:
     }
     print('pulling searches data...')
     searches_lf = tableau.lazyframe_from_view_id(searches_luid, filters=filters, infer_schema=False)
-    if searches_lf is None:
-        sys.exit('no searches data found, check the mm_audit workbook in tableau')
     searches_lf = (
         searches_lf
         .select(

@@ -8,18 +8,20 @@ from utils import files
 # ruff: noqa: ERA001
 # commented code is for alternate dea file formats
 
-type DeaSelector = Literal['all', 'presc', 'pharm', 'az']
+type DeaSelector = Literal['all', 'presc', 'pharm']
 
 
-def deas(p: DeaSelector = 'all') -> pl.LazyFrame:  # noqa: RET503 | function returns for all possible p values
+def deas(p: DeaSelector = 'all', *, az: bool = True) -> pl.LazyFrame:  # noqa: RET503 | function returns for all possible p values
     """
     returns a lazyframe from the full dea fixed width file
 
-    p:
-    for az prescribers: presc
-    for az pharmacies: pharm
-    for all az registrants: az
-    for all registrants: all
+    args:
+        p:
+            for prescribers: presc
+            for pharmacies: pharm
+            for all registrants: all
+
+        az: whether to filter to just az
 
     returns:
     a lazyframe filtered as indicated through `p`
@@ -61,36 +63,27 @@ def deas(p: DeaSelector = 'all') -> pl.LazyFrame:  # noqa: RET503 | function ret
         .drop('full_str')
     )
 
+    if az:
+        deas = deas.filter(pl.col('State') == 'AZ')
+
     if p == 'pharm':
         deas_pharm = (
             deas
             .filter(
-                (pl.col('State') == 'AZ') &
-                (pl.col('Business Activity Code') == 'A')
+                pl.col('Business Activity Code') == 'A'
             )
         )
-        print(deas_pharm.head())
         return deas_pharm.lazy()
+
     if p == 'presc':
         sub_codes = ['5', '6', '7', '8', 'A', 'B', 'C', 'D', 'J']
         deas_presc = (
             deas
             .filter(
-                (pl.col('State') == 'AZ') &
-                ((pl.col('Business Activity Code') == 'C') | ((pl.col('Business Activity Code') == 'M') & pl.col('Business Activity Sub Code').is_in(sub_codes)))
+                (pl.col('Business Activity Code') == 'C') | ((pl.col('Business Activity Code') == 'M') & pl.col('Business Activity Sub Code').is_in(sub_codes))
             )
         )
-        print(deas_presc.head())
         return deas_presc.lazy()
-    if p == 'az':
-        deas_az = (
-            deas
-            .filter(
-                pl.col('State') == 'AZ'
-            )
-        )
-        print(deas_az.head())
-        return deas_az.lazy()
+
     if p == 'all':
-        print(deas.head())
         return deas.lazy()

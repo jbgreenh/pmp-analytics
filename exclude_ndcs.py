@@ -1,5 +1,4 @@
 import os
-import sys
 
 import polars as pl
 from dotenv import load_dotenv
@@ -18,8 +17,6 @@ excluded_ndcs = drive.lazyframe_from_id_and_sheetname(service, sheet_id, 'exclud
 
 luid = tableau.find_view_luid('opiate_antagonists', 'opiate antagonists')
 lf = tableau.lazyframe_from_view_id(luid, infer_schema=False)
-if lf is None:
-    sys.exit('could not pull opiate_antagonists workbook')
 
 antagonists = (
     lf
