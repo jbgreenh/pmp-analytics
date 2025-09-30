@@ -119,7 +119,7 @@ def process_mu(appearance_month: date, input_file: str) -> None:
     )
 
     appear = (
-        drive.lazyframe_from_id_and_sheetname(service=service, file_id=os.environ['APPEARANCES_FILE'], sheet_name='appearances', engine='xlsx2csv', infer_schema=False)
+        drive.lazyframe_from_id_and_sheetname(service=service, file_id=os.environ['APPEARANCES_FILE'], sheet_name='appearances', engine='xlsx2csv', infer_schema_length=0)  # read_excel does not have infer schema
         .with_columns(
             pl.col('appearance_date').str.to_date('%Y-%-m-%-d')
         )

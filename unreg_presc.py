@@ -65,7 +65,7 @@ def get_board_contacts(service) -> dict:    # noqa: ANN001 | service is dynamica
         a dictionary with a board name as the key and BoardInfo (with default uploads_folder, cleaned_license_expr, and board_df) as the value
     """
     contacts_file = os.environ['BOARD_CONTACTS_FILE']
-    board_contacts = drive.lazyframe_from_id_and_sheetname(service=service, file_id=contacts_file, sheet_name='registration', infer_schema=False).collect()
+    board_contacts = drive.lazyframe_from_id_and_sheetname(service=service, file_id=contacts_file, sheet_name='registration', infer_schema_length=0).collect()  # read_excel does not have infer_schema
     boards = board_contacts['Board'].to_list()
     boards_dict = {}
     for board in boards:
@@ -134,9 +134,9 @@ def infer_board(service, unreg_deas: pl.LazyFrame) -> pl.LazyFrame:  # noqa: ANN
     ex_degs_file = os.environ['EXCLUDE_DEGS_FILE']
     deg_board_file = os.environ['DEG_BOARD_FILE']
 
-    exclude_degs = drive.lazyframe_from_id_and_sheetname(service=service, file_id=ex_degs_file, sheet_name='exclude_degs', infer_schema=False)
+    exclude_degs = drive.lazyframe_from_id_and_sheetname(service=service, file_id=ex_degs_file, sheet_name='exclude_degs', infer_schema_length=0)  # read_excel does not have infer_schema
     deg_exclude = exclude_degs.collect()['deg'].to_list()
-    boards = drive.lazyframe_from_id_and_sheetname(service=service, file_id=deg_board_file, sheet_name='deg_board', infer_schema=False)
+    boards = drive.lazyframe_from_id_and_sheetname(service=service, file_id=deg_board_file, sheet_name='deg_board', infer_schema_length=0)  # read_excel does not have infer_schema
 
     with_deg = unreg_deas.filter(pl.col('Degree').is_not_null() & (pl.col('Degree') != ''))
     without_deg = unreg_deas.filter(pl.col('Degree').is_null() | (pl.col('Degree') == ''))
