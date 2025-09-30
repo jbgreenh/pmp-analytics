@@ -1,17 +1,18 @@
+import calendar
 from datetime import date, datetime
 from pathlib import Path
 
 import polars as pl
 
 from utils import tableau
-from utils.constants import JULY_MONTH_NUMBER, PHX_TZ
+from utils.constants import PHX_TZ
 
 
 def mm2() -> None:
     """finishes the medical marijuana audit process. run `mm1.py` and follow instructions there first"""
     today = datetime.now(tz=PHX_TZ).date()
     year = today.year
-    if today.month < JULY_MONTH_NUMBER:
+    if today.month < calendar.JULY:
         year -= 1
         start, end = date(year=year, month=7, day=1), date(year=year, month=12, day=31)
     else:
