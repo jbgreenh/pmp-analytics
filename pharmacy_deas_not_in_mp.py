@@ -2,18 +2,22 @@ from pathlib import Path
 
 import polars as pl
 
-from utils import deas
+from utils import deas, files
 
 # ruff: noqa: PLC1901
 # polars cols with empty string are not falsey
 
+mp_fp = Path('data/pharmacies.csv')
+files.warn_file_age(mp_fp)
 mp = (
-    pl.scan_csv('data/pharmacies.csv', infer_schema=False)
+    pl.scan_csv(mp_fp, infer_schema=False)
     .select('DEA')
 ).collect()['DEA'].to_list()
 
+ig_fp = Path('data/List Request.csv')
+files.warn_file_age(ig_fp)
 igov = (
-    pl.scan_csv('data/List Request.csv', infer_schema=False)
+    pl.scan_csv(ig_fp, infer_schema=False)
     .filter(
         pl.col('Type') == 'Pharmacy'
     )
