@@ -1,18 +1,21 @@
 import os
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import pandas as pd
 import polars as pl
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
-from utils import auth, email
+from utils import auth, email, files
 from utils.constants import PHX_TZ
 
 last_mo = datetime.now(tz=PHX_TZ).date().replace(day=1) - timedelta(days=1)
 
+t_fp = Path('data/techs.xls')
+files.warn_file_age(t_fp)
 techs = (
-    pl.from_pandas(pd.read_html('data/techs.xls', header=1)[0])
+    pl.from_pandas(pd.read_html(t_fp, header=1)[0])
     .with_columns(
         pl.col(['Expiration Date', 'Application Date', 'Issue Date']).str.to_date('%m/%d/%Y')
     )
@@ -21,8 +24,11 @@ techs = (
         ((pl.col('Issue Date').dt.year() == last_mo.year) & (pl.col('Issue Date').dt.month() == last_mo.month))
     )
 )
+
+s_fp = Path('data/superseded.xls')
+files.warn_file_age(s_fp)
 superseded = (
-    pl.from_pandas(pd.read_html('data/superseded.xls', header=1)[0])
+    pl.from_pandas(pd.read_html(s_fp, header=1)[0])
     .with_columns(
         pl.col(['Expiration Date', 'Application Date', 'Issue Date']).str.to_date('%m/%d/%Y')
     )
