@@ -8,7 +8,7 @@ from utils.constants import PHX_TZ
 
 def warn_file_age(file: Path, max_age_hours: int = 12) -> None:
     """
-    warns if file age of input file is older than 12 hours and prompts the user for if they want to continue with the script
+    warns if file age of input file is older than `max_age_hours` and prompts the user for if they want to continue with the script
 
     args:
         file: Path to the file in question
