@@ -2,8 +2,7 @@ import datetime
 import io
 import os
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 from zoneinfo import ZoneInfo
 
 import polars as pl
@@ -12,6 +11,9 @@ from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 
 from utils.constants import EARLIEST_AWARXE_DATE, PHX_TZ
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 type DriveFileType = Literal['sheet', 'csv']
 
