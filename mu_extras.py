@@ -2,15 +2,18 @@ import calendar
 import os
 import sys
 from datetime import date, datetime
+from typing import TYPE_CHECKING
 
-import google.auth.external_account_authorized_user
-import google.oauth2.credentials
 import polars as pl
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
 from utils import auth, deas, drive
 from utils.constants import PHX_TZ, TOP_PRESCRIBERS
+
+if TYPE_CHECKING:
+    import google.auth.external_account_authorized_user
+    import google.oauth2.credentials
 
 
 def ordinal(n: int) -> str:

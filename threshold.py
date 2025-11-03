@@ -2,15 +2,18 @@ import os
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from typing import TYPE_CHECKING
 
-import google.auth.external_account_authorized_user
-import google.oauth2.credentials
 import polars as pl
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
 from utils import auth
 from utils.constants import PHX_TZ
+
+if TYPE_CHECKING:
+    import google.auth.external_account_authorized_user
+    import google.oauth2.credentials
 
 
 @dataclass

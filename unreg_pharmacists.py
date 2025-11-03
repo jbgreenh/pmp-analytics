@@ -1,15 +1,18 @@
 import os
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-import google.auth.external_account_authorized_user
-import google.oauth2.credentials
 import polars as pl
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
 from utils import auth, drive, files
 from utils.constants import PHX_TZ
+
+if TYPE_CHECKING:
+    import google.auth.external_account_authorized_user
+    import google.oauth2.credentials
 
 
 def pull_inspection_list(service, file_name: str | None = None) -> pl.LazyFrame:    # noqa: ANN001 | service is dynamically typed
