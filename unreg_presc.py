@@ -3,12 +3,9 @@ import os
 import sys
 from dataclasses import dataclass, field
 from datetime import datetime
-from io import BytesIO
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
-import google.auth.external_account_authorized_user
-import google.oauth2.credentials
 import polars as pl
 import pymupdf
 from dotenv import load_dotenv
@@ -16,6 +13,13 @@ from googleapiclient.discovery import build
 
 from utils import auth, deas, drive, email
 from utils.constants import PHX_TZ
+
+if TYPE_CHECKING:
+    from io import BytesIO
+
+    import google.auth.external_account_authorized_user
+    import google.oauth2.credentials
+
 
 # ruff: noqa: PLC1901
 # polars cols with empty string are not falsey
