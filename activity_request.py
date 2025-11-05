@@ -48,7 +48,7 @@ def parse_daterange(date_range: list) -> tuple[date, date]:
     else:
         start_date = datetime.strptime(date_range[0][0], '%m/%d/%Y').astimezone(tz=PHX_TZ).date()
 
-    seven_years_ago = datetime.now(tz=PHX_TZ).date() - relativedelta(years=7)
+    seven_years_ago = (datetime.now(tz=PHX_TZ).date() - relativedelta(years=7)).replace(day=1)
     start_date = max(start_date, seven_years_ago)
 
     if len(date_range[0][1].split('/')[2]) == 2:    # noqa: PLR2004
