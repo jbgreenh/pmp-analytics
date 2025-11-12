@@ -156,7 +156,7 @@ def process_files(mp_path: Path, dds_path: Path, lr_path: Path) -> pl.LazyFrame:
 
 def send_notices(dds: pl.LazyFrame) -> None:
     # TODO: read in active 7+, check if past due date from that file, move those to complaint
-    today = datetime.now(tz=PHX_TZ).date().replace(day=14)
+    today = datetime.now(tz=PHX_TZ).date()
     if today.weekday() == FRIDAY:
         due_date = add_business_days(today)
         print(f'friday notices, {due_date = }')
@@ -176,7 +176,7 @@ def send_notices(dds: pl.LazyFrame) -> None:
             'to',
             pl.col('Pharmacy License Number').alias('permit_number'),
             pl.col('Days Delinquent').cast(pl.String).alias('days_delinquent'),
-            pl.col('Zip').alias('zip'),
+            pl.concat_str(pl.lit("'"), pl.col('Zip').cast(pl.String)).alias('zip'),
             pl.lit(email_type).alias('email_type')
 
         )
