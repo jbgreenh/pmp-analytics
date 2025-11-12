@@ -7,9 +7,11 @@ from zoneinfo import ZoneInfo
 
 import polars as pl
 from dotenv import load_dotenv
+from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 
+from utils import auth
 from utils.constants import EARLIEST_AWARXE_DATE, PHX_TZ
 
 if TYPE_CHECKING:
@@ -34,15 +36,15 @@ class GoogleDriveNotFoundError(Exception):
         super().__init__(self.message)
 
 
-def lazyframe_from_file_name(service, file_name: str, folder_id: str, drive_ft: DriveFileType, **kwargs) -> pl.LazyFrame:  # noqa: ANN001 | service is dynamically typed
+def lazyframe_from_file_name(file_name: str, folder_id: str, drive_ft: DriveFileType, service=None, **kwargs) -> pl.LazyFrame:  # noqa: ANN001 | service is dynamically typed
     """
         return a lazyframe of the csv in the provided folder
 
     args:
-        service: an authorized google drive service
         file_name: the file name of the csv
         folder_id: the id of the parent folder of the csv
         drive_ft: a `DriveFileType` indicating whethere the file is a sheet or a csv
+        service: an authorized google drive service
         **kwargs: kwargs for `pl.read_csv()`
 
     raises:
@@ -52,6 +54,9 @@ def lazyframe_from_file_name(service, file_name: str, folder_id: str, drive_ft: 
     returns:
         a pl.LazyFrame with the contents of the csv
     """
+    if service is None:
+        service = build('drive', 'v3', credentials=auth.auth())
+
     try:
         results = service.files().list(q=f"name = '{file_name}' and '{folder_id}' in parents",
                                     supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
@@ -99,14 +104,14 @@ class LatestFile:
     created_at: datetime.datetime
 
 
-def get_latest_uploaded(service, folder_id: str, drive_ft: DriveFileType, **kwargs) -> LatestFile:  # noqa: ANN001 | service is dynamically typed
+def get_latest_uploaded(folder_id: str, drive_ft: DriveFileType, service=None, **kwargs) -> LatestFile:  # noqa: ANN001 | service is dynamically typed
     """
     get the latest uploaded file in the google drive folder at `folder_id`
 
     args:
-        service: a google drive service
         folder_id: the id of the folder to check
         drive_ft: a DriveFileType indicating whether to check for csvs or sheets
+        service: a google drive service
         **kwargs: kwargs to pass to `pl.scan_csv()`
 
     raises:
@@ -116,6 +121,9 @@ def get_latest_uploaded(service, folder_id: str, drive_ft: DriveFileType, **kwar
     returns:
         a LatestFile object containing a lazyframe and the created time
     """
+    if service is None:
+        service = build('drive', 'v3', credentials=auth.auth())
+
     try:
         results = service.files().list(q=f"'{folder_id}' in parents and trashed=false",
             supportsAllDrives=True, includeItemsFromAllDrives=True,
@@ -160,14 +168,14 @@ def get_latest_uploaded(service, folder_id: str, drive_ft: DriveFileType, **kwar
     return LatestFile(lf=pl.scan_csv(file, **kwargs), created_at=phx_ts)
 
 
-def lazyframe_from_id_and_sheetname(service, file_id: str, sheet_name: str, **kwargs) -> pl.LazyFrame:  # noqa: ANN001 | service is dynamically typed
+def lazyframe_from_id_and_sheetname(file_id: str, sheet_name: str, service=None, **kwargs) -> pl.LazyFrame:  # noqa: ANN001 | service is dynamically typed
     """
         return a lazyframe given a `file_id` and `sheet_name`
 
     args:
-        service: an authorized google drive service
         file_id: this id of the file
         sheet_name: the sheet name from within the file
+        service: an authorized google drive service
         **kwargs: kwargs for `pl.read_excel()`
 
     raises:
@@ -176,6 +184,9 @@ def lazyframe_from_id_and_sheetname(service, file_id: str, sheet_name: str, **kw
     returns:
         a pl.LazyFrame with the contents of the sheet
     """
+    if service is None:
+        service = build('drive', 'v3', credentials=auth.auth())
+
     try:
         request = service.files().export_media(fileId=file_id, mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     except HttpError as error:
@@ -193,13 +204,13 @@ def lazyframe_from_id_and_sheetname(service, file_id: str, sheet_name: str, **kw
     return pl.read_excel(file, sheet_name=sheet_name, **kwargs).lazy()
 
 
-def awarxe(service, day: datetime.date | None = None) -> pl.LazyFrame:   # noqa: ANN001 | service is dynamically typed
+def awarxe(service=None, day: datetime.date | None = None) -> pl.LazyFrame:   # noqa: ANN001 | service is dynamically typed
     """
         return a lazy frame of the most recent awarxe file from the google drive, unless day is specified
 
     args:
-        service: an authorized google drive service
         day: the day for the awarxe file
+        service: an authorized google drive service
 
     raises:
         GoogleDriveHttpError : raised when accessing google drive leads to an HttpError
@@ -208,6 +219,9 @@ def awarxe(service, day: datetime.date | None = None) -> pl.LazyFrame:   # noqa:
     returns:
        awarxe: a lazyframe with all active awarxe registrants from the most recent file as of `day` if specified, or yesterday if `day` is not specified
     """
+    if service is None:
+        service = build('drive', 'v3', credentials=auth.auth())
+
     yesterday = datetime.datetime.now(tz=PHX_TZ).date() - datetime.timedelta(days=1)
     day = max(min(day or yesterday, yesterday), EARLIEST_AWARXE_DATE)
 
@@ -238,11 +252,9 @@ def awarxe(service, day: datetime.date | None = None) -> pl.LazyFrame:   # noqa:
             results = service.files().list(q=f"name = '{file_name}' and '{year_folder_id}' in parents",
                                         supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
             files = results.get('files', [])
-            file_id = None
             if files:
-                file_id = files[0]['id']
                 try:
-                    request = service.files().get_media(fileId=file_id)
+                    request = service.files().get_media(fileId=files[0]['id'])
                 except HttpError as error:
                     msg = f'error checking google drive: {error!r}'
                     raise GoogleDriveHttpError(msg) from error
@@ -263,14 +275,14 @@ def awarxe(service, day: datetime.date | None = None) -> pl.LazyFrame:   # noqa:
             raise GoogleDriveHttpError(msg) from error
 
 
-def folder_id_from_name(service, folder_name: str, parent_folder_id: str, *, create: bool = False) -> str:  # noqa: ANN001 | service is dynamically typed
+def folder_id_from_name(folder_name: str, parent_folder_id: str, service=None, *, create: bool = False) -> str:  # noqa: ANN001 | service is dynamically typed
     """
         returns the `folder_id` of the `folder_name` in the parent folder
 
     args:
-        service: an authorized google drive service
         folder_name: the name of the folder
         parent_folder_id: the id of the parent folder
+        service: an authorized google drive service
         create: whether to create the folder or not if it doesn't exist
 
     raises:
@@ -280,6 +292,9 @@ def folder_id_from_name(service, folder_name: str, parent_folder_id: str, *, cre
     returns:
        folder_id: the id of the folder with `folder_name`
     """
+    if service is None:
+        service = build('drive', 'v3', credentials=auth.auth())
+
     try:
         results_folder = service.files().list(q=f"name = '{folder_name}' and '{parent_folder_id}' in parents",
                                     supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
@@ -306,7 +321,7 @@ def folder_id_from_name(service, folder_name: str, parent_folder_id: str, *, cre
         return folder_id
 
 
-def upload_csv_as_sheet(service, file_path: Path, folder_id: str) -> None:  # noqa: ANN001 | service is dynamically typed
+def upload_csv_as_sheet(file_path: Path, folder_id: str, service=None) -> None:  # noqa: ANN001 | service is dynamically typed
     """
         uploads a local csv file as a sheet to the specified folder, `file_name` is the path to the local csv
 
@@ -318,10 +333,13 @@ def upload_csv_as_sheet(service, file_path: Path, folder_id: str) -> None:  # no
         GoogleDriveHttpError : raised when accessing google drive leads to an HttpError
 
     args:
-        service: an authorized google drive service
         file_path: the path to the local csv for uploading
         folder_id: the id of the folder to upload to
+        service: an authorized google drive service
     """
+    if service is None:
+        service = build('drive', 'v3', credentials=auth.auth())
+
     try:
         no_ext = file_path.stem
 
@@ -347,20 +365,23 @@ def upload_csv_as_sheet(service, file_path: Path, folder_id: str) -> None:  # no
         raise GoogleDriveHttpError(msg) from error
 
 
-def update_sheet(service, file_path: Path, file_id: str) -> None:    # noqa: ANN001 | service is dynamically typed
+def update_sheet(file_path: Path, file_id: str, service=None) -> None:    # noqa: ANN001 | service is dynamically typed
     """
         uses the contents of a local csv file to update the sheet at the specified `file_id`
 
         you may want to remove the csv after this upload for cleanliness
 
     args:
-        service: an authorized google drive service
         file_path: the path to the local csv file to use for updating
         file_id: the id of the file to be updated
+        service: an authorized google drive service
 
     raises:
         GoogleDriveHttpError : raised when accessing google drive leads to an HttpError
     """
+    if service is None:
+        service = build('drive', 'v3', credentials=auth.auth())
+
     try:
         media = MediaFileUpload(file_path,
                                 mimetype='text/csv')
