@@ -155,7 +155,7 @@ def send_notices(dds: pl.LazyFrame) -> None:
 
     timestamps = []
     for _row in notices.iter_rows(named=True):
-        # TODO: send emails cc: compliance
+        # TODO: send emails (triple quote f string) bcc: compliance
         sleep(.25)
         ts = datetime.now(tz=PHX_TZ)
         timestamps.append(ts)
