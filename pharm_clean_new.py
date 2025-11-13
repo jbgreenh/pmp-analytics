@@ -5,36 +5,16 @@
 # other sheet will have active 7+ days delinquent pharmacies
 # last sheet will have pharmacies who have had complaints opened
 import os
-from calendar import FRIDAY, SATURDAY
-from datetime import date, datetime, timedelta
+from calendar import FRIDAY, SATURDAY, TUESDAY
+from datetime import datetime
 from pathlib import Path
+from time import sleep
 
 import polars as pl
 from dotenv import load_dotenv
 
-from utils import drive
-from utils.constants import AZ_HOLIDAYS, PHX_TZ
-
-
-def add_business_days(start_date: date, days_to_add: int = 30) -> date:
-    """
-    add the specified number of business days to a given date
-
-    args:
-        start_date: the starting date
-        days_to_add: how many business days to add to the `start_date`
-
-    returns:
-        returns the date `days_to_add` business days after the `start_date`
-    """
-    days_added = 0
-
-    while days_added < days_to_add:
-        start_date += timedelta(days=1)
-        if (start_date.weekday() < SATURDAY) and (start_date not in AZ_HOLIDAYS):
-            days_added += 1
-
-    return start_date
+from utils import drive, num_and_dt
+from utils.constants import PHX_TZ
 
 
 def find_closed(mp_path: Path, lr_path: Path) -> pl.LazyFrame:
@@ -155,35 +135,49 @@ def process_files(mp_path: Path, dds_path: Path, lr_path: Path) -> pl.LazyFrame:
 
 
 def send_notices(dds: pl.LazyFrame) -> None:
-    # TODO: read in active 7+, check if past due date from that file, move those to complaint
     today = datetime.now(tz=PHX_TZ).date()
+    if today.weekday() > TUESDAY and today.weekday() < SATURDAY:
+        # TODO: read in active 7+, check if PAST(> not >=) due date from that file, move those to complaint
+        # must be thursday or friday for this check (maybe wednesday is ok too?)
+        # instead of moving to complaint, find last wednesday before due date and notify compliance email about it
+        pass
     if today.weekday() == FRIDAY:
-        due_date = add_business_days(today)
+        due_date = num_and_dt.add_business_days(today)
         print(f'friday notices, {due_date = }')
         email_type = 'friday'
-        # TODO: join with active 7+, filter, send emails, etc
+        # TODO: antijoin and concat with active 7+, filter, set email subj, body, etc
+        notices = dds.collect()
     else:
         print('daily notices')
         email_type = 'daily'
-        # TODO: send emails
+        # TODO: set email subj, body, etc
+        notices = dds.collect()
 
-    logs = drive.lazyframe_from_id_and_sheetname(os.environ['DDS_EMAIL_LOGS_FILE'], 'dds_email_logs', infer_schema_length=0)
-    time_stamp = datetime.now(tz=PHX_TZ)  # may move when we loop to actually send emails
+    timestamps = []
+    for _row in notices.iter_rows(named=True):
+        # TODO: send emails cc: compliance
+        sleep(.25)
+        ts = datetime.now(tz=PHX_TZ)
+        timestamps.append(ts)
+    ts_series = pl.Series(name='sent_dt', values=timestamps, dtype=pl.Datetime)
+    notices.insert_column(0, ts_series)
+
+    logs = drive.lazyframe_from_id_and_sheetname(os.environ['DDS_EMAIL_LOGS_FILE'], 'dds_email_logs', infer_schema_length=0).collect()  # read_excel does not have infer_schema
     new_dds_log = (
-        dds
+        notices
         .select(
-            pl.lit(time_stamp).dt.to_string('iso').alias('sent_dt'),
+            pl.col('sent_dt').dt.to_string('iso'),
             'to',
             pl.col('Pharmacy License Number').alias('permit_number'),
+            pl.col('DEA').alias('dea'),
             pl.col('Days Delinquent').cast(pl.String).alias('days_delinquent'),
-            pl.concat_str(pl.lit("'"), pl.col('Zip').cast(pl.String)).alias('zip'),
+            pl.concat_str(pl.lit("'"), pl.col('Zip').cast(pl.String)).alias('zip'),  # to preserve leading zeros
             pl.lit(email_type).alias('email_type')
-
         )
     )
     full_logs = pl.concat([logs, new_dds_log])
     fl_path = Path('full_logs.csv')
-    full_logs.collect().write_csv(fl_path)
+    full_logs.write_csv(fl_path)
     drive.update_sheet(fl_path, os.environ['DDS_EMAIL_LOGS_FILE'])
     fl_path.unlink()
 
