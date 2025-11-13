@@ -21,13 +21,13 @@ prev_year = prev_file_m_d.year
 
 folder = os.environ['MASKED_EXTRACT_FOLDER']
 print('getting folder ids...')
-year_folder = drive.folder_id_from_name(service, folder_name=f'{mask_year}', parent_folder_id=folder)
-prev_year_folder = drive.folder_id_from_name(service, folder_name=f'{prev_year}', parent_folder_id=folder)
+year_folder = drive.folder_id_from_name(folder_name=f'{mask_year}', parent_folder_id=folder, service=service)
+prev_year_folder = drive.folder_id_from_name(folder_name=f'{prev_year}', parent_folder_id=folder, service=service)
 
 mask_fn = f'AZ_{mask_year}{str(mask_month).zfill(2)}_masked.csv'
-mask_file = drive.lazyframe_from_file_name(service, file_name=mask_fn, folder_id=year_folder, drive_ft='csv', separator='|', infer_schema=False).collect()
+mask_file = drive.lazyframe_from_file_name(file_name=mask_fn, folder_id=year_folder, drive_ft='csv', service=service, separator='|', infer_schema=False).collect()
 prev_fn = f'AZ_{prev_year}{str(prev_month).zfill(2)}_masked.csv'
-prev_file = drive.lazyframe_from_file_name(service, file_name=prev_fn, folder_id=prev_year_folder, drive_ft='csv', separator='|', infer_schema=False).collect()
+prev_file = drive.lazyframe_from_file_name(file_name=prev_fn, folder_id=prev_year_folder, drive_ft='csv', service=service, separator='|', infer_schema=False).collect()
 
 print('-----')
 print(f'comparing a:{mask_fn} and b:{prev_fn}...')

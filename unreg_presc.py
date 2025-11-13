@@ -95,7 +95,7 @@ def check_deas_for_registration(service) -> pl.LazyFrame:   # noqa: ANN001 | ser
     """
     awarxe = (
         drive
-        .awarxe(service)
+        .awarxe(service=service)
         .collect()
         .drop_nulls('dea number')
         .filter(
@@ -254,7 +254,7 @@ def add_dfs_to_board_info(service, unreg_presc: pl.LazyFrame, board_info: dict) 
         if board_dict.upload_file_type == 'none':
             board_dict.board_df = unreg_presc.filter(pl.col('board') == board).drop('SSN', 'Tax ID').collect()
         else:
-            latest_file = drive.get_latest_uploaded(service, folder_id=board_dict.uploads_folder, drive_ft=board_dict.upload_file_type, skip_rows=board_dict.upload_skip_rows, infer_schema=False)
+            latest_file = drive.get_latest_uploaded(folder_id=board_dict.uploads_folder, drive_ft=board_dict.upload_file_type, service=service, skip_rows=board_dict.upload_skip_rows, infer_schema=False)
             lf = latest_file.lf
             age = datetime.now(PHX_TZ) - latest_file.created_at
             age_hours = round(age.seconds / 60 / 60, 2)  # don't need total_seconds() because of how we handle days below
