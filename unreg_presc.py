@@ -310,7 +310,7 @@ def add_dfs_to_board_info(service, unreg_presc: pl.LazyFrame, board_info: dict) 
             board_dict.board_df = upload_matches
             # TODO: see above todo
         board_dict.board_df = (
-            board_dict
+            board_dict.board_df
             .drop(
                 'SSN',
                 'Tax ID',
