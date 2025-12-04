@@ -289,7 +289,7 @@ def add_dfs_to_board_info(service, unreg_presc: pl.LazyFrame, board_info: dict) 
                 .with_columns(
                     pl.col('cleaned_lino').alias('State License Number')
                 )
-                .drop('first_name', 'last_name', 'dob')
+                .drop('first_name', 'last_name', 'dob', 'cleaned_lino')
             )
 
             upload_matches = pl.concat([upload_ez_match, upload_no_ez_match]).collect()
@@ -307,7 +307,19 @@ def add_dfs_to_board_info(service, unreg_presc: pl.LazyFrame, board_info: dict) 
             upload_no_match.write_csv(no_match_fp)
             print(f'{no_match_fp} written')
 
-            board_dict.board_df = upload_matches.drop('SSN', 'Tax ID')  # , cleaned_lino | drop after testing
+            board_dict.board_df = (
+                upload_matches
+                .drop(
+                    'SSN',
+                    'Tax ID',
+                    'Business Activity Code',
+                    'Business Activity Sub Code',
+                    'Date of Original Registration',
+                    'Expiration Date',
+                    'Drug Schedules',
+                    'State CS License Number'
+                )
+            )
             # TODO: see above todo
         boards_dir = unreg_dir / 'boards'
         boards_dir.mkdir(parents=True, exist_ok=True)
