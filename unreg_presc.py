@@ -382,8 +382,8 @@ def send_emails(board_dict: dict[str, BoardInfo], creds: google.oauth2.credentia
             to=info.board_emails,
             subject=f'CSPMP Unregistered Prescribers {info.board_name}',
             message_text=(
-                f'The CSPMP sends biannual compliance reports to Arizona regulatory licensing boards regarding prescribers who have been identified as non-compliant '
-                f'in registering for the CSPMP, pursuant to A.R.S § 36-2606 (A). This list is generated every six months.\n\n'
+                f'The CSPMP sends monthly compliance reports to Arizona regulatory licensing boards regarding prescribers who have been identified as non-compliant '
+                f'in registering for the CSPMP, pursuant to A.R.S § 36-2606 (A). This list is generated every month.\n\n'
                 f'Attached you will find the list of licensed providers with the {info.board_name} that are not registered with the Arizona CSPMP, '
                 f'as well as detailed information pertaining to the registration requirements.\n\nIf you have any questions please feel free to contact us.{signature}'
             ),
@@ -398,6 +398,7 @@ def send_emails(board_dict: dict[str, BoardInfo], creds: google.oauth2.credentia
             print(f'from: {message.sender}')
             print(f'to: {message.to}')
             print(f'subj: {message.subject}')
+            print(f'body: {message.message_text}')
             print(message.file_paths)
             print(info.board_df.head())
         Path(report_file).unlink()
