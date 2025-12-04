@@ -289,10 +289,10 @@ def add_dfs_to_board_info(service, unreg_presc: pl.LazyFrame, board_info: dict) 
                 .with_columns(
                     pl.col('cleaned_lino').alias('State License Number')
                 )
-                .drop('first_name', 'last_name', 'dob', 'cleaned_lino')
+                .drop('first_name', 'last_name', 'dob')
             )
 
-            upload_matches = pl.concat([upload_ez_match, upload_no_ez_match]).collect()
+            upload_matches = pl.concat([upload_ez_match, upload_no_ez_match]).drop('cleaned_lino').collect()
             upload_no_match = (
                 unreg_presc_board
                 .filter(
