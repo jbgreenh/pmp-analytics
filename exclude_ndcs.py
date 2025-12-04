@@ -13,7 +13,7 @@ load_dotenv()
 
 sheet_id = os.environ['EXCLUDED_NDCS_FILE']
 
-excluded_ndcs = drive.lazyframe_from_id_and_sheetname(service, sheet_id, 'excluded', infer_schema_length=0)  # read_excel does not have infer_schema
+excluded_ndcs = drive.lazyframe_from_id_and_sheetname(sheet_id, 'excluded', service=service, infer_schema_length=0)  # read_excel does not have infer_schema
 
 luid = tableau.find_view_luid('opiate_antagonists', 'opiate antagonists')
 lf = tableau.lazyframe_from_view_id(luid, infer_schema=False)

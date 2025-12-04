@@ -4,9 +4,8 @@ from io import BytesIO
 
 import paramiko
 from dotenv import load_dotenv
-from googleapiclient.discovery import build
 
-from utils import auth, drive
+from utils import drive
 from utils.constants import MAX_SERVU_FILE_COUNT, PHX_TZ
 
 
@@ -39,12 +38,11 @@ def remove_oldest_file(sftp: paramiko.SFTPClient) -> None:
         print(f'{MAX_SERVU_FILE_COUNT} files on servu, none removed')
 
 
-def upload_latest_dhs_file(service, sftp: paramiko.SFTPClient, folder: str) -> None:  # noqa: ANN001 | service is dynamically typed
+def upload_latest_dhs_file(sftp: paramiko.SFTPClient, folder: str) -> None:
     """
     uploads the latest standard extract to the DHS sftp
 
     args:
-        service: google drive service
         sftp: paramiko SFTPClient connected to the DHS sftp
         folder: the google drive folder for the standard extracts
     """
@@ -54,7 +52,7 @@ def upload_latest_dhs_file(service, sftp: paramiko.SFTPClient, folder: str) -> N
 
     if file_name not in files:
         print(f'{file_name} not found, uploading...')
-        extract = drive.lazyframe_from_file_name(service, file_name=file_name, folder_id=folder, drive_ft='csv', separator='|', infer_schema=False)
+        extract = drive.lazyframe_from_file_name(file_name=file_name, folder_id=folder, drive_ft='csv', separator='|', infer_schema=False)
         csv_buffer = BytesIO()
         extract.collect().write_csv(csv_buffer, separator='|')
         csv_buffer.seek(0)
@@ -68,9 +66,6 @@ def upload_latest_dhs_file(service, sftp: paramiko.SFTPClient, folder: str) -> N
 if __name__ == '__main__':
     load_dotenv()
 
-    creds = auth.auth()
-    service = build('drive', 'v3', credentials=creds)
-
     folder = os.environ['STANDARD_EXTRACT_FOLDER']
 
     sftp_host = os.environ['SERVU_HOST']
@@ -83,7 +78,7 @@ if __name__ == '__main__':
     ssh.connect(hostname=sftp_host, port=int(sftp_port), username=sftp_user, password=sftp_password)
     sftp = ssh.open_sftp()
 
-    upload_latest_dhs_file(service, sftp, folder)
+    upload_latest_dhs_file(sftp, folder)
     remove_oldest_file(sftp)
 
     sftp.close()

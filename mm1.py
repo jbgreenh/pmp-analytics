@@ -1,18 +1,12 @@
 import polars as pl
-from googleapiclient.discovery import build
 
-from utils import auth, drive
+from utils import drive
 
 
-def mm1(service) -> None:  # noqa: ANN001 | service is dynamically typed
-    """
-    prepares the medical marijuana audit for `mm2.py` and prints instructions for transitioning between the two scripts
-
-    args:
-        service: an authorized google drive service
-    """
+def mm1() -> None:
+    """prepares the medical marijuana audit for `mm2.py` and prints instructions for transitioning between the two scripts"""
     awarxe = (
-        drive.awarxe(service=service)
+        drive.awarxe()
         .filter(
             pl.col('dea number').is_not_null()
         )
@@ -107,6 +101,4 @@ def mm1(service) -> None:  # noqa: ANN001 | service is dynamically typed
 
 
 if __name__ == '__main__':
-    creds = auth.auth()
-    service = build('drive', 'v3', credentials=creds)
-    mm1(service)
+    mm1()

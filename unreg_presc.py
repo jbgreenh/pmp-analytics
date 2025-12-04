@@ -95,7 +95,7 @@ def check_deas_for_registration(service) -> pl.LazyFrame:   # noqa: ANN001 | ser
     """
     awarxe = (
         drive
-        .awarxe(service)
+        .awarxe(service=service)
         .collect()
         .drop_nulls('dea number')
         .filter(
@@ -254,7 +254,7 @@ def add_dfs_to_board_info(service, unreg_presc: pl.LazyFrame, board_info: dict) 
         if board_dict.upload_file_type == 'none':
             board_dict.board_df = unreg_presc.filter(pl.col('board') == board).drop('SSN', 'Tax ID').collect()
         else:
-            latest_file = drive.get_latest_uploaded(service, folder_id=board_dict.uploads_folder, drive_ft=board_dict.upload_file_type, skip_rows=board_dict.upload_skip_rows, infer_schema=False)
+            latest_file = drive.get_latest_uploaded(folder_id=board_dict.uploads_folder, drive_ft=board_dict.upload_file_type, service=service, skip_rows=board_dict.upload_skip_rows, infer_schema=False)
             lf = latest_file.lf
             age = datetime.now(PHX_TZ) - latest_file.created_at
             age_hours = round(age.seconds / 60 / 60, 2)  # don't need total_seconds() because of how we handle days below
@@ -382,8 +382,8 @@ def send_emails(board_dict: dict[str, BoardInfo], creds: google.oauth2.credentia
             to=info.board_emails,
             subject=f'CSPMP Unregistered Prescribers {info.board_name}',
             message_text=(
-                f'The CSPMP sends biannual compliance reports to Arizona regulatory licensing boards regarding prescribers who have been identified as non-compliant '
-                f'in registering for the CSPMP, pursuant to A.R.S § 36-2606 (A). This list is generated every six months.\n\n'
+                f'The CSPMP sends monthly compliance reports to Arizona regulatory licensing boards regarding prescribers who have been identified as non-compliant '
+                f'in registering for the CSPMP, pursuant to A.R.S § 36-2606 (A). This list is generated every month.\n\n'
                 f'Attached you will find the list of licensed providers with the {info.board_name} that are not registered with the Arizona CSPMP, '
                 f'as well as detailed information pertaining to the registration requirements.\n\nIf you have any questions please feel free to contact us.{signature}'
             ),
@@ -398,6 +398,7 @@ def send_emails(board_dict: dict[str, BoardInfo], creds: google.oauth2.credentia
             print(f'from: {message.sender}')
             print(f'to: {message.to}')
             print(f'subj: {message.subject}')
+            print(f'body: {message.message_text}')
             print(message.file_paths)
             print(info.board_df.head())
         Path(report_file).unlink()

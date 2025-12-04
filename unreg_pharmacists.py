@@ -54,7 +54,7 @@ def registration(service, inspection_list: pl.LazyFrame) -> pl.LazyFrame:   # no
        final_list: the `inspection_list` checked for registration
     """
     awarxe_license_numbers = (
-        drive.awarxe(service)
+        drive.awarxe(service=service)
         .with_columns(
             pl.col('professional license number').str.to_uppercase().str.strip_chars()
         )

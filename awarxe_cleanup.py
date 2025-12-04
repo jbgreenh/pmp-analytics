@@ -1,9 +1,8 @@
 from pathlib import Path
 
 import polars as pl
-from googleapiclient.discovery import build
 
-from utils import auth, deas, drive, tableau
+from utils import deas, drive, tableau
 
 
 def pull_awarxe() -> pl.DataFrame:
@@ -13,13 +12,10 @@ def pull_awarxe() -> pl.DataFrame:
     returns:
         a dataframe with all active awarxe registants
     """
-    creds = auth.auth()
-    service = build('drive', 'v3', credentials=creds)
-
-    return drive.awarxe(service).collect()
+    return drive.awarxe().collect()
 
 
-def tab_awarxe() -> pl.Lazyframe:
+def tab_awarxe() -> pl.LazyFrame:
     """
     pulls active awarxe registrants from tableau. this file differs from the one `pull_awarxe()` returns because each row is one registrant with all of their dea numbers rather than each row being one dea number.
 

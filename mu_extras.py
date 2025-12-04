@@ -8,29 +8,12 @@ import polars as pl
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
 
-from utils import auth, deas, drive
+from utils import auth, deas, drive, num_and_dt
 from utils.constants import PHX_TZ, TOP_PRESCRIBERS
 
 if TYPE_CHECKING:
     import google.auth.external_account_authorized_user
     import google.oauth2.credentials
-
-
-def ordinal(n: int) -> str:
-    """
-    converts a number to its ordinal version (eg 1 to 1st, 4 to 4th)
-
-    args:
-        n: the number to convert
-
-    returns:
-        the ordinal string
-    """
-    if 11 <= (n % 100) <= 13:  # noqa: PLR2004 | not magic
-        suffix = 'th'
-    else:
-        suffix = ['th', 'st', 'nd', 'rd', 'th'][min(n % 10, 4)]
-    return f'{n}{suffix}'
 
 
 def input_str_to_date(month_name: str, year_str: str) -> date:
@@ -154,7 +137,7 @@ def process_mu(appearance_month: date, input_file: str) -> None:
     appear_stats = (
         appear_counts.join(last_appear, on='final_id', how='left', coalesce=True)
         .with_columns(
-            pl.col('appearance').map_elements(ordinal, return_dtype=pl.String),
+            pl.col('appearance').map_elements(num_and_dt.ordinal, return_dtype=pl.String),
             pl.col('last_appearance').dt.strftime('%B %Y')
         )
     )
