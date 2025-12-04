@@ -252,7 +252,7 @@ def add_dfs_to_board_info(service, unreg_presc: pl.LazyFrame, board_info: dict) 
     for board, board_dict in board_info.items():
         print(f'processing for {board}...')
         if board_dict.upload_file_type == 'none':
-            board_dict.board_df = unreg_presc.filter(pl.col('board') == board).drop('SSN', 'Tax ID').collect()
+            board_dict.board_df = unreg_presc.filter(pl.col('board') == board).collect()
         else:
             latest_file = drive.get_latest_uploaded(folder_id=board_dict.uploads_folder, drive_ft=board_dict.upload_file_type, service=service, skip_rows=board_dict.upload_skip_rows, infer_schema=False)
             lf = latest_file.lf
@@ -307,20 +307,21 @@ def add_dfs_to_board_info(service, unreg_presc: pl.LazyFrame, board_info: dict) 
             upload_no_match.write_csv(no_match_fp)
             print(f'{no_match_fp} written')
 
-            board_dict.board_df = (
-                upload_matches
-                .drop(
-                    'SSN',
-                    'Tax ID',
-                    'Business Activity Code',
-                    'Business Activity Sub Code',
-                    'Date of Original Registration',
-                    'Expiration Date',
-                    'Drug Schedules',
-                    'State CS License Number'
-                )
-            )
+            board_dict.board_df = upload_matches
             # TODO: see above todo
+        board_dict.board_df = (
+            board_dict
+            .drop(
+                'SSN',
+                'Tax ID',
+                'Business Activity Code',
+                'Business Activity Sub Code',
+                'Date of Original Registration',
+                'Expiration Date',
+                'Drug Schedules',
+                'State CS License Number'
+            )
+        )
         boards_dir = unreg_dir / 'boards'
         boards_dir.mkdir(parents=True, exist_ok=True)
         board_fp = boards_dir / f'{board.lower()}_unreg.csv'
