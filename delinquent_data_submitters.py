@@ -5,16 +5,19 @@
 # other sheet will have active 7+ days delinquent pharmacies
 # last sheet will have pharmacies who have had complaints opened
 import os
-from calendar import FRIDAY, SATURDAY, TUESDAY
-from datetime import datetime
+from calendar import FRIDAY, WEDNESDAY
+from datetime import datetime, timedelta
 from pathlib import Path
 from time import sleep
+from typing import Literal
 
 import polars as pl
 from dotenv import load_dotenv
 
-from utils import drive, num_and_dt
-from utils.constants import PHX_TZ
+from utils import drive, files, num_and_dt
+from utils.constants import DAYS_DELINQUENT_THRESHOLD, PHX_TZ
+
+type EmailType = Literal['daily', 'friday']
 
 
 def find_closed(mp_path: Path, lr_path: Path) -> pl.LazyFrame:
@@ -65,7 +68,7 @@ def find_closed(mp_path: Path, lr_path: Path) -> pl.LazyFrame:
     )
 
 
-def process_files(mp_path: Path, dds_path: Path, lr_path: Path) -> pl.LazyFrame:
+def process_input_files(mp_path: Path, dds_path: Path, lr_path: Path) -> pl.LazyFrame:
     """
     process files, send email notifications, and update logs
 
@@ -116,6 +119,7 @@ def process_files(mp_path: Path, dds_path: Path, lr_path: Path) -> pl.LazyFrame:
         )
         .join(mp, on='DEA', how='left', coalesce=True)
         .join(lr, on='Pharmacy License Number', how='left', coalesce=True)
+        # TODO: exclude pharmacies that have active complaints in DDS_COMPLAINTS_FILE
         .filter(
             pl.col('Status').str.starts_with('OPEN')
         )
@@ -134,28 +138,32 @@ def process_files(mp_path: Path, dds_path: Path, lr_path: Path) -> pl.LazyFrame:
     )
 
 
-def send_notices(dds: pl.LazyFrame) -> None:
+def date_in_next_week(lf: pl.LazyFrame) -> pl.LazyFrame:
     today = datetime.now(tz=PHX_TZ).date()
-    if today.weekday() > TUESDAY and today.weekday() < SATURDAY:
-        # TODO: read in active 7+, check if PAST(> not >=) due date from that file, move those to complaint
-        # must be thursday or friday for this check (maybe wednesday is ok too?)
-        # instead of moving to complaint, find last wednesday before due date and notify compliance email about it
-        pass
-    if today.weekday() == FRIDAY:
-        due_date = num_and_dt.add_business_days(today)
-        print(f'friday notices, {due_date = }')
-        email_type = 'friday'
-        # TODO: antijoin and concat with active 7+, filter, set email subj, body, etc
+    days_to_mon = 7 - today.weekday()
+    next_mon = today + timedelta(days=days_to_mon)
+    next_fri = next_mon + timedelta(days=FRIDAY)
+    return (
+        lf
+        .filter(
+            pl.col('deadline').str.to_date('%Y-%m-%d').is_between(next_mon, next_fri)
+        )
+    )
+
+
+def send_notices(dds: pl.LazyFrame, email_type: EmailType) -> None:
+    if email_type == 'friday':
+        print('friday notices')
+        # TODO: set email subj, body, from, to, etc
         notices = dds.collect()
     else:
         print('daily notices')
-        email_type = 'daily'
         # TODO: set email subj, body, etc
         notices = dds.collect()
 
     timestamps = []
     for _row in notices.iter_rows(named=True):
-        # TODO: send emails (triple quote f string) bcc: compliance
+        # TODO: send emails bcc: compliance
         sleep(.25)
         ts = datetime.now(tz=PHX_TZ)
         timestamps.append(ts)
@@ -182,16 +190,65 @@ def send_notices(dds: pl.LazyFrame) -> None:
     fl_path.unlink()
 
 
+def pharm_clean(dds: pl.LazyFrame) -> None:
+    today = datetime.now(tz=PHX_TZ).date()
+    if WEDNESDAY <= today.weekday() <= FRIDAY:  # remove pharmacies that are no longer delinquent from deadlines list
+        deadlines = drive.lazyframe_from_id_and_sheetname(os.environ['DDS_DEADLINES_FILE'], 'deadlines', infer_schema_length=0)  # read_excel does not have infer_schema
+        updated_deadlines = (
+            deadlines
+            .join(dds, on='Pharmacy License Number', how='semi')
+        )
+        deadlines_path = Path('deadlines.csv')
+        updated_deadlines.collect().write_csv(deadlines_path)
+        drive.update_sheet(deadlines_path, os.environ['DDS_DEADLINES_FILE'])
+        deadlines_path.unlink()
+
+        if today.weekday() == WEDNESDAY:  # notify compliance team of deadlines that fall in the next week
+            due_next_week = date_in_next_week(updated_deadlines)
+            # TODO: email compliance team with due_next_week
+
+    if today.weekday() == FRIDAY:  # add new deadlines to list, send friday notices
+        # TODO: add schema to deadlines so join doesn't complain if deadlines file is empty. see: lf.match_to_schema
+        deadlines = drive.lazyframe_from_id_and_sheetname(os.environ['DDS_DEADLINES_FILE'], 'deadlines', infer_schema_length=0)  # read_excel does not have infer_schema
+        today = datetime.now(tz=PHX_TZ).date()
+        due_date = num_and_dt.add_business_days(today)
+        new_deadlines = (
+            dds
+            .filter(
+                pl.col('Days Delinquent').cast(pl.Int64) >= DAYS_DELINQUENT_THRESHOLD |
+                pl.col('Days Delinquent') == ''  # noqa: PLC1901 | empty string is not falsey in polars
+            )
+            # TODO: select cols to match DDS_DEADLINES_FILE
+            .join(deadlines, on='Pharmacy License Number', how='anti')
+        )
+        if new_deadlines.collect().height > 0:
+            new_deadlines = (
+                new_deadlines
+                .with_columns(
+                    pl.lit(due_date).dt.to_string('%Y-%m-%d').alias('deadline')
+                )
+            )
+            full_deadlines = pl.concat([deadlines, new_deadlines])
+            deadlines_path = Path('deadlines.csv')
+            full_deadlines.collect().write_csv(deadlines_path)
+            drive.update_sheet(deadlines_path, os.environ['DDS_DEADLINES_FILE'])
+            deadlines_path.unlink()
+
+        send_notices(dds, 'friday')
+    else:
+        send_notices(dds, 'daily')
+
+
 if __name__ == '__main__':
     load_dotenv()
     mp_path = Path('data/pharmacies.csv')
-    # files.warn_file_age(mp_path)
+    files.warn_file_age(mp_path)
 
     dds_path = Path('data/DelinquentDispenserRequest.csv')
-    # files.warn_file_age(dds_path)
+    files.warn_file_age(dds_path)
 
     lr_path = Path('data/List Request.csv')
-    # files.warn_file_age(lr_path)
+    files.warn_file_age(lr_path)
 
-    dds = process_files(mp_path, dds_path, lr_path)
-    send_notices(dds)
+    dds = process_input_files(mp_path, dds_path, lr_path)
+    pharm_clean(dds)
