@@ -241,7 +241,8 @@ def pharm_clean(dds: pl.LazyFrame) -> None:
                 dds
                 .filter(
                     (pl.col('Days Delinquent').str.to_integer() >= DAYS_DELINQUENT_THRESHOLD) |
-                    (pl.col('Days Delinquent') == '')  # noqa: PLC1901 | empty string is not falsey in polars
+                    (pl.col('Days Delinquent') == '') |  # noqa: PLC1901 | empty string is not falsey in polars
+                    (pl.col('Days Delinquent').is_null())
                 )
                 .join(updated_deadlines, on='Pharmacy License Number', how='anti')
             )
