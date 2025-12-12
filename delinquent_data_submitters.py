@@ -206,7 +206,6 @@ def send_notices(lf: pl.LazyFrame, email_type: EmailType) -> None:
             'to',
             pl.col('Pharmacy License Number').alias('permit_number'),
             pl.col('DEA').alias('dea'),
-            pl.col('Days Delinquent').cast(pl.String).alias('days_delinquent'),
             pl.concat_str(pl.lit("'"), pl.col('Zip').cast(pl.String)).alias('zip'),  # to preserve leading zeros
             pl.lit(email_type).alias('email_type')
         )
