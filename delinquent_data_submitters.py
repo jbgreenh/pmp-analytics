@@ -141,8 +141,7 @@ def send_notices(lf: pl.LazyFrame, email_type: EmailType) -> None:
 
         if email_type == 'friday':
             subject = f'CSPMP Action Required: Possible Complaint Against {row['Pharmacy License Number']}'
-            body = f"""
-ATTENTION: {row['Business Name']}
+            body = f"""ATTENTION: {row['Business Name']}
 {pharmacy_address}
 {row['Pharmacy License Number']}
 {row['DEA']}
@@ -170,8 +169,7 @@ If you have any questions or concerns about the data submission process, please 
             """
         else:
             subject = f'Notice of Missing CSPMP Data Submissions for {row['Pharmacy License Number']}'
-            body = f"""
-<b>At this time, your pharmacy, {row['Pharmacy License Number']}, is in violation of <a href="https://www.azleg.gov/ars/36/02608.htm" target="_blank">ARS § 36-2608</a> reporting requirements.</b>
+            body = f"""<b>At this time, your pharmacy, {row['Pharmacy License Number']}, is in violation of <a href="https://www.azleg.gov/ars/36/02608.htm" target="_blank">ARS § 36-2608</a> reporting requirements.</b>
 
 You are receiving this email because you are listed as the party responsible for submitting controlled substance dispensing information for the above-referenced dispenser to the Arizona Controlled Substances Prescription Monitoring Program (AZ CSPMP). Controlled substance dispensing information has not been received since <b>{last_compliant}</b>.
 
