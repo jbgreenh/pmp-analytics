@@ -112,6 +112,17 @@ def process_input_files(mp_path: Path, dds_path: Path, lr_path: Path) -> pl.Lazy
         )
     )
 
+    complaints = (
+        drive.lazyframe_from_id_and_sheetname(os.environ['DDS_COMPLAINTS_FILE'], 'complaints', infer_schema_length=0)  # read_excel does not have infer_schema
+        .select(
+            'Pharmacy License Number',
+            'complaint_status'
+        )
+        .filter(
+            pl.col('complaint_status') == 'Open'
+        )
+    )
+
     return (
         pl.scan_csv(dds_path)
         .with_columns(
@@ -119,7 +130,7 @@ def process_input_files(mp_path: Path, dds_path: Path, lr_path: Path) -> pl.Lazy
         )
         .join(mp, on='DEA', how='left', coalesce=True)
         .join(lr, on='Pharmacy License Number', how='left', coalesce=True)
-        # TODO: exclude pharmacies that have active complaints in DDS_COMPLAINTS_FILE
+        .join(complaints, on='Pharmacy License Number', how='anti')
         .filter(
             pl.col('Status').str.starts_with('OPEN')
         )
@@ -131,14 +142,24 @@ def process_input_files(mp_path: Path, dds_path: Path, lr_path: Path) -> pl.Lazy
             'Last Compliant',
             'Days Delinquent',
             'Primary User',
+            pl.concat_list(pl.col('Primary Email').str.to_lowercase(), pl.col('mp_email'), pl.col('igov_email')).list.unique().list.join(',').alias('to'),
+            pl.concat_list(pl.col('Phone').str.to_lowercase(), pl.col('mp_phone'), pl.col('igov_phone')).list.unique().list.join(',').alias('phone_numbers'),
             'Zip',
-            pl.concat_list(pl.col('Primary Email').str.to_lowercase(), pl.col('mp_email'), pl.col('igov_email')).list.unique().list.join(',').alias('to')
         )
         .sort(pl.col('Days Delinquent'), descending=True)
     )
 
 
 def date_in_next_week(lf: pl.LazyFrame) -> pl.LazyFrame:
+    """
+    filters a given lazyframe for rows with deadlines in the next business week (mon-fri)
+
+    args:
+        lf: a lazyframe with a `deadline` column in `YYYY-MM-DD` format
+
+    returns:
+        the filtered lazyframe
+    """
     today = datetime.now(tz=PHX_TZ).date()
     days_to_mon = 7 - today.weekday()
     next_mon = today + timedelta(days=days_to_mon)
@@ -198,44 +219,39 @@ def pharm_clean(dds: pl.LazyFrame) -> None:
             deadlines
             .join(dds, on='Pharmacy License Number', how='semi')
         )
+        if today.weekday() == FRIDAY:  # add new pharmacies to the deadlines list and apply deadline
+            today = datetime.now(tz=PHX_TZ).date()
+            due_date = num_and_dt.add_business_days(today)
+            new_deadlines = (
+                dds
+                .filter(
+                    pl.col('Days Delinquent').cast(pl.Int64) >= DAYS_DELINQUENT_THRESHOLD |
+                    pl.col('Days Delinquent') == ''  # noqa: PLC1901 | empty string is not falsey in polars
+                )
+                .join(updated_deadlines, on='Pharmacy License Number', how='anti')
+            )
+            if new_deadlines.collect().height > 0:
+                new_deadlines = (
+                    new_deadlines
+                    .drop('Days Delinquent')
+                    .with_columns(
+                        pl.lit(due_date).dt.to_string('%Y-%m-%d').alias('deadline')
+                    )
+                )
+                updated_deadlines = pl.concat([updated_deadlines, new_deadlines])
+
         deadlines_path = Path('deadlines.csv')
         updated_deadlines.collect().write_csv(deadlines_path)
         drive.update_sheet(deadlines_path, os.environ['DDS_DEADLINES_FILE'])
         deadlines_path.unlink()
 
+        send_notices(updated_deadlines, 'friday')
+
         if today.weekday() == WEDNESDAY:  # notify compliance team of deadlines that fall in the next week
             due_next_week = date_in_next_week(updated_deadlines)
             # TODO: email compliance team with due_next_week
 
-    if today.weekday() == FRIDAY:  # add new deadlines to list, send friday notices
-        # TODO: add schema to deadlines so join doesn't complain if deadlines file is empty. see: lf.match_to_schema
-        deadlines = drive.lazyframe_from_id_and_sheetname(os.environ['DDS_DEADLINES_FILE'], 'deadlines', infer_schema_length=0)  # read_excel does not have infer_schema
-        today = datetime.now(tz=PHX_TZ).date()
-        due_date = num_and_dt.add_business_days(today)
-        new_deadlines = (
-            dds
-            .filter(
-                pl.col('Days Delinquent').cast(pl.Int64) >= DAYS_DELINQUENT_THRESHOLD |
-                pl.col('Days Delinquent') == ''  # noqa: PLC1901 | empty string is not falsey in polars
-            )
-            # TODO: select cols to match DDS_DEADLINES_FILE
-            .join(deadlines, on='Pharmacy License Number', how='anti')
-        )
-        if new_deadlines.collect().height > 0:
-            new_deadlines = (
-                new_deadlines
-                .with_columns(
-                    pl.lit(due_date).dt.to_string('%Y-%m-%d').alias('deadline')
-                )
-            )
-            full_deadlines = pl.concat([deadlines, new_deadlines])
-            deadlines_path = Path('deadlines.csv')
-            full_deadlines.collect().write_csv(deadlines_path)
-            drive.update_sheet(deadlines_path, os.environ['DDS_DEADLINES_FILE'])
-            deadlines_path.unlink()
-
-        send_notices(dds, 'friday')
-    else:
+    if today.weekday() != FRIDAY:
         send_notices(dds, 'daily')
 
 
