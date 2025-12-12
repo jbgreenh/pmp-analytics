@@ -21,7 +21,7 @@ AZ_HOLIDAYS = {
     date(year=2026, month=1, day=19),
     date(year=2026, month=2, day=16),
     date(year=2026, month=5, day=25),
-    date(year=2026, month=7, day=4),  # saturday, might be observed friday before or monday after
+    date(year=2026, month=7, day=3),
     date(year=2026, month=9, day=7),
     date(year=2026, month=10, day=12),
     date(year=2026, month=11, day=11),

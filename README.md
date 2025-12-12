@@ -42,6 +42,18 @@ this script takes the number of patients provided by bamboo, updates the file to
 
 checks the newest masked file and compares it to the preceding file
 
+## delinquent_data_submitters
+
+this script performs the daily delinquent data submitters cleanup based on the day of the week, and sends the proper daily or friday notices
+
+### required files
+
+| file                             | description                                                   |
+| -------------------------------- | ------------------------------------------------------------- |
+| `DelinquentDispenserRequest.csv` | AWARxE>Admin>Delinquent Pharmacies>Dowload CSV                |
+| `List Request.csv`               | iGov>Reports>Snapshot Reports>List Request>Generator>Download |
+| `pharmacies.csv`                 | AWARxE>Admin>Manage Pharmacies>Download CSV                   |
+
 ## dhs_upload
 
 takes the latest standard extract from the google drive and uploads it to the dhs sftp, after the upload, it also deletes the oldest file in the sftp folder for maintenance
@@ -139,18 +151,6 @@ a file in `data/od/` in the following format:
 | FIRST NAME |                                    |
 | DOD        | date of overdose MM/DD/YYYY format |
 | DOB        | date of birth MM/DD/YYYY format    |
-
-## pharmacy_cleanup
-
-this script performs the weekly pharmacy cleanup and provides a link to the file on google drive for changing closed pharmacies in awarxe to exempt under manage pharmacies
-
-### required files
-
-| file                             | description                                                   |
-| -------------------------------- | ------------------------------------------------------------- |
-| `DelinquentDispenserRequest.csv` | AWARxE>Admin>Delinquent Pharmacies>Dowload CSV                |
-| `List Request.csv`               | iGov>Reports>Snapshot Reports>List Request>Generator>Download |
-| `pharmacies.csv`                 | AWARxE>Admin>Manage Pharmacies>Download CSV                   |
 
 ## pharmacy deas not in manage pharmacies
 
