@@ -142,47 +142,47 @@ def send_notices(lf: pl.LazyFrame, email_type: EmailType) -> None:
         if email_type == 'friday':
             subject = f'CSPMP Action Required: Possible Complaint Against {row['Pharmacy License Number']}'
             body = f"""
-            ATTENTION: {row['Business Name']}
-            {pharmacy_address}
-            {row['Pharmacy License Number']}
-            {row['DEA']}
+ATTENTION: {row['Business Name']}
+{pharmacy_address}
+{row['Pharmacy License Number']}
+{row['DEA']}
 
-            According to our records, your pharmacy is not submitting daily reports to the Arizona Controlled Substance Prescription Monitoring Program clearinghouse.
+According to our records, your pharmacy is not submitting daily reports to the Arizona Controlled Substance Prescription Monitoring Program clearinghouse.
 
-            Last date of data submission received on: <b>{last_compliant}</b>
+Last date of data submission received on: <b>{last_compliant}</b>
 
-            At this time, you are in violation of <a href="https://www.azleg.gov/ars/36/02608.htm" target="_blank">ARS § 36-2608</a> reporting requirements. <em><b>Failure to upload your delinquent schedule II-V dispensations will result in a complaint being opened against the pharmacy.</b></em>
+At this time, you are in violation of <a href="https://www.azleg.gov/ars/36/02608.htm" target="_blank">ARS § 36-2608</a> reporting requirements. <em><b>Failure to upload your delinquent schedule II-V dispensations will result in a complaint being opened against the pharmacy.</b></em>
 
-            <b>Zero reports should be submitted for any days there are no controlled substance dispensations. For days you are not operational, you should report zero for those days on your next open business day.</b>
+<b>Zero reports should be submitted for any days there are no controlled substance dispensations. For days you are not operational, you should report zero for those days on your next open business day.</b>
 
-            <b style='color: red;'>Please ensure you upload your missed submissions by {row['deadline']} or a complaint will be opened against the pharmacy permit. </b>
+<b style='color: red;'>Please ensure you upload your missed submissions by {row['deadline']} or a complaint will be opened against the pharmacy permit. </b>
 
-            If your pharmacy has an active DEA number, an active AZ pharmacy permit, and is not limited to veterinary dispensing, <em><b>it is required to submit a daily report, including zero reports, for controlled substances II-V.</b></em>
+If your pharmacy has an active DEA number, an active AZ pharmacy permit, and is not limited to veterinary dispensing, <em><b>it is required to submit a daily report, including zero reports, for controlled substances II-V.</b></em>
 
-            If your pharmacy utilizes a vendor to submit dispensations on your behalf, please contact your vendor immediately to get this issue corrected to avoid possible Board action. You may forward this email to the appropriate vendor contact for assistance.
+If your pharmacy utilizes a vendor to submit dispensations on your behalf, please contact your vendor immediately to get this issue corrected to avoid possible Board action. You may forward this email to the appropriate vendor contact for assistance.
 
-            If you are receiving this message and you are a data vendor reporting submissions on behalf of the pharmacy, please be aware that the pharmacy is delinquent in AZ CSPMP reporting and faces possible Board action if not corrected by the given deadline. Please forward this information to the appropriate members of the pharmacy team if necessary.
+If you are receiving this message and you are a data vendor reporting submissions on behalf of the pharmacy, please be aware that the pharmacy is delinquent in AZ CSPMP reporting and faces possible Board action if not corrected by the given deadline. Please forward this information to the appropriate members of the pharmacy team if necessary.
 
-            If you have any questions or concerns about the data submission process, please contact Bamboo Health for Technical Support directly at 1-855-929-4767. Technical Support is available 24 hours a day, 7 days a week.
+If you have any questions or concerns about the data submission process, please contact Bamboo Health for Technical Support directly at 1-855-929-4767. Technical Support is available 24 hours a day, 7 days a week.
 
-            <a href="https://drive.google.com/file/d/1R1wCymw9T5n2sqn8fQGuWeEoCChXmjB0/view?ts=67ca02cd" target="_blank">AZ Data Submission Dispenser Guide</a>
-            <a href="https://pharmacypmp.az.gov/data-submissions-faqs" target="_blank">AZ Data Submission FAQs</a>
+<a href="https://drive.google.com/file/d/1R1wCymw9T5n2sqn8fQGuWeEoCChXmjB0/view?ts=67ca02cd" target="_blank">AZ Data Submission Dispenser Guide</a>
+<a href="https://pharmacypmp.az.gov/data-submissions-faqs" target="_blank">AZ Data Submission FAQs</a>
             """
         else:
             subject = f'Notice of Missing CSPMP Data Submissions for {row['Pharmacy License Number']}'
             body = f"""
-            <b>At this time, your pharmacy, {row['Pharmacy License Number']}, is in violation of <a href="https://www.azleg.gov/ars/36/02608.htm" target="_blank">ARS § 36-2608</a> reporting requirements.</b>
+<b>At this time, your pharmacy, {row['Pharmacy License Number']}, is in violation of <a href="https://www.azleg.gov/ars/36/02608.htm" target="_blank">ARS § 36-2608</a> reporting requirements.</b>
 
-            You are receiving this email because you are listed as the party responsible for submitting controlled substance dispensing information for the above-referenced dispenser to the Arizona Controlled Substances Prescription Monitoring Program (AZ CSPMP). Controlled substance dispensing information has not been received since <b>{last_compliant}</b>.
+You are receiving this email because you are listed as the party responsible for submitting controlled substance dispensing information for the above-referenced dispenser to the Arizona Controlled Substances Prescription Monitoring Program (AZ CSPMP). Controlled substance dispensing information has not been received since <b>{last_compliant}</b>.
 
-            Please upload your schedule II-V dispensations DAILY, including zero reports, to avoid being noncompliant, and make sure to upload any days that were missed.
+Please upload your schedule II-V dispensations DAILY, including zero reports, to avoid being noncompliant, and make sure to upload any days that were missed.
 
-            *Businesses closed for the weekend will still need to report on the following business day (Ex. on Monday report zero reports for Saturday and Sunday).
+*Businesses closed for the weekend will still need to report on the following business day (Ex. on Monday report zero reports for Saturday and Sunday).
 
-            If you have any questions or concerns about the data submission process, please contact Bamboo Health for Technical Support directly at 1-855-929-4767. Technical Support is available 24 hours a day, 7 days a week.
+If you have any questions or concerns about the data submission process, please contact Bamboo Health for Technical Support directly at 1-855-929-4767. Technical Support is available 24 hours a day, 7 days a week.
 
-            <a href="https://drive.google.com/file/d/1R1wCymw9T5n2sqn8fQGuWeEoCChXmjB0/view?ts=67ca02cd" target="_blank">AZ Data Submission Dispenser Guide</a>
-            <a href="https://pharmacypmp.az.gov/data-submissions-faqs" target="_blank">AZ Data Submission FAQs</a>
+<a href="https://drive.google.com/file/d/1R1wCymw9T5n2sqn8fQGuWeEoCChXmjB0/view?ts=67ca02cd" target="_blank">AZ Data Submission Dispenser Guide</a>
+<a href="https://pharmacypmp.az.gov/data-submissions-faqs" target="_blank">AZ Data Submission FAQs</a>
             """
         msg = email.EmailMessage(
             sender=os.environ['EMAIL_COMPLIANCE'],
