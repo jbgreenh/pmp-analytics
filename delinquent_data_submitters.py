@@ -185,6 +185,7 @@ If you have any questions or concerns about the data submission process, please 
         msg = email.EmailMessage(
             sender=os.environ['EMAIL_COMPLIANCE'],
             to=row['to'],
+            bcc=os.environ['EMAIL_COMPLIANCE'],
             subject=subject,
             message_text=body,
             monospace=True,
