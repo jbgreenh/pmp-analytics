@@ -90,7 +90,7 @@ def process_input_files(mp_path: Path, dds_path: Path, lr_path: Path) -> pl.Lazy
             'Days Delinquent',
             'Primary User',
             pl.concat_list(pl.col('Primary Email').str.to_lowercase(), pl.col('mp_email'), pl.col('igov_email')).list.unique().list.join(',').alias('to'),
-            pl.concat_list(pl.col('Phone').str.to_lowercase(), pl.col('mp_phone'), pl.col('igov_phone')).list.unique().list.join(',').alias('phone_numbers'),
+            pl.concat_list(pl.col('Primary Phone').str.to_lowercase(), pl.col('mp_phone'), pl.col('igov_phone')).list.unique().list.join(',').alias('phone_numbers'),
             'Street Address',
             'Apt/Suite #',
             'City',
