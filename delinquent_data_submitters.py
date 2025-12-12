@@ -166,6 +166,8 @@ If you have any questions or concerns about the data submission process, please 
 
 <a href="https://drive.google.com/file/d/1R1wCymw9T5n2sqn8fQGuWeEoCChXmjB0/view?ts=67ca02cd" target="_blank">AZ Data Submission Dispenser Guide</a>
 <a href="https://pharmacypmp.az.gov/data-submissions-faqs" target="_blank">AZ Data Submission FAQs</a>
+
+{os.environ['EMAIL_COMP_SIG'].replace(r'\n', '\n')}
             """
         else:
             subject = f'Notice of Missing CSPMP Data Submissions for {row['Pharmacy License Number']}'
@@ -181,6 +183,8 @@ If you have any questions or concerns about the data submission process, please 
 
 <a href="https://drive.google.com/file/d/1R1wCymw9T5n2sqn8fQGuWeEoCChXmjB0/view?ts=67ca02cd" target="_blank">AZ Data Submission Dispenser Guide</a>
 <a href="https://pharmacypmp.az.gov/data-submissions-faqs" target="_blank">AZ Data Submission FAQs</a>
+
+{os.environ['EMAIL_COMP_SIG'].replace(r'\n', '\n')}
             """
         msg = email.EmailMessage(
             sender=os.environ['EMAIL_COMPLIANCE'],
@@ -264,17 +268,18 @@ def pharm_clean(dds: pl.LazyFrame) -> None:
 
         if today.weekday() == WEDNESDAY:  # notify compliance team of deadlines that fall in the next week
             due_next_week = date_in_next_week(updated_deadlines).collect()
-            dnw_path = Path('deadline_next_week.csv')
-            due_next_week.write_csv(dnw_path)
+            if due_next_week.height > 0:
+                msg = f'the following pharmacies have deadlines next week:\n{'\n'.join(f'permit: {item[0]} deadline: {item[1]}' for item in zip(due_next_week['Pharmacy License Number'].to_list(), due_next_week['deadline'].to_list(), strict=True))}\ncomplaints should be opened if the deadlines are missed\n\nthank you!'
+            else:
+                msg = 'no pharmacies have deadlines next week\n\nthank you!'
             dnw_msg = email.EmailMessage(
                 sender=os.environ['EMAIL_COMPLIANCE'],
                 to=os.environ['EMAIL_COMPLIANCE'],
                 subject='DDS Pharmacies with Deadlines Next Week',
-                message_text=f'There are {due_next_week.height} pharmacies with deadlines next week.\n{"Please see the attachment for details.\n" if due_next_week.height > 0 else "\n"}Thank you.',
-                file_paths=[dnw_path] if due_next_week.height > 0 else [],
+                message_text=msg,
+                monospace=True
             )
             email.send_email(dnw_msg, draft=(not args.send_emails))
-            dnw_path.unlink()
 
     if today.weekday() != FRIDAY:
         send_notices(dds, 'daily')
