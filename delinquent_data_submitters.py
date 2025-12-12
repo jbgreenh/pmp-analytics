@@ -165,9 +165,7 @@ If you are receiving this message and you are a data vendor reporting submission
 If you have any questions or concerns about the data submission process, please contact Bamboo Health for Technical Support directly at 1-855-929-4767. Technical Support is available 24 hours a day, 7 days a week.
 
 <a href="https://drive.google.com/file/d/1R1wCymw9T5n2sqn8fQGuWeEoCChXmjB0/view?ts=67ca02cd" target="_blank">AZ Data Submission Dispenser Guide</a>
-<a href="https://pharmacypmp.az.gov/data-submissions-faqs" target="_blank">AZ Data Submission FAQs</a>
-
-{os.environ['EMAIL_COMP_SIG'].replace(r'\n', '\n')}
+<a href="https://pharmacypmp.az.gov/data-submissions-faqs" target="_blank">AZ Data Submission FAQs</a>{os.environ['EMAIL_COMP_SIG'].replace(r'\n', '\n')}
             """
         else:
             subject = f'Notice of Missing CSPMP Data Submissions for {row['Pharmacy License Number']}'
@@ -182,9 +180,7 @@ Please upload your schedule II-V dispensations DAILY, including zero reports, to
 If you have any questions or concerns about the data submission process, please contact Bamboo Health for Technical Support directly at 1-855-929-4767. Technical Support is available 24 hours a day, 7 days a week.
 
 <a href="https://drive.google.com/file/d/1R1wCymw9T5n2sqn8fQGuWeEoCChXmjB0/view?ts=67ca02cd" target="_blank">AZ Data Submission Dispenser Guide</a>
-<a href="https://pharmacypmp.az.gov/data-submissions-faqs" target="_blank">AZ Data Submission FAQs</a>
-
-{os.environ['EMAIL_COMP_SIG'].replace(r'\n', '\n')}
+<a href="https://pharmacypmp.az.gov/data-submissions-faqs" target="_blank">AZ Data Submission FAQs</a>{os.environ['EMAIL_COMP_SIG'].replace(r'\n', '\n')}
             """
         msg = email.EmailMessage(
             sender=os.environ['EMAIL_COMPLIANCE'],
