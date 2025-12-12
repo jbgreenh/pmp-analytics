@@ -146,6 +146,7 @@ def process_input_files(mp_path: Path, dds_path: Path, lr_path: Path) -> pl.Lazy
             pl.concat_list(pl.col('Phone').str.to_lowercase(), pl.col('mp_phone'), pl.col('igov_phone')).list.unique().list.join(',').alias('phone_numbers'),
             'Zip',
         )
+        # TODO: add schema to deadlines so join doesn't complain if deadlines file is empty. see: lf.match_to_schema)
         .sort(pl.col('Days Delinquent'), descending=True)
     )
 
