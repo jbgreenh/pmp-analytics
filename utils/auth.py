@@ -14,8 +14,13 @@ def auth() -> google.oauth2.credentials.Credentials | google.auth.external_accou
         creds: credentials for building google services
     """
     # if modifying these scopes, delete the file token.json. scopes here: https://developers.google.com/identity/protocols/oauth2/scopes#drive
-    scopes = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/spreadsheets',
-              'https://www.googleapis.com/auth/documents', 'https://www.googleapis.com/auth/gmail.send']
+    scopes = [
+        'https://www.googleapis.com/auth/drive',
+        'https://www.googleapis.com/auth/spreadsheets',
+        'https://www.googleapis.com/auth/documents',
+        'https://www.googleapis.com/auth/gmail.send',
+        'https://www.googleapis.com/auth/gmail.compose',
+    ]
 
     creds = None
     # the file token.json stores the user's access and refresh tokens, and is
