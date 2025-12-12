@@ -28,7 +28,7 @@ def process_input_files(mp_path: Path, dds_path: Path, lr_path: Path) -> pl.Lazy
         processed dds file as a lazyframe
     """
     mp = (
-        pl.scan_csv(mp_path)
+        pl.scan_csv(mp_path, infer_schema=False)
         .filter(
             pl.col('Reporting Requirements') != 'Exempt'
         )
@@ -71,7 +71,7 @@ def process_input_files(mp_path: Path, dds_path: Path, lr_path: Path) -> pl.Lazy
     )
 
     return (
-        pl.scan_csv(dds_path)
+        pl.scan_csv(dds_path, infer_schema=False)
         .with_columns(
             pl.col('Last Compliant').fill_null('never submitted')
         )
