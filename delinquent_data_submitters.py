@@ -227,7 +227,7 @@ def pharm_clean(dds: pl.LazyFrame) -> None:
     today = datetime.now(tz=PHX_TZ).date()
     if WEDNESDAY <= today.weekday() <= FRIDAY:  # remove pharmacies that are no longer delinquent from deadlines list
         deadlines = (
-            drive.lazyframe_from_id_and_sheetname(os.environ['DDS_DEADLINES_FILE'], 'deadlines', infer_schema_length=0)  # read_excel does not have infer_schema
+            drive.lazyframe_from_id_and_sheetname(os.environ['DDS_DEADLINES_FILE'], 'dds_deadlines', infer_schema_length=0)  # read_excel does not have infer_schema
             .cast({pl.Null: pl.String})
         )
         updated_deadlines = (
