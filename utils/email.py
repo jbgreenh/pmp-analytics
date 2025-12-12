@@ -38,13 +38,14 @@ class EmailMessage:
     monospace: bool = False
 
 
-def send_email(email_message: EmailMessage, *, service=None) -> dict:    # noqa: ANN001 | service is dynamically typed
+def send_email(email_message: EmailMessage, *, service=None, draft=False) -> dict:    # noqa: ANN001 | service is dynamically typed
     """
     sends an email using the details in `email_message`
 
     args:
         email_message: an `EmailMethod` witht he detals for sending the email
         service: an authorized google email service, generated per email if not provided
+        draft: whether to create a draft rather than send an email
 
     returns:
         the message json as a dict
@@ -90,6 +91,11 @@ def send_email(email_message: EmailMessage, *, service=None) -> dict:    # noqa:
 
     message = {'raw': base64.urlsafe_b64encode(message.as_bytes()).decode()}
 
-    message = service.users().messages().send(userId='me', body=message).execute()
-    print(f'message sent, message id: {message['id']}')
+    if draft:
+        draft_body = {'message': message}
+        message = service.users().drafts().create(userId='me', body=draft_body).execute()
+        print(f'draft created, draft id: {message['id']}')
+    else:
+        message = service.users().messages().send(userId='me', body=message).execute()
+        print(f'message sent, message id: {message['id']}')
     return message
