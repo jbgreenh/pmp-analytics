@@ -43,7 +43,8 @@ def process_input_files(mp_path: Path, dds_path: Path, lr_path: Path) -> pl.Lazy
     lr = (
         pl.scan_csv(lr_path, infer_schema=False)
         .filter(
-            pl.col('Type') == 'Pharmacy'
+            pl.col('Type') == 'Pharmacy',
+            pl.col('Status').str.starts_with('OPEN')
         )
         .select(
             pl.col('License/Permit #').str.strip_chars().str.to_uppercase().alias('Pharmacy License Number'),
@@ -75,12 +76,9 @@ def process_input_files(mp_path: Path, dds_path: Path, lr_path: Path) -> pl.Lazy
         .with_columns(
             pl.col('Last Compliant').fill_null('never submitted')
         )
-        .join(mp, on='DEA', how='left', coalesce=True)
-        .join(lr, on='Pharmacy License Number', how='left', coalesce=True)
+        .join(mp, on='DEA', how='left')
+        .join(lr, on='Pharmacy License Number', how='inner')
         .join(complaints, on='Pharmacy License Number', how='anti')
-        .filter(
-            pl.col('Status').str.starts_with('OPEN')
-        )
         .select(
             'DEA',
             'Pharmacy License Number',
@@ -225,46 +223,41 @@ def pharm_clean(dds: pl.LazyFrame) -> None:
         dds: the dds lazyframe returned by `process_input_files()`
     """
     today = datetime.now(tz=PHX_TZ).date()
-    if WEDNESDAY <= today.weekday() <= FRIDAY:  # remove pharmacies that are no longer delinquent from deadlines list
+    if today.weekday() == FRIDAY:  # add new pharmacies to the deadlines list and apply deadline
+        today = datetime.now(tz=PHX_TZ).date()
+        due_date = num_and_dt.add_business_days(today)
         deadlines = (
             drive.lazyframe_from_id_and_sheetname(os.environ['DDS_DEADLINES_FILE'], 'dds_deadlines', infer_schema_length=0)  # read_excel does not have infer_schema
             .cast({pl.Null: pl.String})
         )
-        updated_deadlines = (
-            deadlines
-            .join(dds, on='Pharmacy License Number', how='semi')
-        )
-        if today.weekday() == FRIDAY:  # add new pharmacies to the deadlines list and apply deadline
-            today = datetime.now(tz=PHX_TZ).date()
-            due_date = num_and_dt.add_business_days(today)
-            new_deadlines = (
-                dds
-                .filter(
-                    (pl.col('Days Delinquent').str.to_integer() >= DAYS_DELINQUENT_THRESHOLD) |
-                    (pl.col('Days Delinquent') == '') |  # noqa: PLC1901 | empty string is not falsey in polars
-                    (pl.col('Days Delinquent').is_null())
-                )
-                .join(updated_deadlines, on='Pharmacy License Number', how='anti')
+        new_deadlines = (
+            dds
+            .filter(
+                (pl.col('Days Delinquent').str.to_integer() >= DAYS_DELINQUENT_THRESHOLD) |
+                (pl.col('Days Delinquent') == '') |  # noqa: PLC1901 | empty string is not falsey in polars
+                (pl.col('Days Delinquent').is_null())
             )
-            if new_deadlines.collect().height > 0:
-                new_deadlines = (
-                    new_deadlines
-                    .drop('Days Delinquent')
-                    .with_columns(
-                        pl.lit(due_date).dt.to_string('%Y-%m-%d').alias('deadline')
-                    )
+            .join(deadlines, on='Pharmacy License Number', how='anti')
+        )
+        if new_deadlines.collect().height > 0:
+            new_deadlines = (
+                new_deadlines
+                .drop('Days Delinquent')
+                .with_columns(
+                    pl.lit(due_date).dt.to_string('%Y-%m-%d').alias('deadline')
                 )
-                updated_deadlines = pl.concat([updated_deadlines, new_deadlines])
+            )
+            deadlines = pl.concat([deadlines, new_deadlines])
 
         deadlines_path = Path('deadlines.csv')
-        updated_deadlines.collect().write_csv(deadlines_path)
+        deadlines.collect().write_csv(deadlines_path)
         drive.update_sheet(deadlines_path, os.environ['DDS_DEADLINES_FILE'])
         deadlines_path.unlink()
 
-        send_notices(updated_deadlines, 'friday')
+        send_notices(deadlines, 'friday')
 
         if today.weekday() == WEDNESDAY:  # notify compliance team of deadlines that fall in the next week
-            due_next_week = date_in_next_week(updated_deadlines).collect()
+            due_next_week = date_in_next_week(deadlines).collect()
             if due_next_week.height > 0:
                 msg = f'the following pharmacies have deadlines next week:\n{'\n'.join(f'permit: {item[0]} deadline: {item[1]}' for item in zip(due_next_week['Pharmacy License Number'].to_list(), due_next_week['deadline'].to_list(), strict=True))}\ncomplaints should be opened if the deadlines are missed\n\nthank you!'
             else:
