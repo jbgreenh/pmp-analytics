@@ -223,8 +223,27 @@ def pharm_clean(dds: pl.LazyFrame) -> None:
         dds: the dds lazyframe returned by `process_input_files()`
     """
     today = datetime.now(tz=PHX_TZ).date()
+
+    if today.weekday() == WEDNESDAY:  # notify compliance team of deadlines that fall in the next week
+        deadlines = (
+            drive.lazyframe_from_id_and_sheetname(os.environ['DDS_DEADLINES_FILE'], 'dds_deadlines', infer_schema_length=0)  # read_excel does not have infer_schema
+            .cast({pl.Null: pl.String})
+        )
+        due_next_week = date_in_next_week(deadlines).collect()
+        if due_next_week.height > 0:
+            msg = f'the following pharmacies have deadlines next week:\n{'\n'.join(f'permit: {item[0]} deadline: {item[1]}' for item in zip(due_next_week['Pharmacy License Number'].to_list(), due_next_week['deadline'].to_list(), strict=True))}\ncomplaints should be opened if the deadlines are missed\n\nthank you!'
+        else:
+            msg = 'no pharmacies have deadlines next week\n\nthank you!'
+        dnw_msg = email.EmailMessage(
+            sender=os.environ['EMAIL_COMPLIANCE'],
+            to=os.environ['EMAIL_COMPLIANCE'],
+            subject=f'DDS Pharmacies with Deadlines Next Week - {today.strftime('%Y-%m-%d')}',
+            message_text=msg,
+            monospace=True
+        )
+        email.send_email(dnw_msg, draft=(not args.send_emails))
+
     if today.weekday() == FRIDAY:  # add new pharmacies to the deadlines list and apply deadline
-        today = datetime.now(tz=PHX_TZ).date()
         due_date = num_and_dt.add_business_days(today)
         deadlines = (
             drive.lazyframe_from_id_and_sheetname(os.environ['DDS_DEADLINES_FILE'], 'dds_deadlines', infer_schema_length=0)  # read_excel does not have infer_schema
@@ -255,23 +274,7 @@ def pharm_clean(dds: pl.LazyFrame) -> None:
         deadlines_path.unlink()
 
         send_notices(deadlines, 'friday')
-
-        if today.weekday() == WEDNESDAY:  # notify compliance team of deadlines that fall in the next week
-            due_next_week = date_in_next_week(deadlines).collect()
-            if due_next_week.height > 0:
-                msg = f'the following pharmacies have deadlines next week:\n{'\n'.join(f'permit: {item[0]} deadline: {item[1]}' for item in zip(due_next_week['Pharmacy License Number'].to_list(), due_next_week['deadline'].to_list(), strict=True))}\ncomplaints should be opened if the deadlines are missed\n\nthank you!'
-            else:
-                msg = 'no pharmacies have deadlines next week\n\nthank you!'
-            dnw_msg = email.EmailMessage(
-                sender=os.environ['EMAIL_COMPLIANCE'],
-                to=os.environ['EMAIL_COMPLIANCE'],
-                subject=f'DDS Pharmacies with Deadlines Next Week - {today.strftime('%Y-%m-%d')}',
-                message_text=msg,
-                monospace=True
-            )
-            email.send_email(dnw_msg, draft=(not args.send_emails))
-
-    if today.weekday() != FRIDAY:
+    else:
         send_notices(dds, 'daily')
 
 
