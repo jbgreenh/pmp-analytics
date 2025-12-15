@@ -205,7 +205,7 @@ If you have any questions or concerns about the data submission process, please 
             'to',
             pl.col('Pharmacy License Number').alias('permit_number'),
             pl.col('DEA').alias('dea'),
-            pl.col('Last Compliant'),
+            pl.col('Last Compliant').alias('last_compliant'),
             pl.concat_str(pl.lit("'"), pl.col('Zip').cast(pl.String)).alias('zip'),  # to preserve leading zeros
             pl.lit(email_type).alias('email_type')
         )
