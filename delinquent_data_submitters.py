@@ -271,7 +271,7 @@ def pharm_clean(dds: pl.LazyFrame) -> None:
             dnw_msg = email.EmailMessage(
                 sender=os.environ['EMAIL_COMPLIANCE'],
                 to=os.environ['EMAIL_COMPLIANCE'],
-                subject='DDS Pharmacies with Deadlines Next Week',
+                subject=f'DDS Pharmacies with Deadlines Next Week - {today.strftime('%Y-%m-%d')}',
                 message_text=msg,
                 monospace=True
             )
