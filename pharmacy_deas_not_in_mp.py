@@ -27,7 +27,7 @@ igov = (
 dea = (
     deas.deas('pharm')
     .filter(pl.col('DEA Number').is_in(mp).not_())
-    .join(igov, how='left', left_on='State License Number', right_on='License/Permit #', coalesce=True)
+    .join(igov, how='left', left_on='State License Number', right_on='License/Permit #')
     .with_columns(
         pl.when((pl.col('Address 1').is_not_null()) & (pl.col('Address 1') != ''))
             .then(pl.col('Address 1') + pl.lit(', ') + pl.col('Address 2'))

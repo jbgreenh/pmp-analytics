@@ -66,8 +66,8 @@ def mm2() -> None:
     mm_combined = pl.concat([mm_matches, mm_manual])
     mm_combined = (
         mm_combined
-        .join(users_explode, left_on='DEA Number', right_on='dea', how='left', coalesce=True)
-        .join(searches_lf, left_on='User ID', right_on='TrueID', how='left', coalesce=True)
+        .join(users_explode, left_on='DEA Number', right_on='dea', how='left')
+        .join(searches_lf, left_on='User ID', right_on='TrueID', how='left')
         .with_columns(
             pl.col('totallookups').fill_null(0)
         )

@@ -140,15 +140,9 @@ def registration(service, inspection_list: pl.LazyFrame) -> pl.LazyFrame:   # no
             pl.col('License #').is_in(awarxe_license_numbers['professional license number'].to_list()).replace_strict({True: 'YES', False: 'NO'}).alias('awarxe')
         )
         .filter(pl.col('awarxe') == 'NO')
-        .join(
-            pharmacies, left_on='Permit #', right_on='License/Permit #', how='left', coalesce=True
-        )
-        .join(
-            pharmacists, left_on='License #', right_on='License/Permit #', how='left', coalesce=True
-        )
-        .join(
-            manage_pharmacies, left_on='Permit #', right_on='Pharmacy License Number', how='left', coalesce=True
-        )
+        .join(pharmacies, left_on='Permit #', right_on='License/Permit #', how='left')
+        .join(pharmacists, left_on='License #', right_on='License/Permit #', how='left')
+        .join(manage_pharmacies, left_on='Permit #', right_on='Pharmacy License Number', how='left')
         .select(
             'awarxe', 'License #', 'Last Insp', 'Notes', 'First Name', 'Middle Name', 'Last Name',
             'Status', 'Phone', 'Email', 'Address', 'CSZ', 'Business Name', 'SubType', 'Permit #', 'PharmacyDEA'

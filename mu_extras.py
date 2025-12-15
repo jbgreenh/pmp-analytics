@@ -135,7 +135,7 @@ def process_mu(appearance_month: date, input_file: str) -> None:
     )
 
     appear_stats = (
-        appear_counts.join(last_appear, on='final_id', how='left', coalesce=True)
+        appear_counts.join(last_appear, on='final_id', how='left')
         .with_columns(
             pl.col('appearance').map_elements(num_and_dt.ordinal, return_dtype=pl.String),
             pl.col('last_appearance').dt.strftime('%B %Y')
@@ -150,12 +150,12 @@ def process_mu(appearance_month: date, input_file: str) -> None:
     filepath = f'data/{input_file}+.csv'
     _output = (
         mu_nv
-        .join(appear_stats, on='final_id', how='left', coalesce=True)
+        .join(appear_stats, on='final_id', how='left')
         .select(
             pl.lit(str(month_num).zfill(2) + '/' + year_str).alias('MM/YYYY'),
             pl.all()
         )
-        .join(dea, left_on='final_id', right_on='DEA Number', how='left', coalesce=True)
+        .join(dea, left_on='final_id', right_on='DEA Number', how='left')
         .with_columns(
             pl.col('license_number').fill_null(pl.col('State License Number'))
         )

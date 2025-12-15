@@ -55,7 +55,7 @@ def pull_files(service) -> pl.DataFrame:  # noqa: ANN001 | service is dynamicall
             dispensations
             .filter(pl.col('state') == 'AZ')
             .select('dea_number')
-            .join(lookups, on='dea_number', how='left', coalesce=True)
+            .join(lookups, on='dea_number', how='left')
             .group_by('dea_number')
             .sum()
             .collect()

@@ -180,7 +180,7 @@ def audit_trail(params: SearchParameters) -> None:
 
         searches_lf = (
             searches_lf
-            .join(users_lf, how='left', left_on='Requestor ID', right_on='User ID', coalesce=True)
+            .join(users_lf, how='left', left_on='Requestor ID', right_on='User ID')
             .drop('Requestor ID')
             .select(
                 'Search ID',

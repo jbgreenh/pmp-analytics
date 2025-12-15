@@ -159,7 +159,7 @@ def infer_board(service, unreg_deas: pl.LazyFrame) -> pl.LazyFrame:  # noqa: ANN
         )
         .drop('temp_deg')
     )
-    all_degs = pl.concat([with_deg, inferred_degs]).join(boards, how='left', left_on='Degree', right_on='degree', coalesce=True)
+    all_degs = pl.concat([with_deg, inferred_degs]).join(boards, how='left', left_on='Degree', right_on='degree')
     unmatched = all_degs.filter(pl.col('Degree').is_not_null() & pl.col('board').is_null()).collect()
     if not unmatched.is_empty():
         unmatched_degs = unmatched['Degree'].value_counts(sort=True)

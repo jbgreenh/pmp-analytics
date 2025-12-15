@@ -56,7 +56,7 @@ def mm1() -> None:
             )
         )
 
-    mm_merged = (mm.join(old, on='Physician Id', how='left', coalesce=True))
+    mm_merged = (mm.join(old, on='Physician Id', how='left'))
     mm_old_match = (
         mm_merged
         .filter(pl.col('DEA Number').is_not_null())
@@ -67,7 +67,7 @@ def mm1() -> None:
         .with_columns(
             (pl.col('Physician Name').str.slice(-3) + pl.col('License Number').str.slice(-4)).alias('mm_code')
         )
-        .join(awarxe, left_on='mm_code', right_on='awarxe_code', how='left', coalesce=True)
+        .join(awarxe, left_on='mm_code', right_on='awarxe_code', how='left')
         .drop('mm_code', 'DEA Number')
         .rename({'dea number': 'DEA Number'})
     )

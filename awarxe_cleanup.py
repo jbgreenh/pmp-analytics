@@ -324,7 +324,7 @@ def closed_pharmacies_in_mp() -> pl.LazyFrame:
 
     closed = (
         mp
-        .join(igov, on='Pharmacy License Number', how='left', coalesce=True)
+        .join(igov, on='Pharmacy License Number', how='left')
         .filter(
             pl.col('Status').str.starts_with('OPEN').not_()
         )
