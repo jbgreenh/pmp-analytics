@@ -681,6 +681,7 @@ dependencies = [
     { name = "python-dotenv" },
     { name = "tableauserverclient" },
     { name = "toml" },
+    { name = "tzdata" },
     { name = "xlsx2csv" },
     { name = "xlsxwriter" },
 ]
@@ -710,6 +711,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.0.1" },
     { name = "tableauserverclient", specifier = ">=0.35" },
     { name = "toml", specifier = ">=0.10.2" },
+    { name = "tzdata", specifier = ">=2025.3" },
     { name = "xlsx2csv", specifier = ">=0.8.4" },
     { name = "xlsxwriter", specifier = ">=3.2.0" },
 ]
