@@ -3,8 +3,7 @@ from datetime import timedelta
 
 import polars as pl
 import polars_distance as pld
-
-from utils import tableau
+from az_pmp_utils import tableau
 
 
 def process_ods(input_file: str, days_before: int, ratio: float) -> None:
