@@ -6,12 +6,11 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import paramiko
+from az_pmp_utils import auth
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseUpload
-
-from utils import auth
 
 
 def upload_file(service, sftp: paramiko.SFTPClient, remote_file_path: str, drive_folder_id: str) -> None:  # noqa: ANN001 | service is dynamically typed
