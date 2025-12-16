@@ -41,7 +41,7 @@ def test_awarxe() -> None:
     assert awarxe_24_nye_df.schema == AWARXE_SCHEMA
     assert awarxe_24_nye_df.height == 72_568
 
-    awarxe = drive.awarxe(service)
+    awarxe = drive.awarxe(service=service)
     assert isinstance(awarxe, pl.LazyFrame)
     assert awarxe.collect_schema() == AWARXE_SCHEMA
 
