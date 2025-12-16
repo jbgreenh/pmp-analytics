@@ -35,7 +35,7 @@ service = build('drive', 'v3', credentials=creds)
 
 def test_awarxe() -> None:
     """test awarxe function"""
-    awarxe_24_nye = drive.awarxe(service, day=date(year=2024, month=12, day=31))
+    awarxe_24_nye = drive.awarxe(day=date(year=2024, month=12, day=31), service=service)
     assert isinstance(awarxe_24_nye, pl.LazyFrame)
     awarxe_24_nye_df = awarxe_24_nye.collect()
     assert awarxe_24_nye_df.schema == AWARXE_SCHEMA
@@ -49,7 +49,7 @@ def test_awarxe() -> None:
 def test_lazyframe_from_filename() -> None:
     """test the lazyframe_from_filename function"""
     test_folder = os.environ['TEST_FOLDER']
-    test_sheet = drive.lazyframe_from_file_name(service, 'test sheet', folder_id=test_folder, drive_ft='sheet')
+    test_sheet = drive.lazyframe_from_file_name('test sheet', folder_id=test_folder, drive_ft='sheet', service=service)
     assert isinstance(test_sheet, pl.LazyFrame)
     test_sheet_df = test_sheet.collect()
     assert test_sheet_df['a'].first() == 1
@@ -62,7 +62,7 @@ def test_lazyframe_from_filename() -> None:
     assert test_sheet_df['c'].last() == 1
     assert test_sheet_df['c'].sum() == 5
 
-    test_csv = drive.lazyframe_from_file_name(service, 'test_csv.csv', folder_id=test_folder, drive_ft='csv')
+    test_csv = drive.lazyframe_from_file_name('test_csv.csv', folder_id=test_folder, drive_ft='csv', service=service)
     assert isinstance(test_csv, pl.LazyFrame)
     test_csv_df = test_csv.collect()
     assert test_csv_df['a'].first() == 1
@@ -76,12 +76,12 @@ def test_lazyframe_from_filename() -> None:
     assert test_csv_df['c'].sum() == 5
 
     with pytest.raises(drive.GoogleDriveNotFoundError):
-        _fake_file = drive.lazyframe_from_file_name(service, 'this_file_doesnt_exist', folder_id=test_folder, drive_ft='sheet')
+        _fake_file = drive.lazyframe_from_file_name('this_file_doesnt_exist', folder_id=test_folder, drive_ft='sheet', service=service)
 
 
 def test_get_latest_upload() -> None:
     """test the get_latest_upload function"""
-    latest_file = drive.get_latest_uploaded(service, folder_id=os.environ['TEST_UPLOADS_FOLDER'], drive_ft='sheet')
+    latest_file = drive.get_latest_uploaded(folder_id=os.environ['TEST_UPLOADS_FOLDER'], drive_ft='sheet', service=service)
     assert isinstance(latest_file.created_at, datetime)
     assert latest_file.created_at.month == 9
     assert latest_file.created_at.day == 23
@@ -95,15 +95,15 @@ def test_get_latest_upload() -> None:
 
 def test_folder_id_from_name() -> None:
     """test folder_id_from_name function"""
-    folder_id = drive.folder_id_from_name(service, folder_name='test uploads', parent_folder_id=os.environ['TEST_FOLDER'])
+    folder_id = drive.folder_id_from_name(folder_name='test uploads', parent_folder_id=os.environ['TEST_FOLDER'], service=service)
     assert folder_id == os.environ['TEST_UPLOADS_FOLDER']
 
-    make_folder = drive.folder_id_from_name(service, folder_name='make folder', parent_folder_id=os.environ['TEST_FOLDER'], create=True)
-    assert make_folder == drive.folder_id_from_name(service, folder_name='make folder', parent_folder_id=os.environ['TEST_FOLDER'])
+    make_folder = drive.folder_id_from_name(folder_name='make folder', parent_folder_id=os.environ['TEST_FOLDER'], create=True, service=service)
+    assert make_folder == drive.folder_id_from_name(folder_name='make folder', parent_folder_id=os.environ['TEST_FOLDER'], service=service)
 
     _response = service.files().delete(fileId=make_folder, supportsAllDrives=True).execute()
     with pytest.raises(drive.GoogleDriveNotFoundError):
-        _fake_folder = drive.folder_id_from_name(service, folder_name='make folder', parent_folder_id=os.environ['TEST_FOLDER'])
+        _fake_folder = drive.folder_id_from_name(folder_name='make folder', parent_folder_id=os.environ['TEST_FOLDER'], service=service)
 
 
 def test_upload_csv_as_sheet() -> None:
@@ -115,9 +115,9 @@ def test_upload_csv_as_sheet() -> None:
     file_path = Path('data/test_df_upload.csv')
     test_df.write_csv(file_path)
     test_folder = os.environ['TEST_FOLDER']
-    drive.upload_csv_as_sheet(service, file_path=file_path, folder_id=test_folder)
+    drive.upload_csv_as_sheet(file_path=file_path, folder_id=test_folder, service=service)
     file_path.unlink()
-    upload_csv = drive.lazyframe_from_file_name(service, file_name='test_df_upload', folder_id=test_folder, drive_ft='sheet').collect()
+    upload_csv = drive.lazyframe_from_file_name(file_name='test_df_upload', folder_id=test_folder, drive_ft='sheet', service=service).collect()
 
     assert test_df.schema == upload_csv.schema
     assert upload_csv['a'].sum() == 9
@@ -141,8 +141,8 @@ def test_update_sheet() -> None:
     })
     fp = Path('data/test_update.csv')
     test_df.write_csv(fp)
-    drive.update_sheet(service, fp, file_id=os.environ['TEST_SHEET'])
-    test_sheet = drive.lazyframe_from_file_name(service, file_name='test sheet', folder_id=os.environ['TEST_FOLDER'], drive_ft='sheet').collect()
+    drive.update_sheet(fp, file_id=os.environ['TEST_SHEET'], service=service)
+    test_sheet = drive.lazyframe_from_file_name(file_name='test sheet', folder_id=os.environ['TEST_FOLDER'], drive_ft='sheet', service=service).collect()
     assert test_sheet['d'].first() == 1
     assert test_sheet['d'].last() == 3
     assert test_sheet['d'].sum() == 6
@@ -160,8 +160,8 @@ def test_update_sheet() -> None:
         'c': [3, 1, 1],
     })
     test_df.write_csv(fp)
-    drive.update_sheet(service, fp, file_id=os.environ['TEST_SHEET'])
-    test_sheet = drive.lazyframe_from_file_name(service, file_name='test sheet', folder_id=os.environ['TEST_FOLDER'], drive_ft='sheet').collect()
+    drive.update_sheet(fp, file_id=os.environ['TEST_SHEET'], service=service)
+    test_sheet = drive.lazyframe_from_file_name(file_name='test sheet', folder_id=os.environ['TEST_FOLDER'], drive_ft='sheet', service=service).collect()
     assert test_sheet['a'].first() == 1
     assert test_sheet['a'].sum() == 6
     assert test_sheet['a'].last() == 2
@@ -176,7 +176,7 @@ def test_update_sheet() -> None:
 
 def test_lazyframe_from_id_and_sheetname() -> None:
     """test lazyframe_from_id_and_sheetname function"""
-    test_sheet = drive.lazyframe_from_id_and_sheetname(service, file_id=os.environ['TEST_SHEET'], sheet_name='test sheet')
+    test_sheet = drive.lazyframe_from_id_and_sheetname(file_id=os.environ['TEST_SHEET'], sheet_name='test sheet', service=service)
     assert isinstance(test_sheet, pl.LazyFrame)
     test_sheet_df = test_sheet.collect()
     assert test_sheet_df['a'].first() == 1
