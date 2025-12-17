@@ -92,7 +92,7 @@ def process_input_files(mp_path: Path, dds_path: Path, lr_path: Path) -> pl.Lazy
             'Apt/Suite #',
             'City',
             'State',
-            'Zip',
+            pl.concat_str(pl.lit("'"), pl.col('Zip').cast(pl.String)).alias('Zip'),  # to preserve leading zeros
         )
         .sort(pl.col('Days Delinquent'), descending=True)
     )
@@ -103,7 +103,7 @@ def date_in_next_week(lf: pl.LazyFrame) -> pl.LazyFrame:
     filters a given lazyframe for rows with deadlines in the next business week (mon-fri)
 
     args:
-        lf: a lazyframe with a `deadline` column in `YYYY-MM-DD` format
+        lf: a lazyframe with a `deadline` column in `'YYYY-MM-DD` format
 
     returns:
         the filtered lazyframe
@@ -115,7 +115,7 @@ def date_in_next_week(lf: pl.LazyFrame) -> pl.LazyFrame:
     return (
         lf
         .filter(
-            pl.col('deadline').str.to_date('%Y-%m-%d').is_between(next_mon, next_fri)
+            pl.col('deadline').str.to_date("'%Y-%m-%d").is_between(next_mon, next_fri)
         )
     )
 
@@ -203,7 +203,7 @@ If you have any questions or concerns about the data submission process, please 
             pl.col('Pharmacy License Number').alias('permit_number'),
             pl.col('DEA').alias('dea'),
             pl.col('Last Compliant').alias('last_compliant'),
-            pl.concat_str(pl.lit("'"), pl.col('Zip').cast(pl.String)).alias('zip'),  # to preserve leading zeros
+            pl.col('Zip').alias('zip'),
             pl.lit(email_type).alias('email_type')
         )
     )
@@ -262,7 +262,7 @@ def pharm_clean(dds: pl.LazyFrame) -> None:
                 new_deadlines
                 .drop('Days Delinquent')
                 .with_columns(
-                    pl.lit(due_date).dt.to_string('%Y-%m-%d').alias('deadline')
+                    pl.lit(due_date).dt.to_string("'%Y-%m-%d").alias('deadline')
                 )
             )
             deadlines = pl.concat([deadlines, new_deadlines])
