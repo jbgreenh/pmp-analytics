@@ -115,7 +115,7 @@ def date_in_next_week(lf: pl.LazyFrame) -> pl.LazyFrame:
     return (
         lf
         .filter(
-            pl.col('deadline').str.to_date("'%Y-%m-%d").is_between(next_mon, next_fri)
+            pl.col('deadline').str.to_date("%Y-%m-%d").is_between(next_mon, next_fri)
         )
     )
 
