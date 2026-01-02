@@ -247,6 +247,9 @@ def pharm_clean(dds: pl.LazyFrame) -> None:
         deadlines = (
             drive.lazyframe_from_id_and_sheetname(os.environ['DDS_DEADLINES_FILE'], 'dds_deadlines', infer_schema_length=0)  # read_excel does not have infer_schema
             .cast({pl.Null: pl.String})
+            .with_columns(
+                pl.col(['Last Compliant', 'deadline']).str.split(' ').list.get(0).str.to_date('%Y-%m-%d').alias('deadline')
+            )
         )
         new_deadlines = (
             dds
