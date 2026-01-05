@@ -9,6 +9,7 @@ import polars as pl
 from az_pmp_utils import auth, drive, email, files, num_and_dt
 from az_pmp_utils.constants import DAYS_DELINQUENT_THRESHOLD, PHX_TZ
 from dotenv import load_dotenv
+from googleapiclient import errors
 from googleapiclient.discovery import build
 
 type EmailType = Literal['daily', 'friday']
@@ -187,8 +188,12 @@ If you have any questions or concerns about the data submission process, please 
             message_text=body,
             monospace=True,
         )
-        email.send_email(msg, service=service, draft=(not args.send_emails))
-        ts = datetime.now(tz=PHX_TZ)
+        try:
+            email.send_email(msg, service=service, draft=(not args.send_emails))
+            ts = datetime.now(tz=PHX_TZ)
+        except errors.HttpError:
+            print(f'failed to send message for {row['Pharmacy License Number']} | {row['DEA']}')
+            ts = None
         timestamps.append(ts)
 
     ts_series = pl.Series(name='sent_dt', values=timestamps, dtype=pl.Datetime)
