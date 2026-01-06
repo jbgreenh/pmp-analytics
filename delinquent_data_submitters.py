@@ -191,8 +191,10 @@ If you have any questions or concerns about the data submission process, please 
         try:
             email.send_email(msg, service=service, draft=(not args.send_emails))
             ts = datetime.now(tz=PHX_TZ)
-        except errors.HttpError:
-            print(f'failed to send message for {row['Pharmacy License Number']} | {row['DEA']}')
+        except errors.HttpError as error:
+            print(f'failed to send message for {row['Pharmacy License Number']} | {row['DEA']}:')
+            print(f'error: {error!s}')
+            print('`sent_dt` will be left blank')
             ts = None
         timestamps.append(ts)
 
