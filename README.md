@@ -107,7 +107,7 @@ this script pulls the not in violation list for mandatory use and exludes prescr
 ### required files
 
 a mandatory use file: `{MONTH_NAME}{YEAR}_mandatory_use_full.csv`  
-the date at the beginning should be entered as an argument when running the script:
+the date at the beginning should be entered as an argument when running the script:  
 `data/cs_active.txt` should also be updated before running
 
 ```text
@@ -160,20 +160,20 @@ this script checks for pharmacy dea numbers that are active with the dea but not
 
 ### required files
 
-updated `data/cs_active.txt`
-`List Request.csv` list request in igov
+updated `data/cs_active.txt`  
+`List Request.csv` list request in igov  
 `pharmacies.csv` compliance>manage pharmacies>download
 
 ## scorecard
 
-this script updates the scorecard tracking sheet on google drive with prescriber search rates for opioid and benzodiazepine prescriptions
-a counterpart for this script runs `0 10 12 * *` on google cloud
+this script updates the scorecard tracking sheet on google drive with prescriber search rates for opioid and benzodiazepine prescriptions  
+a counterpart for this script runs `0 10 12 * *` on google cloud  
 `scorecard.py` is for running on a local machine as needed
 
 ## sftp_backup
 
-these scripts backup the vendor and pmp sftps to the google drive daily
-counterparts for this script run `30 8 * * *` on google cloud for both `vendor` and `pmp`
+these scripts backup the vendor and pmp sftps to the google drive daily  
+counterparts for this script run `30 8 * * *` on google cloud for both `vendor` and `pmp`  
 `sftp_backup.py` is for running on a local machine as needed and takes a command line argument:
 
 - `vendor` for backing up the vendor sftp
