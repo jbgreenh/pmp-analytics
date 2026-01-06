@@ -329,7 +329,7 @@ def add_dfs_to_board_info(service, unreg_presc: pl.LazyFrame, board_info: dict) 
     return board_info
 
 
-def send_emails(board_dict: dict[str, BoardInfo], creds: google.oauth2.credentials.Credentials | google.auth.external_account_authorized_user.Credentials, drive_service, *, send: bool = True) -> None:    # noqa: ANN001 | service is dynamically typed
+def send_emails(board_dict: dict[str, BoardInfo], creds: google.oauth2.credentials.Credentials | google.auth.external_account_authorized_user.Credentials, drive_service) -> None:    # noqa: ANN001 | service is dynamically typed
     """
     sends emails to each board with their unregistered prescribers
 
@@ -337,7 +337,6 @@ def send_emails(board_dict: dict[str, BoardInfo], creds: google.oauth2.credentia
         board_dict: the `board_dict` returned by `add_dfs_to_board_info()`
         creds: google api credentials
         drive_service: a google drive service
-        send: a boolean indicating whether to send the emails (True) or to print info on the emails that would be sent (False)
     """
     def remove_first_page(export: BytesIO, file_path: Path) -> None:
         """this removes the broken header first page google drive exports create for some reason"""
@@ -403,22 +402,13 @@ def send_emails(board_dict: dict[str, BoardInfo], creds: google.oauth2.credentia
             bcc=os.environ['EMAIL_COMPLIANCE']
         )
 
-        if send:
-            email.send_email(message)
-        else:
-            print(f'email to {board} board')
-            print(f'from: {message.sender}')
-            print(f'to: {message.to}')
-            print(f'subj: {message.subject}')
-            print(f'body: {message.message_text}')
-            print(message.file_paths)
-            print(info.board_df.head())
+        email.send_email(message, draft=(not args.send_email))
         Path(report_file).unlink()
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='check unregistered prescribers')
-    parser.add_argument('-ne', '--no-email', action='store_false', help='do not send emails')
+    parser.add_argument('-s', '--send-email', action='store_true', help='send emails instead of creating drafts')
     args = parser.parse_args()
 
     load_dotenv()
@@ -430,7 +420,7 @@ if __name__ == '__main__':
     board_contacts = get_board_contacts(service)
     board_info = update_board_info_with_uploaders(board_contacts)
     full_board_info = add_dfs_to_board_info(service, unregistered_w_boards, board_info)
-    send_emails(full_board_info, creds, service, send=args.no_email)
+    send_emails(full_board_info, creds, service)
 
     board_counts = unregistered_w_boards.collect()['board'].value_counts(sort=True)
     print('board unregistered counts (written to clipboard):')
