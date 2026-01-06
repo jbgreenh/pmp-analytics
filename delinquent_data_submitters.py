@@ -58,6 +58,7 @@ def process_input_files(mp_path: Path, dds_path: Path, lr_path: Path) -> pl.Lazy
             pl.col('Email').str.to_lowercase().alias('igov_email'),
             pl.col('Phone').alias('igov_phone')
         )
+        .unique()  # this file has an entry for each PIC
     )
 
     complaints = (
