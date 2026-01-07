@@ -147,7 +147,7 @@ def send_notices(lf: pl.LazyFrame, email_type: EmailType) -> None:
 
 According to our records, your pharmacy is not submitting daily reports to the Arizona Controlled Substance Prescription Monitoring Program clearinghouse.
 
-Data is missing for: <b>{last_compliant}</b>
+Dispensation data is missing for: <b>{last_compliant}</b>
 
 At this time, you are in violation of <a href="https://www.azleg.gov/ars/36/02608.htm" target="_blank">ARS § 36-2608</a> reporting requirements. <em><b>Failure to upload your delinquent schedule II-V dispensations will result in a complaint being opened against the pharmacy.</b></em>
 
