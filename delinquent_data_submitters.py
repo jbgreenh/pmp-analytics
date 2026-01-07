@@ -82,7 +82,7 @@ def process_input_files(mp_path: Path, dds_path: Path, lr_path: Path) -> pl.Lazy
             'Pharmacy License Number',
             'Business Name',
             'Status',
-            (pl.col('Last Compliant').str.to_date('%Y-%m-%d') + pl.duration(days=1)).dt.to_string('%Y-%m-%d').alias('Last Complaint'),
+            (pl.col('Last Compliant').str.to_date('%Y-%m-%d') + pl.duration(days=1)).dt.to_string('%Y-%m-%d').alias('Last Compliant'),
             'Days Delinquent',
             'Primary User',
             pl.concat_list(pl.col('Primary Email').str.to_lowercase(), pl.col('mp_email'), pl.col('igov_email')).list.unique().list.join(',').alias('to'),
