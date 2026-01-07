@@ -85,7 +85,7 @@ def process_input_files(mp_path: Path, dds_path: Path, lr_path: Path) -> pl.Lazy
             'Pharmacy License Number',
             'Business Name',
             'Status',
-            'Last Compliant',
+            (pl.col('Last Compliant').str.to_date('%Y-%m-%d') + pl.duration(days=1)).dt.to_string('%Y-%m-%d').alias('Last Complaint'),
             'Days Delinquent',
             'Primary User',
             pl.concat_list(pl.col('Primary Email').str.to_lowercase(), pl.col('mp_email'), pl.col('igov_email')).list.unique().list.join(',').alias('to'),
@@ -136,7 +136,10 @@ def send_notices(lf: pl.LazyFrame, email_type: EmailType) -> None:
     notices = lf.collect()
     for row in notices.iter_rows(named=True):
         pharmacy_address = f'{row['Street Address']}, {row['Apt/Suite #']}\n{row['City']}, {row['State']} {row['Zip']}' if row['Apt/Suite #'] else f'{row['Street Address']}\n{row['City']}, {row['State']} {row['Zip']}'
-        last_compliant = f'{row['Last Compliant']} - {(datetime.now(tz=PHX_TZ).date() - timedelta(days=2)).strftime('%Y-%m-%d')}' if row['Last Compliant'] != 'never submitted' else 'no data has ever been received'
+        if (int(row['Days Delinquent']) > 1):
+            last_compliant = f'{row['Last Compliant']} - {(datetime.now(tz=PHX_TZ).date() - timedelta(days=2)).strftime('%Y-%m-%d')}' if row['Last Compliant'] != 'never submitted' else 'no data has ever been received'
+        else:
+            last_compliant = row['Last Compliant'] if row['Last Compliant'] != 'never submitted' else 'no data has ever been received'
 
         if email_type == 'friday':
             subject = f'CSPMP Action Required: Possible Complaint Against {row['Pharmacy License Number']}'
