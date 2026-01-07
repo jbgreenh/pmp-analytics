@@ -170,7 +170,7 @@ If you have any questions or concerns about the data submission process, please 
             subject = f'Notice of Missing CSPMP Data Submissions for {row['Pharmacy License Number']}'
             body = f"""<b>At this time, your pharmacy, {row['Pharmacy License Number']}, is in violation of <a href="https://www.azleg.gov/ars/36/02608.htm" target="_blank">ARS § 36-2608</a> reporting requirements.</b>
 
-You are receiving this email because you are listed as the party responsible for submitting controlled substance dispensing information for the above-referenced dispenser to the Arizona Controlled Substances Prescription Monitoring Program (AZ CSPMP). Controlled substance dispensing information is missing for <b>{last_compliant}</b>.
+You are receiving this email because you are listed as the party responsible for submitting controlled substance dispensing information for the above-referenced dispenser to the Arizona Controlled Substances Prescription Monitoring Program (AZ CSPMP). Controlled substance dispensing information is missing for: <b>{last_compliant}</b>.
 
 Please upload your schedule II-V dispensations DAILY, including zero reports, to avoid being noncompliant, and make sure to upload any days that were missed.
 
