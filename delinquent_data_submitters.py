@@ -136,7 +136,7 @@ def send_notices(lf: pl.LazyFrame, email_type: EmailType) -> None:
     notices = lf.collect()
     for row in notices.iter_rows(named=True):
         pharmacy_address = f'{row['Street Address']}, {row['Apt/Suite #']}\n{row['City']}, {row['State']} {row['Zip']}' if row['Apt/Suite #'] else f'{row['Street Address']}\n{row['City']}, {row['State']} {row['Zip']}'
-        last_compliant = row['Last Compliant'] or 'data has never been received'
+        last_compliant = f'{row['Last Compliant']} - {(datetime.now(tz=PHX_TZ).date() - timedelta(days=2)).strftime('%Y-%m-%d')}' if row['Last Compliant'] != 'never submitted' else 'no data has ever been received'
 
         if email_type == 'friday':
             subject = f'CSPMP Action Required: Possible Complaint Against {row['Pharmacy License Number']}'
@@ -147,7 +147,7 @@ def send_notices(lf: pl.LazyFrame, email_type: EmailType) -> None:
 
 According to our records, your pharmacy is not submitting daily reports to the Arizona Controlled Substance Prescription Monitoring Program clearinghouse.
 
-Last date of data submission received on: <b>{last_compliant}</b>
+Data is missing for: <b>{last_compliant}</b>
 
 At this time, you are in violation of <a href="https://www.azleg.gov/ars/36/02608.htm" target="_blank">ARS § 36-2608</a> reporting requirements. <em><b>Failure to upload your delinquent schedule II-V dispensations will result in a complaint being opened against the pharmacy.</b></em>
 
@@ -170,7 +170,7 @@ If you have any questions or concerns about the data submission process, please 
             subject = f'Notice of Missing CSPMP Data Submissions for {row['Pharmacy License Number']}'
             body = f"""<b>At this time, your pharmacy, {row['Pharmacy License Number']}, is in violation of <a href="https://www.azleg.gov/ars/36/02608.htm" target="_blank">ARS § 36-2608</a> reporting requirements.</b>
 
-You are receiving this email because you are listed as the party responsible for submitting controlled substance dispensing information for the above-referenced dispenser to the Arizona Controlled Substances Prescription Monitoring Program (AZ CSPMP). Controlled substance dispensing information has not been received since <b>{last_compliant}</b>.
+You are receiving this email because you are listed as the party responsible for submitting controlled substance dispensing information for the above-referenced dispenser to the Arizona Controlled Substances Prescription Monitoring Program (AZ CSPMP). Controlled substance dispensing information is missing for <b>{last_compliant}</b>.
 
 Please upload your schedule II-V dispensations DAILY, including zero reports, to avoid being noncompliant, and make sure to upload any days that were missed.
 
