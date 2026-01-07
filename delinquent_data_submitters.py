@@ -211,7 +211,7 @@ If you have any questions or concerns about the data submission process, please 
             pl.col('Pharmacy License Number').alias('permit_number'),
             pl.col('DEA').alias('dea'),
             pl.col('Last Compliant').alias('last_compliant'),
-            pl.col('Zip').alias('zip'),
+            ("'" + pl.col('Zip')).alias('zip'),
             pl.lit(email_type).alias('email_type')
         )
     )
