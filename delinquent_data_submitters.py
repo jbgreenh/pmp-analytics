@@ -74,9 +74,6 @@ def process_input_files(mp_path: Path, dds_path: Path, lr_path: Path) -> pl.Lazy
 
     return (
         pl.scan_csv(dds_path, infer_schema=False)
-        .with_columns(
-            pl.col('Last Compliant').fill_null('never submitted')
-        )
         .join(mp, on='DEA', how='left')
         .join(lr, on='Pharmacy License Number', how='inner')
         .join(complaints, on='Pharmacy License Number', how='anti')
@@ -139,7 +136,7 @@ def send_notices(lf: pl.LazyFrame, email_type: EmailType) -> None:
         if (int(row['Days Delinquent']) > 1):
             last_compliant = f'{row['Last Compliant']} - {(datetime.now(tz=PHX_TZ).date() - timedelta(days=2)).strftime('%Y-%m-%d')}' if row['Last Compliant'] != 'never submitted' else 'no data has ever been received'
         else:
-            last_compliant = row['Last Compliant'] if row['Last Compliant'] != 'never submitted' else 'no data has ever been received'
+            last_compliant = row['Last Compliant'] or 'no data has ever been received'
 
         if email_type == 'friday':
             subject = f'CSPMP Action Required: Possible Complaint Against {row['Pharmacy License Number']}'
