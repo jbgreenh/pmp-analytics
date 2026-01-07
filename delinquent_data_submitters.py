@@ -211,11 +211,16 @@ If you have any questions or concerns about the data submission process, please 
             pl.col('Pharmacy License Number').alias('permit_number'),
             pl.col('DEA').alias('dea'),
             pl.col('Last Compliant').alias('last_compliant'),
-            ("'" + pl.col('Zip')).alias('zip'),
+            pl.col('Zip').alias('zip'),
             pl.lit(email_type).alias('email_type')
         )
     )
-    full_logs = pl.concat([logs, new_dds_log])
+    full_logs = (
+        pl.concat([logs, new_dds_log])
+        .with_columns(
+            ("'" + pl.col('Zip')).alias('Zip')
+        )
+    )
     fl_path = Path('full_logs.csv')
     full_logs.write_csv(fl_path)
     drive.update_sheet(fl_path, os.environ['DDS_EMAIL_LOGS_FILE'])
