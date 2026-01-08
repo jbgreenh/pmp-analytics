@@ -202,7 +202,13 @@ If you have any questions or concerns about the data submission process, please 
     ts_series = pl.Series(name='sent_dt', values=timestamps, dtype=pl.Datetime)
     notices.insert_column(0, ts_series)
 
-    logs = drive.lazyframe_from_id_and_sheetname(os.environ['DDS_EMAIL_LOGS_FILE'], 'dds_email_logs', infer_schema_length=0).collect()  # read_excel does not have infer_schema
+    logs = (
+        drive.lazyframe_from_id_and_sheetname(os.environ['DDS_EMAIL_LOGS_FILE'], 'dds_email_logs', infer_schema_length=0)  # read_excel does not have infer_schema
+        .with_columns(
+            pl.col('last_compliant').str.to_date('%Y-%m-%d').dt.to_string('%Y-%m-%d')
+        )
+        .collect()
+    )
     new_dds_log = (
         notices
         .select(
