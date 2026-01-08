@@ -222,7 +222,12 @@ If you have any questions or concerns about the data submission process, please 
             pl.lit(email_type).alias('email_type')
         )
     )
-    full_logs = (pl.concat([logs, new_dds_log]))
+    full_logs = (
+        pl.concat([logs, new_dds_log])
+        .with_columns(
+            ("'" + pl.col('last_compliant')).alias('last_compliant')
+        )
+    )
     fl_path = Path('full_logs.csv')
     full_logs.write_csv(fl_path)
     drive.update_sheet(fl_path, os.environ['DDS_EMAIL_LOGS_FILE'])
