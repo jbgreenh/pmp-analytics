@@ -205,7 +205,8 @@ If you have any questions or concerns about the data submission process, please 
     logs = (
         drive.lazyframe_from_id_and_sheetname(os.environ['DDS_EMAIL_LOGS_FILE'], 'dds_email_logs', infer_schema_length=0)  # read_excel does not have infer_schema
         .with_columns(
-            pl.col('last_compliant').str.to_date('%Y-%m-%d').dt.to_string('%Y-%m-%d')
+            pl.col('last_compliant').str.to_date('%Y-%m-%d').dt.to_string('%Y-%m-%d'),
+            ("'" + pl.col('zip')).alias('zip')
         )
         .collect()
     )
@@ -221,12 +222,7 @@ If you have any questions or concerns about the data submission process, please 
             pl.lit(email_type).alias('email_type')
         )
     )
-    full_logs = (
-        pl.concat([logs, new_dds_log])
-        .with_columns(
-            ("'" + pl.col('zip')).alias('zip')
-        )
-    )
+    full_logs = (pl.concat([logs, new_dds_log]))
     fl_path = Path('full_logs.csv')
     full_logs.write_csv(fl_path)
     drive.update_sheet(fl_path, os.environ['DDS_EMAIL_LOGS_FILE'])
