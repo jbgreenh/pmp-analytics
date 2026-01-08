@@ -218,7 +218,7 @@ If you have any questions or concerns about the data submission process, please 
     full_logs = (
         pl.concat([logs, new_dds_log])
         .with_columns(
-            ("'" + pl.col('Zip')).alias('Zip')
+            ("'" + pl.col('zip')).alias('zip')
         )
     )
     fl_path = Path('full_logs.csv')
