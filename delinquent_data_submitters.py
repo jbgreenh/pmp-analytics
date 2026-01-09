@@ -134,7 +134,7 @@ def send_notices(lf: pl.LazyFrame, email_type: EmailType) -> None:
     for row in notices.iter_rows(named=True):
         pharmacy_address = f'{row['Street Address']}, {row['Apt/Suite #']}\n{row['City']}, {row['State']} {row['Zip']}' if row['Apt/Suite #'] else f'{row['Street Address']}\n{row['City']}, {row['State']} {row['Zip']}'
         if row['Last Compliant'] is not None:
-            # TODO: handle if range is only 1 day (not necessary if we use 2+)
+            # TODO: handle if range is only 1 day (not necessary if we use 2+ for daily notices)
             last_compliant = f'{row['Last Compliant']} - {(datetime.now(tz=PHX_TZ).date() - timedelta(days=2)).strftime('%Y-%m-%d')}'
         else:
             last_compliant = 'no data has ever been received'
