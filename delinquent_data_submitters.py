@@ -7,7 +7,11 @@ from typing import Literal
 
 import polars as pl
 from az_pmp_utils import auth, drive, email, files, num_and_dt
-from az_pmp_utils.constants import DAYS_DELINQUENT_THRESHOLD, PHX_TZ
+from az_pmp_utils.constants import (
+    DAILY_DAYS_DELINQUENT_THRESHOLD,
+    PHX_TZ,
+    WEEKLY_DAYS_DELINQUENT_THRESHOLD,
+)
 from dotenv import load_dotenv
 from googleapiclient import errors
 from googleapiclient.discovery import build
@@ -74,6 +78,11 @@ def process_input_files(mp_path: Path, dds_path: Path, lr_path: Path) -> pl.Lazy
 
     return (
         pl.scan_csv(dds_path, infer_schema=False)
+        .filter(
+            (pl.col('Days Delinquent').str.to_integer() >= DAILY_DAYS_DELINQUENT_THRESHOLD) |  # account for bamboo's mishandling of time zones
+            (pl.col('Days Delinquent') == '') |  # noqa: PLC1901 | empty string is not falsey in polars
+            (pl.col('Days Delinquent').is_null())
+        )
         .join(mp, on='DEA', how='left')
         .join(lr, on='Pharmacy License Number', how='inner')
         .join(complaints, on='Pharmacy License Number', how='anti')
@@ -134,8 +143,10 @@ def send_notices(lf: pl.LazyFrame, email_type: EmailType) -> None:
     for row in notices.iter_rows(named=True):
         pharmacy_address = f'{row['Street Address']}, {row['Apt/Suite #']}\n{row['City']}, {row['State']} {row['Zip']}' if row['Apt/Suite #'] else f'{row['Street Address']}\n{row['City']}, {row['State']} {row['Zip']}'
         if row['Last Compliant'] is not None:
-            # TODO: handle if range is only 1 day (not necessary if we use 2+ for daily notices)
-            last_compliant = f'{row['Last Compliant']} - {(datetime.now(tz=PHX_TZ).date() - timedelta(days=2)).strftime('%Y-%m-%d')}'
+            if row['Last Compliant'] == (datetime.now(tz=PHX_TZ).date() - timedelta(days=2)).strftime('%Y-%m-%d'):
+                last_compliant = row['Last Compliant']
+            else:
+                last_compliant = f'{row['Last Compliant']} - {(datetime.now(tz=PHX_TZ).date() - timedelta(days=2)).strftime('%Y-%m-%d')}'
         else:
             last_compliant = 'no data has ever been received'
 
@@ -279,7 +290,7 @@ def pharm_clean(dds: pl.LazyFrame) -> None:
         new_deadlines = (
             dds
             .filter(
-                (pl.col('Days Delinquent').str.to_integer() >= DAYS_DELINQUENT_THRESHOLD) |
+                (pl.col('Days Delinquent').str.to_integer() >= WEEKLY_DAYS_DELINQUENT_THRESHOLD) |
                 (pl.col('Days Delinquent') == '') |  # noqa: PLC1901 | empty string is not falsey in polars
                 (pl.col('Days Delinquent').is_null())
             )
