@@ -80,7 +80,7 @@ def process_input_files(mp_path: Path, dds_path: Path, lr_path: Path) -> pl.Lazy
         pl.scan_csv(dds_path, infer_schema=False)
         .filter(
             (pl.col('Days Delinquent').str.to_integer() >= DAILY_DAYS_DELINQUENT_THRESHOLD) |  # account for bamboo's mishandling of time zones
-            (pl.col('Days Delinquent') == '') |  # noqa: PLC1901 | empty string is not falsey in polars
+            (pl.col('Days Delinquent') == '') |                                                # noqa: PLC1901 | empty string is not falsey in polars
             (pl.col('Days Delinquent').is_null())
         )
         .join(mp, on='DEA', how='left')
@@ -211,6 +211,7 @@ If you have any questions or concerns about the data submission process, please 
             ts = None
         timestamps.append(ts)
 
+    print(f'{len(timestamps)} {'emails sent' if args.send_emails else 'drafts created'}')
     ts_series = pl.Series(name='sent_dt', values=timestamps, dtype=pl.Datetime)
     notices.insert_column(0, ts_series)
 
