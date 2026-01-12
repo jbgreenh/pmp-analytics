@@ -141,7 +141,7 @@ def send_notices(lf: pl.LazyFrame, email_type: EmailType) -> None:
     timestamps = []
     notices = lf.collect()
     for row in notices.iter_rows(named=True):
-        pharmacy_address = f'{row['Street Address']}, {row['Apt/Suite #']}\n{row['City']}, {row['State']} {row['Zip']}' if row['Apt/Suite #'] else f'{row['Street Address']}\n{row['City']}, {row['State']} {row['Zip']}'
+        pharmacy_address = f'{row['Street Address']}, {row['Apt/Suite #']}\n{row['City']}, {row['State']} {row['Zip'][1:]}' if row['Apt/Suite #'] else f'{row['Street Address']}\n{row['City']}, {row['State']} {row['Zip']}'
         if row['Last Compliant'] is not None:
             if row['Last Compliant'] == (datetime.now(tz=PHX_TZ).date() - timedelta(days=2)).strftime('%Y-%m-%d'):
                 last_compliant = row['Last Compliant']
