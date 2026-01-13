@@ -5,6 +5,7 @@
 **/*.txt
 **/*.json
 **/*.pdf
+**/*.dat
 **/__pycache__
 *xx*
 build
