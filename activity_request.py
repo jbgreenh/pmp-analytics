@@ -80,7 +80,7 @@ def process_pdf(request_type: RequestType) -> None:
             page = pymupdf.open(pdf).load_page(0)
             page_text = page.get_text()  # type: ignore[reportAttributeAccessIssue] | pymupdf does not support static type checkers at this time
 
-            if not page_text:
+            if (not page_text) or args.ocr:
                 print('---')
                 print(f'{pdf} does not have readable text')
                 print('attempting ocr...')
@@ -339,6 +339,7 @@ if __name__ == '__main__':
     group.add_argument('-p', '--prescriber', action='store_true', help='pull prescriber activity request')
     group.add_argument('-d', '--dispenser', action='store_true', help='pull dispenser activity request')
     group.add_argument('-at', '--audit-trail', action='store_true', help='pull audit trail')
+    parser.add_argument('-o', '--ocr', action='store_true', help='force ocr for pdf reading')
     args = parser.parse_args()
 
     if args.prescriber:
