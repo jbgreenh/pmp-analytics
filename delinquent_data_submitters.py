@@ -102,7 +102,6 @@ def process_input_files(mp_path: Path, dds_path: Path, lr_path: Path) -> pl.Lazy
             'State',
             pl.concat_str(pl.lit("'"), pl.col('Zip').cast(pl.String)).alias('Zip'),  # to preserve leading zeros
         )
-        .sort(pl.col('Days Delinquent'), descending=True)
     )
 
 
@@ -139,7 +138,7 @@ def send_notices(lf: pl.LazyFrame, email_type: EmailType) -> None:
     creds = auth.auth()
     service = build('gmail', 'v1', credentials=creds)
     timestamps = []
-    notices = lf.collect()
+    notices = lf.sort(pl.col('Last Compliant').str.to_date('%Y-%m-%d')).collect()
     for row in notices.iter_rows(named=True):
         pharmacy_address = f'{row['Street Address']}, {row['Apt/Suite #']}\n{row['City']}, {row['State']} {row['Zip'][1:]}' if row['Apt/Suite #'] else f'{row['Street Address']}\n{row['City']}, {row['State']} {row['Zip'][1:]}'
         if row['Last Compliant'] is not None:
