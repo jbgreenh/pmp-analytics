@@ -279,13 +279,6 @@ def pharm_clean(dds: pl.LazyFrame) -> None:
         deadlines = (
             drive.lazyframe_from_id_and_sheetname(os.environ['DDS_DEADLINES_FILE'], 'dds_deadlines', infer_schema_length=0)  # read_excel does not have infer_schema
             .cast({pl.Null: pl.String})
-            .with_columns(
-                pl.col('deadline').str.split(' ').list.get(0),
-                pl.when(pl.col('Last Compliant').str.starts_with('never'))
-                .then(pl.col('Last Compliant'))
-                .otherwise(pl.col('Last Compliant').str.split(' ').list.get(0)),
-                (pl.lit("'") + pl.col('Zip')).alias('Zip')
-            )
         )
         new_deadlines = (
             dds
@@ -301,10 +294,17 @@ def pharm_clean(dds: pl.LazyFrame) -> None:
                 new_deadlines
                 .drop('Days Delinquent')
                 .with_columns(
-                    ("'" + pl.lit(due_date).dt.to_string('%Y-%m-%d')).alias('deadline')
+                    pl.lit(due_date).dt.to_string('%Y-%m-%d').alias('deadline')
                 )
             )
-            deadlines = pl.concat([deadlines, new_deadlines])
+            deadlines = (
+              pl.concat([deadlines, new_deadlines])
+              .with_columns(
+                    ("'" + pl.col('last_compliant')).alias('last_compliant'),
+                    ("'" + pl.col('deadline')).alias('deadline'),
+                    ("'" + pl.col('zip')).alias('zip'),
+                )
+            )
 
         deadlines_path = Path('deadlines.csv')
         deadlines.collect().write_csv(deadlines_path)
