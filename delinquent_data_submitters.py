@@ -100,7 +100,7 @@ def process_input_files(mp_path: Path, dds_path: Path, lr_path: Path) -> pl.Lazy
             'Apt/Suite #',
             'City',
             'State',
-            pl.concat_str(pl.lit("'"), pl.col('Zip').cast(pl.String)).alias('Zip'),  # to preserve leading zeros
+            'Zip'
         )
     )
 
@@ -138,14 +138,14 @@ def send_notices(lf: pl.LazyFrame, email_type: EmailType) -> None:
     creds = auth.auth()
     service = build('gmail', 'v1', credentials=creds)
     timestamps = []
-    notices = lf.sort(pl.col('Last Compliant').str.to_date('%Y-%m-%d')).collect()
+    notices = lf.sort(pl.col('Last Compliant').str.to_date("'%Y-%m-%d")).collect()
     for row in notices.iter_rows(named=True):
         pharmacy_address = f'{row['Street Address']}, {row['Apt/Suite #']}\n{row['City']}, {row['State']} {row['Zip'][1:]}' if row['Apt/Suite #'] else f'{row['Street Address']}\n{row['City']}, {row['State']} {row['Zip'][1:]}'
         if row['Last Compliant'] is not None:
-            if row['Last Compliant'] == (datetime.now(tz=PHX_TZ).date() - timedelta(days=2)).strftime('%Y-%m-%d'):
-                last_compliant = row['Last Compliant']
+            if row['Last Compliant'][1:] == (datetime.now(tz=PHX_TZ).date() - timedelta(days=2)).strftime('%Y-%m-%d'):
+                last_compliant = row['Last Compliant'][1:]
             else:
-                last_compliant = f'{row['Last Compliant']} - {(datetime.now(tz=PHX_TZ).date() - timedelta(days=2)).strftime('%Y-%m-%d')}'
+                last_compliant = f'{row['Last Compliant'][1:]} - {(datetime.now(tz=PHX_TZ).date() - timedelta(days=2)).strftime('%Y-%m-%d')}'
         else:
             last_compliant = 'no data has ever been received'
 
@@ -164,7 +164,7 @@ At this time, you are in violation of <a href="https://www.azleg.gov/ars/36/0260
 
 <b>Zero reports should be submitted for any days there are no controlled substance dispensations. For days you are not operational, you should report zero for those days on your next open business day.</b>
 
-<b style='color: red;'>Please ensure you upload your missed submissions by {row['deadline']} or a complaint will be opened against the pharmacy permit. </b>
+<b style='color: red;'>Please ensure you upload your missed submissions by {row['deadline'][1:]} or a complaint will be opened against the pharmacy permit. </b>
 
 If your pharmacy has an active DEA number, an active AZ pharmacy permit, and is not limited to veterinary dispensing, <em><b>it is required to submit a daily report, including zero reports, for controlled substances II-V.</b></em>
 
@@ -217,7 +217,7 @@ If you have any questions or concerns about the data submission process, please 
     logs = (
         drive.lazyframe_from_id_and_sheetname(os.environ['DDS_EMAIL_LOGS_FILE'], 'dds_email_logs', infer_schema_length=0)  # read_excel does not have infer_schema
         .with_columns(
-            pl.col('last_compliant').str.to_date('%Y-%m-%d').dt.to_string('%Y-%m-%d'),
+            ("'" + pl.col('last_compliant')).alias('last_compliant'),
             ("'" + pl.col('zip')).alias('zip')
         )
         .collect()
@@ -234,12 +234,7 @@ If you have any questions or concerns about the data submission process, please 
             pl.lit(email_type).alias('email_type')
         )
     )
-    full_logs = (
-        pl.concat([logs, new_dds_log])
-        .with_columns(
-            ("'" + pl.col('last_compliant')).alias('last_compliant')
-        )
-    )
+    full_logs = pl.concat([logs, new_dds_log])
     fl_path = Path('full_logs.csv')
     full_logs.write_csv(fl_path)
     drive.update_sheet(fl_path, os.environ['DDS_EMAIL_LOGS_FILE'])
@@ -297,22 +292,30 @@ def pharm_clean(dds: pl.LazyFrame) -> None:
                     pl.lit(due_date).dt.to_string('%Y-%m-%d').alias('deadline')
                 )
             )
-            deadlines = (
-              pl.concat([deadlines, new_deadlines])
-              .with_columns(
-                    ("'" + pl.col('last_compliant')).alias('last_compliant'),
-                    ("'" + pl.col('deadline')).alias('deadline'),
-                    ("'" + pl.col('zip')).alias('zip'),
-                )
-            )
+            deadlines = pl.concat([deadlines, new_deadlines])
 
         deadlines_path = Path('deadlines.csv')
+        deadlines = (
+            deadlines
+            .with_columns(
+                ("'" + pl.col('Last Compliant')).alias('Last Compliant'),
+                ("'" + pl.col('deadline')).alias('deadline'),
+                ("'" + pl.col('Zip')).alias('Zip'),
+            )
+        )
         deadlines.collect().write_csv(deadlines_path)
         drive.update_sheet(deadlines_path, os.environ['DDS_DEADLINES_FILE'])
         deadlines_path.unlink()
 
         send_notices(deadlines, 'friday')
     else:
+        dds = (
+            dds
+            .with_columns(
+                ("'" + pl.col('Last Compliant')).alias('Last Compliant'),
+                ("'" + pl.col('Zip')).alias('Zip'),
+            )
+        )
         send_notices(dds, 'daily')
 
 
