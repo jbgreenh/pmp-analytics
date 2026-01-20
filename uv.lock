@@ -4,8 +4,8 @@ requires-python = ">=3.14"
 
 [[package]]
 name = "az-pmp-utils"
-version = "0.1.6"
-source = { git = "https://github.com/jbgreenh/az-pmp-utils#c0d54f44bbcc219003fafc7ed575df531ab36f61" }
+version = "0.1.7"
+source = { git = "https://github.com/jbgreenh/az-pmp-utils#8f882e835db67c1239767d03601931f54f94e739" }
 dependencies = [
     { name = "fastexcel" },
     { name = "google-api-python-client" },
