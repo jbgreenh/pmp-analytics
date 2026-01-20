@@ -4,7 +4,8 @@ from pathlib import Path
 
 import polars as pl
 from az_pmp_utils import tableau
-from az_pmp_utils.constants import PHX_TZ
+
+from constants import PHX_TZ
 
 
 def mm2() -> None:

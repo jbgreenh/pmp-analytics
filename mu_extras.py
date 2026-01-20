@@ -6,9 +6,10 @@ from typing import TYPE_CHECKING
 
 import polars as pl
 from az_pmp_utils import auth, deas, drive, num_and_dt
-from az_pmp_utils.constants import PHX_TZ, TOP_PRESCRIBERS
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
+
+from constants import PHX_TZ, TOP_PRESCRIBERS
 
 if TYPE_CHECKING:
     import google.auth.external_account_authorized_user

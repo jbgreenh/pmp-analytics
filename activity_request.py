@@ -9,7 +9,8 @@ from typing import Literal
 import polars as pl
 import pymupdf
 from az_pmp_utils import tableau
-from az_pmp_utils.constants import PHX_TZ
+
+from constants import PHX_TZ
 
 
 @dataclass

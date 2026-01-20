@@ -7,14 +7,15 @@ from typing import Literal
 
 import polars as pl
 from az_pmp_utils import auth, drive, email, files, num_and_dt
-from az_pmp_utils.constants import (
+from dotenv import load_dotenv
+from googleapiclient import errors
+from googleapiclient.discovery import build
+
+from constants import (
     DAILY_DAYS_DELINQUENT_THRESHOLD,
     PHX_TZ,
     WEEKLY_DAYS_DELINQUENT_THRESHOLD,
 )
-from dotenv import load_dotenv
-from googleapiclient import errors
-from googleapiclient.discovery import build
 
 type EmailType = Literal['daily', 'friday']
 
