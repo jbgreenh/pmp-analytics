@@ -42,6 +42,11 @@ this script takes the number of patients provided by bamboo, updates the file to
 
 checks the newest masked file and compares it to the preceding file
 
+## constants
+
+contains constants for use in the other scripts  
+the use of each constant is described in the comments
+
 ## delinquent_data_submitters
 
 this script performs the daily delinquent data submitters cleanup based on the day of the week, and sends the proper daily or friday notices
