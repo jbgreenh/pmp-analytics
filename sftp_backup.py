@@ -13,6 +13,19 @@ from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseUpload
 
 
+def del_prev(delete_prev_line: bool) -> None:  # noqa: FBT001 | only one arg
+    """
+    delete the previous printed line
+
+    args:
+        delete_prev_line: whether to perform the delete
+    """
+    line_up = '\033[1A'
+    line_clear = '\x1b[2K'
+    if delete_prev_line:
+        print(line_up, end=line_clear)
+
+
 def upload_file(service, sftp: paramiko.SFTPClient, remote_file_path: str, drive_folder_id: str) -> None:  # noqa: ANN001 | service is dynamically typed
     """
     uploads a file to the google drive if it is new or has been modified
@@ -29,7 +42,7 @@ def upload_file(service, sftp: paramiko.SFTPClient, remote_file_path: str, drive
     st_mtime = sftp.lstat(remote_file_path).st_mtime
     remote_file_mtime = datetime.fromtimestamp(float(st_mtime)).astimezone(tz=ZoneInfo('UTC')) if isinstance(st_mtime, int) else datetime(year=2001, month=1, day=1, tzinfo=ZoneInfo('UTC'))
     time_dif = datetime.now(tz=ZoneInfo('UTC')) - remote_file_mtime
-    print(f'{remote_file} is {round(time_dif.total_seconds() / 60 / 60, 2)} hours old')
+    delete_prev_line = False
 
     if time_dif <= timedelta(hours=24):
         try:
@@ -39,10 +52,13 @@ def upload_file(service, sftp: paramiko.SFTPClient, remote_file_path: str, drive
                                         fields='files(id, modifiedTime)').execute()
             files = results.get('files', [])
             if files:
+                del_prev(delete_prev_line)
                 print(f'{remote_file} already exists on google drive')
+                delete_prev_line = True
                 drive_file_id = files[0]['id']
                 drive_file_modified_time = datetime.fromisoformat(files[0]['modifiedTime'])
                 if remote_file_mtime > drive_file_modified_time:
+                    del_prev(delete_prev_line)
                     print(f'{remote_file} has been updated since uploading')
                     print(f'updating {remote_file} on google drive...')
                     with sftp.file(remote_file_path, 'rb') as remote_file_content:
@@ -50,9 +66,13 @@ def upload_file(service, sftp: paramiko.SFTPClient, remote_file_path: str, drive
                         media = MediaIoBaseUpload(remote_file_content, mimetype='application/octet-stream', chunksize=1024 * 1024, resumable=True)
                         service.files().update(fileId=drive_file_id, media_body=media, supportsAllDrives=True).execute()
                         print(f'{remote_file} updated on google drive.')
+                        delete_prev_line = False
                 else:
+                    del_prev(delete_prev_line)
                     print(f'{remote_file} has not been updated, skipping...')
+                    delete_prev_line = True
             else:
+                del_prev(delete_prev_line)
                 print(f'uploading {remote_file} to google drive...')
                 with sftp.file(remote_file_path, 'rb') as remote_file_content:
                     remote_file_content.prefetch()
@@ -63,11 +83,16 @@ def upload_file(service, sftp: paramiko.SFTPClient, remote_file_path: str, drive
                     }
                     service.files().create(supportsAllDrives=True, media_body=media, body=file_metadata).execute()
                     print(f'{remote_file} uploaded to google drive.')
+                    delete_prev_line = False
 
         except HttpError as error:
             sys.exit(f'error checking google drive: {error}')
     else:
-        print('skipping...')
+        del_prev(delete_prev_line)
+        print(f'{remote_file} is {round(time_dif.total_seconds() / 60 / 60, 2)} hours old, skipping...')
+        delete_prev_line = True
+
+    del_prev(delete_prev_line)
 
 
 def find_or_create_folder(service, folder_name: str, parent_folder_id: str) -> str:  # noqa: ANN001 | service is dynamically typed
