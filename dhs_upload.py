@@ -1,3 +1,4 @@
+import argparse
 import os
 from datetime import date, datetime, timedelta
 from io import BytesIO
@@ -16,7 +17,7 @@ def get_last_sunday() -> date:
     returns:
         a datetime.date for the last sunday
     """
-    today = datetime.now(tz=PHX_TZ).date()
+    today = datetime.now(tz=PHX_TZ).date() if not args.weeks else datetime.now(tz=PHX_TZ).date() - timedelta(weeks=args.weeks)
     days_since_sunday = today.weekday() + 1
     return today - timedelta(days=days_since_sunday)
 
@@ -64,6 +65,9 @@ def upload_latest_dhs_file(sftp: paramiko.SFTPClient, folder: str) -> None:
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='delinquent data submitters')
+    parser.add_argument('-w', '--weeks', type=int, default=None, help='run the process as if it is n weeks in the past')
+    args = parser.parse_args()
     load_dotenv()
 
     folder = os.environ['STANDARD_EXTRACT_FOLDER']
