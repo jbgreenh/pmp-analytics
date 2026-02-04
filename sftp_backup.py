@@ -44,7 +44,7 @@ def upload_file(service, sftp: paramiko.SFTPClient, remote_file_path: str, drive
     time_dif = datetime.now(tz=ZoneInfo('UTC')) - remote_file_mtime
     delete_prev_line = False
 
-    if time_dif <= timedelta(hours=24):
+    if time_dif <= timedelta(hours=args.age):
         try:
             results = service.files().list(q=f"name = '{remote_file}' and '{drive_folder_id}' in parents",
                                         supportsAllDrives=True,
@@ -136,7 +136,10 @@ def upload_directory(service, sftp: paramiko.SFTPClient, remote_path: str, drive
         drive_folder_id: the id for the target google drive folder
     """
     sftp.chdir(remote_path)
+    print(f'checking {remote_path}...')
     for item in sftp.listdir():
+        if item == 'Standard_Extract':
+            continue
         remote_item_path = remote_path + item
         mode = sftp.lstat(remote_item_path).st_mode
         if not isinstance(mode, int):
@@ -154,6 +157,7 @@ if __name__ == '__main__':
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('-v', '--vendor', action='store_true', help='backup vendor sftp')
     group.add_argument('-p', '--pmp', action='store_true', help='backup pmp sftp')
+    parser.add_argument('-a', '--age', type=int, default=24, help='max file age in hours on sftp to check for backing up')
 
     args = parser.parse_args()
     load_dotenv()
@@ -178,15 +182,22 @@ if __name__ == '__main__':
 
     creds = auth.auth()
     service = build('drive', 'v3', credentials=creds)
+
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.connect(hostname=sftp_host, port=int(sftp_port), username=sftp_user, password=sftp_password)
     sftp = ssh.open_sftp()
+    try:
+        vendor = "vendor" if args.vendor else "pmp"
+        print(f'updating {vendor} sftp backup...')
+        upload_directory(service, sftp, remote_path, drive_folder_id)
+    finally:
+        print()
+        if sftp:
+            sftp.close()
+            print('sftp closed')
+        if ssh:
+            ssh.close()
+            print('ssh closed')
 
-    vendor = "vendor" if args.vendor else "pmp"
-    print(f'updating {vendor} sftp backup...')
-    upload_directory(service, sftp, remote_path, drive_folder_id)
-
-    sftp.close()
-    ssh.close()
     print(f'{vendor} sftp backup complete')
