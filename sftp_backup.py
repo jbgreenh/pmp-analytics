@@ -41,10 +41,9 @@ def upload_file(service, sftp: paramiko.SFTPClient, remote_file_path: str, drive
 
     st_mtime = sftp.lstat(remote_file_path).st_mtime
     remote_file_mtime = datetime.fromtimestamp(float(st_mtime)).astimezone(tz=ZoneInfo('UTC')) if isinstance(st_mtime, int) else datetime(year=2001, month=1, day=1, tzinfo=ZoneInfo('UTC'))
-    time_dif = datetime.now(tz=ZoneInfo('UTC')) - remote_file_mtime
     delete_prev_line = False
 
-    if time_dif <= timedelta(hours=args.age):
+    if (datetime.now(tz=ZoneInfo('UTC')) - remote_file_mtime) <= timedelta(hours=args.age):
         try:
             results = service.files().list(q=f"name = '{remote_file}' and '{drive_folder_id}' in parents",
                                         supportsAllDrives=True,
@@ -61,10 +60,12 @@ def upload_file(service, sftp: paramiko.SFTPClient, remote_file_path: str, drive
                     del_prev(delete_prev_line)
                     print(f'{remote_file} has been updated since uploading')
                     print(f'updating {remote_file} on google drive...')
+                    delete_prev_line = True
                     with sftp.file(remote_file_path, 'rb') as remote_file_content:
                         remote_file_content.prefetch()
                         media = MediaIoBaseUpload(remote_file_content, mimetype='application/octet-stream', chunksize=1024 * 1024, resumable=True)
                         service.files().update(fileId=drive_file_id, media_body=media, supportsAllDrives=True).execute()
+                        del_prev(delete_prev_line)
                         print(f'{remote_file} updated on google drive.')
                         delete_prev_line = False
                 else:
@@ -74,6 +75,7 @@ def upload_file(service, sftp: paramiko.SFTPClient, remote_file_path: str, drive
             else:
                 del_prev(delete_prev_line)
                 print(f'uploading {remote_file} to google drive...')
+                delete_prev_line = True
                 with sftp.file(remote_file_path, 'rb') as remote_file_content:
                     remote_file_content.prefetch()
                     media = MediaIoBaseUpload(remote_file_content, mimetype='application/octet-stream', chunksize=1024 * 1024, resumable=True)
@@ -82,6 +84,7 @@ def upload_file(service, sftp: paramiko.SFTPClient, remote_file_path: str, drive
                         'parents': [drive_folder_id],
                     }
                     service.files().create(supportsAllDrives=True, media_body=media, body=file_metadata).execute()
+                    del_prev(delete_prev_line)
                     print(f'{remote_file} uploaded to google drive.')
                     delete_prev_line = False
 
@@ -89,7 +92,7 @@ def upload_file(service, sftp: paramiko.SFTPClient, remote_file_path: str, drive
             sys.exit(f'error checking google drive: {error}')
     else:
         del_prev(delete_prev_line)
-        print(f'{remote_file} is {round(time_dif.total_seconds() / 60 / 60, 2)} hours old, skipping...')
+        print(f'{remote_file} is {round((datetime.now(tz=ZoneInfo('UTC')) - remote_file_mtime).total_seconds() / 60 / 60, 2)} hours old, skipping...')
         delete_prev_line = True
 
     del_prev(delete_prev_line)
@@ -199,5 +202,6 @@ if __name__ == '__main__':
         if ssh:
             ssh.close()
             print('ssh closed')
+        print()
 
     print(f'{vendor} sftp backup complete')
