@@ -141,8 +141,6 @@ def upload_directory(service, sftp: paramiko.SFTPClient, remote_path: str, drive
     sftp.chdir(remote_path)
     print(f'checking {remote_path}...')
     for item in sftp.listdir():
-        if item == 'Standard_Extract':
-            continue
         remote_item_path = remote_path + item
         mode = sftp.lstat(remote_item_path).st_mode
         if not isinstance(mode, int):
