@@ -192,7 +192,7 @@ if __name__ == '__main__':
     sftp = ssh.open_sftp()
     try:
         vendor = "vendor" if args.vendor else "pmp"
-        print(f'updating {vendor} sftp backup...')
+        print(f'updating {vendor} sftp backup...\n')
         upload_directory(service, sftp, remote_path, drive_folder_id)
     finally:
         print()
