@@ -43,6 +43,7 @@ indent-style = 'space'
 [tool.ruff.lint]
 select = ["ALL"]
 preview = true
+allowed-confusables = [ "–" ]
 ignore = [
   "ANN003",  # missing-type-kwargs
   "COM812",  # missing-trailing-comma
