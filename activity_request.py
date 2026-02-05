@@ -99,7 +99,7 @@ def process_pdf(request_type: RequestType) -> None:
                 with log_fp.open('a', encoding='utf-8') as file:
                     file.write(f'---\ncould not find any deas in {pdf}\n:::\npage text:\n:::\n{page_text}\n---')
                 continue
-            date_range = re.findall(r'(\d{1,2}/\d{1,2}/(?:\d{4}|\d{2}))\s*(?:-|–|through|to)\s*(\d{1,2}/\d{1,2}/(?:\d{4}|\d{2}))', page_text)  # type: ignore[reportCallIssue] | pymupdf does not support static type checkers at this time
+            date_range = re.findall(r'(\d{1,2}/\d{1,2}/(?:\d{4}|\d{2}))\s*(?:-|–|—|through|to)\s*(\d{1,2}/\d{1,2}/(?:\d{4}|\d{2}))', page_text)  # type: ignore[reportCallIssue] | pymupdf does not support static type checkers at this time
             if not date_range:
                 print('---')
                 print(f'could not find a daterange in {pdf}')
