@@ -147,6 +147,7 @@ def registration(service, inspection_list: pl.LazyFrame) -> pl.LazyFrame:   # no
             'awarxe', 'License #', 'Last Insp', 'Notes', 'First Name', 'Middle Name', 'Last Name',
             'Status', 'Phone', 'Email', 'Address', 'CSZ', 'Business Name', 'SubType', 'Permit #', 'PharmacyDEA'
         )
+        .sort('Permit #', 'License #')
         .unique()
     )
 
