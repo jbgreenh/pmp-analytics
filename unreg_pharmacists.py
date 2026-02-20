@@ -42,7 +42,7 @@ def pull_inspection_list(service, file_name: str | None = None) -> pl.LazyFrame:
     return drive.lazyframe_from_file_name(service=service, file_name=file_name, folder_id=folder_id, drive_ft='sheet', infer_schema=False)
 
 
-def registration(service, inspection_list: pl.LazyFrame) -> pl.LazyFrame:   # noqa: ANN001 | service is dynamically typed
+def registration(service, inspection_list: pl.LazyFrame) -> pl.DataFrame:   # noqa: ANN001 | service is dynamically typed
     """
     check the `inspection list` for registration in awarxe
 
@@ -147,12 +147,13 @@ def registration(service, inspection_list: pl.LazyFrame) -> pl.LazyFrame:   # no
             'awarxe', 'License #', 'Last Insp', 'Notes', 'First Name', 'Middle Name', 'Last Name',
             'Status', 'Phone', 'Email', 'Address', 'CSZ', 'Business Name', 'SubType', 'Permit #', 'PharmacyDEA'
         )
+        .collect()
         .sort('Permit #')
         .unique()
     )
 
 
-def update_unreg_sheet(creds: google.oauth2.credentials.Credentials | google.auth.external_account_authorized_user.Credentials, registration: pl.LazyFrame) -> None:
+def update_unreg_sheet(creds: google.oauth2.credentials.Credentials | google.auth.external_account_authorized_user.Credentials, registration: pl.DataFrame) -> None:
     """
     update the unregistered pharmacists sheet with the `registration` list
 
@@ -168,7 +169,7 @@ def update_unreg_sheet(creds: google.oauth2.credentials.Credentials | google.aut
 
     last_row = len(values) if values else 1
 
-    data = [list(row) for row in registration.collect().rows()]
+    data = [list(row) for row in registration.rows()]
 
     data_range = f'pharmacists!B{last_row + 1}:{chr(65 + len(data[0]))}{last_row + len(data) + 1}'
 
