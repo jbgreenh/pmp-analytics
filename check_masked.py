@@ -11,7 +11,7 @@ from googleapiclient.discovery import build
 from constants import PHX_TZ
 
 parser = argparse.ArgumentParser(description='check masked extract')
-parser.add_argument('-o', '--old', action='store_true', help='check as if a month in the past')
+parser.add_argument('-o', '--old', type=int, default=0, help='check as if n months in the past')
 args = parser.parse_args()
 
 load_dotenv()
@@ -19,7 +19,8 @@ creds = auth.auth()
 service = build('drive', 'v3', credentials=creds)
 
 last_month_date = datetime.now(tz=PHX_TZ).replace(day=1) - timedelta(days=1)
-last_month_date = last_month_date.replace(day=1) - timedelta(days=1) if args.old else last_month_date
+for _ in range(args.old):
+    last_month_date = last_month_date.replace(day=1) - timedelta(days=1)
 mask_month = last_month_date.month
 mask_year = last_month_date.year - 7
 prev_file_m_d = last_month_date.replace(day=1, year=mask_year) - timedelta(days=1)
