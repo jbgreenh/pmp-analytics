@@ -1,6 +1,8 @@
+import argparse
 import os
 from datetime import datetime, timedelta
 
+import polars as pl
 from az_pmp_utils import auth, drive
 from df_compare_pl import df_compare
 from dotenv import load_dotenv
@@ -8,11 +10,16 @@ from googleapiclient.discovery import build
 
 from constants import PHX_TZ
 
+parser = argparse.ArgumentParser(description='check masked extract')
+parser.add_argument('-o', '--old', action='store_true', help='check as if a month in the past')
+args = parser.parse_args()
+
 load_dotenv()
 creds = auth.auth()
 service = build('drive', 'v3', credentials=creds)
 
 last_month_date = datetime.now(tz=PHX_TZ).replace(day=1) - timedelta(days=1)
+last_month_date = last_month_date.replace(day=1) - timedelta(days=1) if args.old else last_month_date
 mask_month = last_month_date.month
 mask_year = last_month_date.year - 7
 prev_file_m_d = last_month_date.replace(day=1, year=mask_year) - timedelta(days=1)
@@ -39,6 +46,17 @@ print(f'{mask_fn} row count: {mask_file.height}')
 print(f'{prev_fn} row count: {prev_file.height}')
 percent_change = round((((mask_file.height - prev_file.height) / prev_file.height) * 100), 2)
 print(f'percent change: {percent_change}')
+print('-----')
+filled_dates = (
+    mask_file
+    .with_columns(
+        pl.col('dispensation_filled_at').str.to_date('%Y-%m-%d')
+    )
+)
+min_filled_date = filled_dates.select(pl.col('dispensation_filled_at').min()).item().strftime('%Y-%m-%d')
+max_filled_date = filled_dates.select(pl.col('dispensation_filled_at').max()).item().strftime('%Y-%m-%d')
+print(f'{mask_fn} {min_filled_date = }')
+print(f'{mask_fn} {max_filled_date = }')
 print('-----')
 sample = mask_file.sample(20)
 sample.write_clipboard()
