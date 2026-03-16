@@ -285,7 +285,7 @@ def multiple_deas(awarxe: pl.DataFrame, dea_list: pl.LazyFrame) -> None:
     print(f'wrote {mdfname}')
 
 
-def closed_pharmacies_in_mp() -> pl.LazyFrame:
+def closed_pharmacies_in_mp() -> None:
     """finds pharmacies from manage pharmacies that are not open in igov"""
     mp_path = Path('data/pharmacies.csv')
     files.warn_file_age(mp_path)
