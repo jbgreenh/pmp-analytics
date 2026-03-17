@@ -201,7 +201,7 @@ def audit_trail(params: SearchParameters) -> None:
             searches_lf = (
                 searches_lf
                 .select('Searched First Name', 'Searched Last Name', 'Searched DOB', 'User Full Name', 'Search Creation Date')
-                .sort(['Searched Last Name', 'Searched First Name', 'Search Creation Date'])
+                .sort(['Searched First Name', 'Searched Last Name', 'Search Creation Date'])
             )
 
         fn = f'data/{request_type}/{user_name}_audit_trail_{params.start_date}_-_{params.end_date}.csv'
