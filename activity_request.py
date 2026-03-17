@@ -196,6 +196,14 @@ def audit_trail(params: SearchParameters) -> None:
             )
             .sort('Search Creation Date')
         )
+
+        if args.mandatory_use:
+            searches_lf = (
+                searches_lf
+                .select('Searched First Name', 'Searched Last Name', 'Searched DOB', 'User Full Name', 'Search Creation Date')
+                .sort(['Searched Last Name', 'Searched First Name', 'Search Creation Date'])
+            )
+
         fn = f'data/{request_type}/{user_name}_audit_trail_{params.start_date}_-_{params.end_date}.csv'
         searches_lf.collect().write_csv(fn)
         print(f'{fn} written')
@@ -330,12 +338,6 @@ def activity_request(request_type: RequestType, params: SearchParameters) -> Non
             pl.DataFrame({'message': f'no results found for {file_name}'}).write_csv(file_path)
             print(f'{file_path} was empty, empty file written with message')
         else:
-            if args.mandatory_use:
-                df = (
-                    df
-                    .select('Searched First Name', 'Searched Last Name', 'Searched DOB', 'User Full Name', 'Search Creation Date')
-                    .sort(['Searched Last Name', 'Searched First Name', 'Search Creation Date'])
-                )
             df.write_csv(file_path)
             print(f'{file_path} written')
 
