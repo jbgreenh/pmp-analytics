@@ -349,7 +349,7 @@ if __name__ == '__main__':
     group.add_argument('-d', '--dispenser', action='store_true', help='pull dispenser activity request')
     group.add_argument('-at', '--audit-trail', action='store_true', help='pull audit trail')
     parser.add_argument('-o', '--ocr', action='store_true', help='force ocr for pdf reading')
-    parser.add_argument('-mu', '--mandatory-user', action='store_true', help='optimize the file for mu recheck')
+    parser.add_argument('-mu', '--mandatory-use', action='store_true', help='optimize the file for mu recheck')
     args = parser.parse_args()
 
     if args.prescriber:
