@@ -141,9 +141,10 @@ def send_notices(lf: pl.LazyFrame, email_type: EmailType) -> None:
     timestamps = []
     notices = lf.sort(pl.col('Last Compliant').str.to_date("'%Y-%m-%d")).collect()
 
-    sanity_check = input(f'{notices.height} notices to be sent, does this make sense? (y/n): ')
-    if sanity_check != 'y':
-        sys.exit('no notices sent, verify data with vendor')
+    if args.send_emails:
+        sanity_check = input(f'{notices.height} notices to be sent, does this make sense? (y/n): ')
+        if sanity_check != 'y':
+            sys.exit('no notices sent, verify data with vendor')
 
     for row in notices.iter_rows(named=True):
         pharmacy_address = f'{row['Street Address']}, {row['Apt/Suite #']}\n{row['City']}, {row['State']} {row['Zip'][1:]}' if row['Apt/Suite #'] else f'{row['Street Address']}\n{row['City']}, {row['State']} {row['Zip'][1:]}'
