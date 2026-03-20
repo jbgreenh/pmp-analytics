@@ -1,5 +1,6 @@
 import argparse
 import os
+import sys
 from calendar import FRIDAY, WEDNESDAY
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -136,10 +137,14 @@ def send_notices(lf: pl.LazyFrame, email_type: EmailType) -> None:
         lf: a lazyframe with the dds recipients
         email_type: daily or friday notices
     """
-    creds = auth.auth()
-    service = build('gmail', 'v1', credentials=creds)
+    service = build('gmail', 'v1', credentials=auth.auth())
     timestamps = []
     notices = lf.sort(pl.col('Last Compliant').str.to_date("'%Y-%m-%d")).collect()
+
+    sanity_check = input(f'{notices.height} notices to be sent, does this make sense? (y/n): ')
+    if sanity_check != 'y':
+        sys.exit('no notices sent, verify data with vendor')
+
     for row in notices.iter_rows(named=True):
         pharmacy_address = f'{row['Street Address']}, {row['Apt/Suite #']}\n{row['City']}, {row['State']} {row['Zip'][1:]}' if row['Apt/Suite #'] else f'{row['Street Address']}\n{row['City']}, {row['State']} {row['Zip'][1:]}'
         if row['Last Compliant'] is not None:
