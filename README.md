@@ -115,7 +115,7 @@ a mandatory use file: `{MONTH_NAME}{YEAR}_mandatory_use_full.csv`
 the date at the beginning should be entered as an argument when running the script:  
 `data/cs_active.txt` should also be updated before running
 
-```text
+```shell
 python mu_extras.py january2024
 ```
 
