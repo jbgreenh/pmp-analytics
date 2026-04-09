@@ -18,12 +18,12 @@ load_dotenv()
 creds = auth.auth()
 service = build('drive', 'v3', credentials=creds)
 
-last_month_date = datetime.now(tz=PHX_TZ).replace(day=1) - timedelta(days=1)
+current_month_date = datetime.now(tz=PHX_TZ).replace(day=1)
 for _ in range(args.old):
-    last_month_date = last_month_date.replace(day=1) - timedelta(days=1)
-mask_month = last_month_date.month
-mask_year = last_month_date.year - 7
-prev_file_m_d = last_month_date.replace(day=1, year=mask_year) - timedelta(days=1)
+    current_month_date = current_month_date.replace(day=1) - timedelta(days=1)
+mask_month = current_month_date.month
+mask_year = current_month_date.year - 7
+prev_file_m_d = current_month_date.replace(day=1, year=mask_year) - timedelta(days=1)
 prev_month = prev_file_m_d.month
 prev_year = prev_file_m_d.year
 
