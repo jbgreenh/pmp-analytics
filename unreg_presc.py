@@ -184,26 +184,26 @@ def update_board_info_with_uploaders(board_contacts: dict) -> dict:
     returns:
         a dict of board contacts with added info for uploaders
     """
-    opto_folder = os.environ['OPTOMETRY_UPLOADS_FOLDER']
-    opto_select = (
-        pl.col('First Name').str.to_uppercase().alias('first_name'),
-        pl.col('Last Name').str.to_uppercase().alias('last_name'),
-        pl.col('Date of Birth').str.to_date('%Y-%m-%d', strict=False).alias('dob'),
-        pl.col('License Number').str.to_uppercase().alias('license_number'),
-        pl.col('Status').str.to_uppercase().alias('status'),
-        pl.col('Email').alias('board_email'),
-    )
-    opto_filter = (
-        (pl.col('first_name') != 'TOTALS') &
-        (pl.col('status') == 'ACTIVE')
-    )
-    opto_clean = (pl.lit('OPT-') + pl.col('State License Number').str.replace_all('[^0-9]', '').str.zfill(6)).alias('cleaned_lino')
-    board_contacts['Optometry'].uploads_folder = opto_folder
-    board_contacts['Optometry'].upload_skip_rows = 3
-    board_contacts['Optometry'].upload_file_type = 'sheet'
-    board_contacts['Optometry'].upload_select_expr = opto_select
-    board_contacts['Optometry'].upload_filter_expr = opto_filter
-    board_contacts['Optometry'].cleaned_license_expr = opto_clean
+    # opto_folder = os.environ['OPTOMETRY_UPLOADS_FOLDER']
+    # opto_select = (
+    #     pl.col('First Name').str.to_uppercase().alias('first_name'),
+    #     pl.col('Last Name').str.to_uppercase().alias('last_name'),
+    #     pl.col('Date of Birth').str.to_date('%Y-%m-%d', strict=False).alias('dob'),
+    #     pl.col('License Number').str.to_uppercase().alias('license_number'),
+    #     pl.col('Status').str.to_uppercase().alias('status'),
+    #     pl.col('Email').alias('board_email'),
+    # )
+    # opto_filter = (
+    #     (pl.col('first_name') != 'TOTALS') &
+    #     (pl.col('status') == 'ACTIVE')
+    # )
+    # opto_clean = (pl.lit('OPT-') + pl.col('State License Number').str.replace_all('[^0-9]', '').str.zfill(6)).alias('cleaned_lino')
+    # board_contacts['Optometry'].uploads_folder = opto_folder
+    # board_contacts['Optometry'].upload_skip_rows = 3
+    # board_contacts['Optometry'].upload_file_type = 'sheet'
+    # board_contacts['Optometry'].upload_select_expr = opto_select
+    # board_contacts['Optometry'].upload_filter_expr = opto_filter
+    # board_contacts['Optometry'].cleaned_license_expr = opto_clean
 
     # ruff: noqa: ERA001
     # osteopath code commented out until file extract is set up
@@ -423,7 +423,7 @@ if __name__ == '__main__':
     full_board_info = add_dfs_to_board_info(service, unregistered_w_boards, board_info)
     send_emails(full_board_info, creds, service)
 
-    board_counts = unregistered_w_boards.collect()['board'].value_counts(sort=True)
-    print('board unregistered counts (written to clipboard):')
-    print(board_counts)
-    board_counts.write_clipboard()
+    # board_counts = full_board_info.board_df.collect()['board'].value_counts(sort=True)
+    # print('board unregistered counts (written to clipboard):')
+    # print(board_counts)
+    # board_counts.write_clipboard()
