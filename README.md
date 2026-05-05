@@ -159,6 +159,10 @@ a file in `data/od/` in the following format:
 | DOD        | date of overdose MM/DD/YYYY format |
 | DOB        | date of birth MM/DD/YYYY format    |
 
+## permit inspection licenses
+
+checks for pharmacy permit inspections from the last 3 months (current month + last 2 months) that have not yet submitted license numbers through the form
+
 ## pharmacy deas not in manage pharmacies
 
 this script checks for pharmacy dea numbers that are active with the dea but not in manage pharmacies in awarxe and writes the results to `data/pharmacy_deas_not_in_mp.csv`
