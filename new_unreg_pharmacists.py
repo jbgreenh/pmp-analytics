@@ -33,9 +33,40 @@ mp_deas = (
 
 list_request = (
     pl.scan_csv('data/List Request.csv', infer_schema=False)
+    .with_columns(
+        pl.concat_str(
+            [
+                pl.col('Street Address'),
+                pl.col('Apt/Suite #')
+            ],
+            separator=' '
+        ).alias('Address'),
+        pl.concat_str(
+            [
+                pl.col('City'),
+                pl.lit(',')
+            ]
+        ).alias('City,')
+    )
     .select(
         pl.col('License/Permit #').str.strip_chars().str.to_uppercase().alias('license_number'),
-        pl.col('Status').alias('igov_status')
+        pl.col('Status').alias('igov_status'),
+        pl.col('Email').alias('email'),
+        pl.col('First Name').alias('first_name'),
+        pl.col('Middle Name').alias('middle_name'),
+        pl.col('Last Name').alias('last_name'),
+        pl.col('Phone').alias('phone'),
+        pl.col('Street Address').alias('address'),
+        pl.concat_str(
+            [
+                pl.col('City,'),
+                pl.col('State'),
+                pl.col('Zip')
+            ],
+            separator=' '
+        ).alias('csz'),
+        pl.col('Business Name').alias('business_name'),
+        pl.col('SubType').alias('subtype'),
     )
 )
 
@@ -61,6 +92,23 @@ licenses = (
     .sort('submit_date', 'permit_number')
     .filter(pl.col('awarxe') == 'NO')
     .join(list_request, on='license_number', how='left')
+    .select(
+        'license_number',
+        'submit_date',
+        pl.lit('').alias('notes'),
+        'first_name',
+        'middle_name',
+        'last_name',
+        'igov_status',
+        'phone',
+        'email',
+        'address',
+        'csz',
+        'business_name',
+        'subtype',
+        'permit_number',
+        'dea_number'
+    )
 )
 
 print(licenses.collect())
