@@ -107,8 +107,10 @@ licenses = (
         'business_name',
         'subtype',
         'permit_number',
-        'dea_number'
+        'dea_number',
+        'dea_in_mp?',
     )
 )
 
 print(licenses.collect())
+# TODO: append to end of unregistered pharmacist report
