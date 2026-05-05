@@ -27,15 +27,20 @@ prev_file_m_d = current_month_date.replace(day=1, year=mask_year) - timedelta(da
 prev_month = prev_file_m_d.month
 prev_year = prev_file_m_d.year
 
-folder = os.environ['MASKED_EXTRACT_FOLDER']
+masked_extract_folder = os.environ['MASKED_EXTRACT_FOLDER']
 print('getting folder ids...')
-year_folder = drive.folder_id_from_name(folder_name=f'{mask_year}', parent_folder_id=folder, service=service)
-prev_year_folder = drive.folder_id_from_name(folder_name=f'{prev_year}', parent_folder_id=folder, service=service)
+masked_extract_year_folder = drive.folder_id_from_name(folder_name=f'{mask_year}', parent_folder_id=masked_extract_folder, service=service)
+masked_extract_prev_year_folder = drive.folder_id_from_name(folder_name=f'{prev_year}', parent_folder_id=masked_extract_folder, service=service)
 
 mask_fn = f'AZ_{mask_year}{str(mask_month).zfill(2)}_masked.csv'
-mask_file = drive.lazyframe_from_file_name(file_name=mask_fn, folder_id=year_folder, drive_ft='csv', service=service, separator='|', infer_schema=False).collect()
+mask_file = drive.lazyframe_from_file_name(file_name=mask_fn, folder_id=masked_extract_year_folder, drive_ft='csv', service=service, separator='|', infer_schema=False).collect()
 prev_fn = f'AZ_{prev_year}{str(prev_month).zfill(2)}_masked.csv'
-prev_file = drive.lazyframe_from_file_name(file_name=prev_fn, folder_id=prev_year_folder, drive_ft='csv', service=service, separator='|', infer_schema=False).collect()
+prev_file = drive.lazyframe_from_file_name(file_name=prev_fn, folder_id=masked_extract_prev_year_folder, drive_ft='csv', service=service, separator='|', infer_schema=False).collect()
+
+data_retention_folder = os.environ['DATA_RETENTION_FOLDER']
+data_retention_year_folder = drive.folder_id_from_name(folder_name=f'{mask_year}', parent_folder_id=data_retention_folder, service=service)
+data_retention_fn = f'data_retention_{mask_year}{str(mask_month).zfill(2)}.csv'
+data_retention_file = drive.lazyframe_from_file_name(file_name=data_retention_fn, folder_id=data_retention_year_folder, drive_ft='csv', service=service, separator='|', infer_schema=False).collect()
 
 print('-----')
 print(f'comparing a:{mask_fn} and b:{prev_fn}...')
@@ -47,6 +52,12 @@ print(f'{mask_fn} row count: {mask_file.height}')
 print(f'{prev_fn} row count: {prev_file.height}')
 percent_change = round((((mask_file.height - prev_file.height) / prev_file.height) * 100), 2)
 print(f'percent change: {percent_change}')
+print('-----')
+print(f'{mask_fn} row count: {mask_file.height}')
+dr_count = int(data_retention_file.item())
+print(f'{data_retention_fn} count: {dr_count}')
+percent_dif = round((((mask_file.height - dr_count) / dr_count) * 100), 2)
+print(f'percent difference: {percent_dif}')
 print('-----')
 filled_dates = (
     mask_file
@@ -60,6 +71,5 @@ print(f'{mask_fn} {min_filled_date = }')
 print(f'{mask_fn} {max_filled_date = }')
 print('-----')
 sample = mask_file.sample(20)
-sample.write_clipboard()
 sample.write_csv('data/mask_sample.csv')
-print('data/mask_sample.csv updated and written to clipboard')
+print('data/mask_sample.csv updated')
