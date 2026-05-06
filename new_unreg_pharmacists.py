@@ -19,6 +19,9 @@ def check_registration(service) -> pl.LazyFrame:    # noqa: ANN001 | service is 
     """
     checks pharmacist license numbers from inspections submissions during the last month for awarxe registrations
 
+    args:
+        service: an authorized google drive service
+
     returns:
         a lazyframe with information ready to update the unreg pharmacist tracking sheet
     """
