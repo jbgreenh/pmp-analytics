@@ -108,13 +108,12 @@ def check_registration(service) -> pl.LazyFrame:    # noqa: ANN001 | service is 
             pl.col('license_number').is_in(awarxe_license_numbers).replace_strict({True: 'YES', False: 'NO'}).alias('awarxe'),
             pl.col('dea_number').is_in(mp_deas).replace_strict({True: 'YES', False: 'NO'}).alias('dea_in_mp?'),
         )
-        .sort('submit_date', 'permit_number')
         .filter(pl.col('awarxe') == 'NO')
         .join(list_request, on='license_number', how='left')
         .select(
             'awarxe',
             'license_number',
-            'submit_date',
+            pl.col('submit_date').dt.to_string('%m/%d/%Y'),
             pl.lit('').alias('notes'),
             'first_name',
             'middle_name',
@@ -130,6 +129,7 @@ def check_registration(service) -> pl.LazyFrame:    # noqa: ANN001 | service is 
             'dea_number',
             'dea_in_mp?',
         )
+        .sort('submit_date', 'permit_number')
     )
 
 
@@ -196,4 +196,4 @@ if __name__ == '__main__':
     service = build('drive', 'v3', credentials=creds)
 
     unreg_pharmacists = check_registration(service)
-    update_unreg_sheet(creds, unreg_pharmacists)
+    update_unreg_sheet(creds, unreg_pharmacists.collect())
