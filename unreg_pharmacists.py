@@ -15,110 +15,66 @@ if TYPE_CHECKING:
     import google.oauth2.credentials
 
 
-def pull_inspection_list(service, file_name: str | None = None) -> pl.LazyFrame:    # noqa: ANN001 | service is dynamically typed
+def check_registration(service) -> pl.LazyFrame:    # noqa: ANN001 | service is dynamically typed
     """
-    pull the proper inspection list
+    checks pharmacist license numbers from inspections submissions during the last month for awarxe registrations
 
     args:
         service: an authorized google drive service
-        file_name: a string with the exact name of the file; '09/2023 Unregistered Pharmacists Report'
 
     returns:
-        inspection_list: a LazyFrame with the inspection list to be checked for registration
-    """
-    if not file_name:
-        today = datetime.now(tz=PHX_TZ).date()
-        last_month = today.replace(day=1) - timedelta(days=1)
-        lm_yr = str(last_month.year)
-        lm_mo = str(last_month.month).zfill(2)
-
-        file_name = f'{lm_mo}/{lm_yr} Unregistered Pharmacists Report'
-    else:
-        lm_yr = file_name.split(' ')[0].split('/')[1]
-
-    folder_id = os.environ['PHARMACIST_REG_FOLDER']
-
-    folder_id = drive.folder_id_from_name(service=service, folder_name=lm_yr, parent_folder_id=folder_id)
-    return drive.lazyframe_from_file_name(service=service, file_name=file_name, folder_id=folder_id, drive_ft='sheet', infer_schema=False)
-
-
-def registration(service, inspection_list: pl.LazyFrame) -> pl.DataFrame:   # noqa: ANN001 | service is dynamically typed
-    """
-    check the `inspection list` for registration in awarxe
-
-    args:
-        service: an authorized google drive service
-        inspection_list: a LazyFrame with the inspection list for to check for registration
-
-    returns:
-       final_list: the `inspection_list` checked for registration
+        a lazyframe with information ready to update the unreg pharmacist tracking sheet
     """
     awarxe_license_numbers = (
         drive.awarxe(service=service)
-        .with_columns(
-            pl.col('professional license number').str.to_uppercase().str.strip_chars()
-        )
         .select(
-            'professional license number'
+            pl.col('professional license number').str.strip_chars().str.to_uppercase()
         )
         .collect()
+        ['professional license number']
+        .to_list()
     )
 
     mp_path = Path('data/pharmacies.csv')
     files.warn_file_age(mp_path)
-    manage_pharmacies = (
-        pl.scan_csv(mp_path)
-        .with_columns(
-            pl.col('Pharmacy License Number').str.to_uppercase().str.strip_chars(),
-            pl.col('DEA').str.to_uppercase().str.strip_chars()
-        )
-        .rename(
-            {'DEA': 'PharmacyDEA'}
-        )
+    mp_deas = (
+        pl.scan_csv(mp_path, infer_schema=False)
         .select(
-            'Pharmacy License Number', 'PharmacyDEA'
+            pl.col('DEA').alias('dea_number')
         )
+        .collect()
+        ['dea_number']
+        .to_list()
     )
 
     lr_path = Path('data/List Request.csv')
     files.warn_file_age(lr_path)
-    igov = pl.scan_csv(lr_path, infer_schema=False)
-
-    pharmacies = (
-        igov
-        .filter(
-            pl.col('Type') == 'Pharmacy'
-        )
+    list_request = (
+        pl.scan_csv(lr_path, infer_schema=False)
         .with_columns(
-            pl.col('License/Permit #').str.to_uppercase().str.strip_chars()
+            pl.concat_str(
+                [
+                    pl.col('Street Address'),
+                    pl.col('Apt/Suite #')
+                ],
+                separator=' '
+            ).alias('Address'),
+            pl.concat_str(
+                [
+                    pl.col('City'),
+                    pl.lit(',')
+                ]
+            ).alias('City,')
         )
         .select(
-            'License/Permit #', 'Business Name', 'SubType'
-        )
-    )
-
-    pharmacists = (
-        igov
-        .filter(
-            pl.col('Type') == 'Pharmacist'
-        )
-        .with_columns(
-                pl.col('License/Permit #').str.to_uppercase().str.strip_chars(),
-                pl.concat_str(
-                    [
-                        pl.col('Street Address'),
-                        pl.col('Apt/Suite #')
-                    ],
-                    separator=' '
-                ).alias('Address'),
-                pl.concat_str(
-                    [
-                        pl.col('City'),
-                        pl.lit(',')
-                    ]
-                ).alias('City,')
-        )
-        .with_columns(
+            pl.col('License/Permit #').str.strip_chars().str.to_uppercase().alias('license_number'),
+            pl.col('Status').alias('igov_status'),
+            pl.col('Email').alias('email'),
+            pl.col('First Name').alias('first_name'),
+            pl.col('Middle Name').alias('middle_name'),
+            pl.col('Last Name').alias('last_name'),
+            pl.col('Phone').alias('phone'),
+            pl.col('Street Address').alias('address'),
             pl.concat_str(
                 [
                     pl.col('City,'),
@@ -126,40 +82,64 @@ def registration(service, inspection_list: pl.LazyFrame) -> pl.DataFrame:   # no
                     pl.col('Zip')
                 ],
                 separator=' '
-            ).alias('CSZ')
-        )
-        .select(
-            'License/Permit #', 'First Name', 'Middle Name', 'Last Name', 'Status', 'Phone', 'Email',
-            'Address', 'CSZ'
+            ).alias('csz'),
+            pl.col('Business Name').alias('business_name'),
+            pl.col('SubType').alias('subtype'),
         )
     )
+
+    today = datetime.now(tz=PHX_TZ)
+    last_mo = (today.replace(day=1) - timedelta(days=1))
+
+    license_tracker_file_id = os.environ['PI_LICENSE_TRACKER_FILE']
 
     return (
-        inspection_list
+        drive.lazyframe_from_id_and_sheetname(file_id=license_tracker_file_id, sheet_name='Form Responses 1', service=service, infer_schema_length=0)  # read_excel() does not have infer_schema
+        .select(
+            pl.col('Timestamp').str.to_date('%Y-%m-%d %H:%M:%S%.f').alias('submit_date'),
+            pl.col('Permit Number').alias('permit_number'),
+            pl.col('License Numbers').str.to_uppercase().str.strip_chars().str.replace_all(r'\s+', '|').str.split('|').alias('license_numbers'),
+            pl.col('DEA Number').alias('dea_number')
+        )
+        .filter(pl.col('submit_date').dt.month() == last_mo.month)
+        .explode('license_numbers')
+        .rename({'license_numbers': 'license_number'})
         .with_columns(
-            pl.col('License #').is_in(awarxe_license_numbers['professional license number'].to_list()).replace_strict({True: 'YES', False: 'NO'}).alias('awarxe')
+            pl.col('license_number').is_in(awarxe_license_numbers).replace_strict({True: 'YES', False: 'NO'}).alias('awarxe'),
+            pl.col('dea_number').is_in(mp_deas).replace_strict({True: 'YES', False: 'NO'}).alias('dea_in_mp?'),
         )
         .filter(pl.col('awarxe') == 'NO')
-        .join(pharmacies, left_on='Permit #', right_on='License/Permit #', how='left')
-        .join(pharmacists, left_on='License #', right_on='License/Permit #', how='left')
-        .join(manage_pharmacies, left_on='Permit #', right_on='Pharmacy License Number', how='left')
+        .join(list_request, on='license_number', how='left')
         .select(
-            'awarxe', 'License #', 'Last Insp', 'Notes', 'First Name', 'Middle Name', 'Last Name',
-            'Status', 'Phone', 'Email', 'Address', 'CSZ', 'Business Name', 'SubType', 'Permit #', 'PharmacyDEA'
+            'awarxe',
+            'license_number',
+            pl.col('submit_date').dt.to_string('%m/%d/%Y'),
+            pl.lit('').alias('notes'),
+            'first_name',
+            'middle_name',
+            'last_name',
+            'igov_status',
+            'phone',
+            'email',
+            'address',
+            'csz',
+            'business_name',
+            'subtype',
+            'permit_number',
+            'dea_number',
+            'dea_in_mp?',
         )
-        .unique()
-        .collect()
-        .sort('Permit #')
+        .sort('submit_date', 'permit_number')
     )
 
 
-def update_unreg_sheet(creds: google.oauth2.credentials.Credentials | google.auth.external_account_authorized_user.Credentials, registration: pl.DataFrame) -> None:
+def update_unreg_sheet(creds: google.oauth2.credentials.Credentials | google.auth.external_account_authorized_user.Credentials, unregistered_pharmacists: pl.DataFrame) -> None:
     """
-    update the unregistered pharmacists sheet with the `registration` list
+    update the unregistered pharmacists sheet with new unregistered pharmacists
 
     args:
         creds: google drive credentials from `auth.auth()`
-        registration: a LazyFrame with the registration status of this month's `inspection list`
+        unregistered_pharmacists: a LazyFrame with the unregistered pharmacists submitted with pharmacy inspections in the last month
     """
     sheet_id = os.environ['UNREG_PHARMACISTS_FILE']
     range_name = 'pharmacists!B:B'
@@ -169,7 +149,7 @@ def update_unreg_sheet(creds: google.oauth2.credentials.Credentials | google.aut
 
     last_row = len(values) if values else 1
 
-    data = [list(row) for row in registration.rows()]
+    data = [list(row) for row in unregistered_pharmacists.rows()]
 
     data_range = f'pharmacists!B{last_row + 1}:{chr(65 + len(data[0]))}{last_row + len(data) + 1}'
 
@@ -215,6 +195,5 @@ if __name__ == '__main__':
     creds = auth.auth()
     service = build('drive', 'v3', credentials=creds)
 
-    inspection_list = pull_inspection_list(service)
-    reg = registration(service, inspection_list)
-    update_unreg_sheet(creds, reg)
+    unreg_pharmacists = check_registration(service)
+    update_unreg_sheet(creds, unreg_pharmacists.collect())
