@@ -201,7 +201,7 @@ this script adds a new tab to the superseded to techs sheet for the previous mon
 
 ## unregistered_pharmacists
 
-this script checks the monthly inspection list for pharmacist registration, adds information from igov, and then adds the results to the unregistered pharmacist report on google drive
+this script checks the permit inspection license number submissions for pharmacist registration, adds information from igov, and then adds the results to the unregistered pharmacist report on google drive
 
 ### required files
 

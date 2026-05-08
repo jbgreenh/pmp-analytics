@@ -37,7 +37,8 @@ licenses = (
     drive.lazyframe_from_id_and_sheetname(file_id=license_tracker_file_id, sheet_name='Form Responses 1', infer_schema_length=0)  # read_excel() does not have infer_schema
     .select(
         pl.col('Timestamp').str.to_date('%Y-%m-%d %H:%M:%S%.f').alias('submit_date'),
-        pl.col('Permit Number').alias('permit_number')
+        pl.col('Permit Number').alias('permit_number'),
+        pl.col('License Numbers').str.split(by=r'\s+').alias('license_numbers')
     )
     .filter(pl.col('submit_date') >= last_last_mo)
 )
