@@ -66,14 +66,13 @@ def check_registration(service) -> pl.LazyFrame:    # noqa: ANN001 | service is 
                 ]
             ).alias('City,')
         )
+    )
+
+    list_request_bus = (
+        list_request
         .select(
-            pl.col('License/Permit #').str.strip_chars().str.to_uppercase().alias('license_number'),
+            pl.col('License/Permit #').str.strip_chars().str.to_uppercase().alias('permit_number'),
             pl.col('Status').alias('igov_status'),
-            pl.col('Email').alias('email'),
-            pl.col('First Name').alias('first_name'),
-            pl.col('Middle Name').alias('middle_name'),
-            pl.col('Last Name').alias('last_name'),
-            pl.col('Phone').alias('phone'),
             pl.col('Street Address').alias('address'),
             pl.concat_str(
                 [
@@ -85,6 +84,19 @@ def check_registration(service) -> pl.LazyFrame:    # noqa: ANN001 | service is 
             ).alias('csz'),
             pl.col('Business Name').alias('business_name'),
             pl.col('SubType').alias('subtype'),
+        )
+
+    )
+
+    list_request_per = (
+        list_request
+        .select(
+            pl.col('License/Permit #').str.strip_chars().str.to_uppercase().alias('license_number'),
+            pl.col('Email').alias('email'),
+            pl.col('First Name').alias('first_name'),
+            pl.col('Middle Name').alias('middle_name'),
+            pl.col('Last Name').alias('last_name'),
+            pl.col('Phone').alias('phone'),
         )
     )
 
@@ -109,7 +121,8 @@ def check_registration(service) -> pl.LazyFrame:    # noqa: ANN001 | service is 
             pl.col('dea_number').is_in(mp_deas).replace_strict({True: 'YES', False: 'NO'}).alias('dea_in_mp?'),
         )
         .filter(pl.col('awarxe') == 'NO')
-        .join(list_request, on='license_number', how='left')
+        .join(list_request_bus, on='permit_number', how='left')
+        .join(list_request_per, on='license_number', how='left')
         .select(
             'awarxe',
             'license_number',
