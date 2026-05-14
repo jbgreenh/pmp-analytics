@@ -244,7 +244,7 @@ If you have any questions or concerns about the data submission process, please 
     full_logs = pl.concat([logs, new_dds_log])
     fl_path = Path('full_logs.csv')
     full_logs.write_csv(fl_path)
-    drive.update_sheet(fl_path, os.environ['DDS_EMAIL_LOGS_FILE'])
+    drive.update_sheet(fl_path, os.environ['DDS_EMAIL_LOGS_FILE'], sheet_name='dds_email_logs')
     fl_path.unlink()
 
 
