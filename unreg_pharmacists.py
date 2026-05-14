@@ -73,15 +73,6 @@ def check_registration(service) -> pl.LazyFrame:    # noqa: ANN001 | service is 
         .select(
             pl.col('License/Permit #').str.strip_chars().str.to_uppercase().alias('permit_number'),
             pl.col('Status').alias('igov_status'),
-            pl.col('Street Address').alias('address'),
-            pl.concat_str(
-                [
-                    pl.col('City,'),
-                    pl.col('State'),
-                    pl.col('Zip')
-                ],
-                separator=' '
-            ).alias('csz'),
             pl.col('Business Name').alias('business_name'),
             pl.col('SubType').alias('subtype'),
         )
@@ -93,6 +84,15 @@ def check_registration(service) -> pl.LazyFrame:    # noqa: ANN001 | service is 
         .select(
             pl.col('License/Permit #').str.strip_chars().str.to_uppercase().alias('license_number'),
             pl.col('Email').alias('email'),
+            pl.col('Street Address').alias('address'),
+            pl.concat_str(
+                [
+                    pl.col('City,'),
+                    pl.col('State'),
+                    pl.col('Zip')
+                ],
+                separator=' '
+            ).alias('csz'),
             pl.col('First Name').alias('first_name'),
             pl.col('Middle Name').alias('middle_name'),
             pl.col('Last Name').alias('last_name'),
