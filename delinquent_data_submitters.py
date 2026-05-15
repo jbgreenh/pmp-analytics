@@ -139,7 +139,7 @@ def send_notices(lf: pl.LazyFrame, email_type: EmailType) -> None:
     """
     service = build('gmail', 'v1', credentials=auth.auth())
     timestamps = []
-    notices = lf.sort(pl.col('Last Compliant').str.to_date("'%Y-%m-%d")).collect()
+    notices = lf.sort(pl.col('Last Compliant').str.to_date("%Y-%m-%d")).collect()
 
     if args.send_emails:
         sanity_check = input(f'{notices.height} notices to be sent, does this make sense? (y/n): ')
@@ -223,10 +223,6 @@ If you have any questions or concerns about the data submission process, please 
 
     logs = (
         drive.lazyframe_from_id_and_sheetname(os.environ['DDS_EMAIL_LOGS_FILE'], 'dds_email_logs', infer_schema_length=0)  # read_excel does not have infer_schema
-        .with_columns(
-            ("'" + pl.col('last_compliant')).alias('last_compliant'),
-            ("'" + pl.col('zip')).alias('zip')
-        )
         .collect()
     )
     new_dds_log = (
@@ -302,27 +298,12 @@ def pharm_clean(dds: pl.LazyFrame) -> None:
             deadlines = pl.concat([deadlines, new_deadlines])
 
         deadlines_path = Path('deadlines.csv')
-        deadlines = (
-            deadlines
-            .with_columns(
-                ("'" + pl.col('Last Compliant')).alias('Last Compliant'),
-                ("'" + pl.col('deadline')).alias('deadline'),
-                ("'" + pl.col('Zip')).alias('Zip'),
-            )
-        )
         deadlines.collect().write_csv(deadlines_path)
-        drive.update_sheet(deadlines_path, os.environ['DDS_DEADLINES_FILE'])
+        drive.update_sheet(deadlines_path, os.environ['DDS_DEADLINES_FILE'], 'dds_deadlines')
         deadlines_path.unlink()
 
         send_notices(deadlines, 'friday')
     else:
-        dds = (
-            dds
-            .with_columns(
-                ("'" + pl.col('Last Compliant')).alias('Last Compliant'),
-                ("'" + pl.col('Zip')).alias('Zip'),
-            )
-        )
         send_notices(dds, 'daily')
 
 
