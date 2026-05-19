@@ -19,16 +19,17 @@ inspections = (
     drive.lazyframe_from_id_and_sheetname(file_id=inspection_tracker_file_id, sheet_name='input', infer_schema_length=0, read_options={'header_row': 4})  # read_excel() does not have infer_schema
     .select(
         pl.col('Current Routine Inspection Date').str.to_date('%Y-%m-%d %H:%M:%S').alias('inspection_date'),
-        pl.col('Permit #').alias('permit_number'),
-        pl.col('DEA Registration Number').alias('dea_number'),
-        pl.col('Status').alias('status'),
-        pl.col('Routine Inspection Type').alias('inspect_type'),
+        pl.col('Permit #').str.strip_chars().str.to_uppercase().alias('permit_number'),
+        pl.col('DEA Registration Number').str.strip_chars().str.to_uppercase().alias('dea_number'),
+        pl.col('Status').str.strip_chars().str.to_uppercase().alias('status'),
+        pl.col('Routine Inspection Type').str.to_uppercase().alias('inspect_type'),
         pl.col('Assigned CO').alias('co')
     )
     .filter(
         pl.col('inspection_date') >= last_last_mo,
-        pl.col('permit_number').str.to_lowercase().str.starts_with('y'),
-        pl.col('status').str.to_lowercase().str.starts_with('open')
+        pl.col('permit_number').str.starts_with('Y'),
+        pl.col('status').str.starts_with('OPEN'),
+        pl.col('inspect_type').is_in(['OPI', 'OWN', 'REI']).not_()
     )
 )
 
@@ -37,8 +38,7 @@ licenses = (
     drive.lazyframe_from_id_and_sheetname(file_id=license_tracker_file_id, sheet_name='Form Responses 1', infer_schema_length=0)  # read_excel() does not have infer_schema
     .select(
         pl.col('Timestamp').str.to_date('%Y-%m-%d %H:%M:%S%.f').alias('submit_date'),
-        pl.col('Permit Number').alias('permit_number'),
-        pl.col('License Numbers').str.split(by=r'\s+').alias('license_numbers')
+        pl.col('Permit Number').str.strip_chars().str.to_uppercase().alias('permit_number'),
     )
     .filter(pl.col('submit_date') >= last_last_mo)
 )
@@ -49,6 +49,10 @@ inspections_wo_licenses_submission = (
     .sort('inspection_date')
 )
 
+iwls_df = inspections_wo_licenses_submission.collect()
+print('inspections without licenses sumbission:')
+print(iwls_df)
+
 fn = Path('data/inspections_wo_licenses_submission.csv')
-inspections_wo_licenses_submission.collect().write_csv(fn)
+iwls_df.write_csv(fn)
 print(f'{fn} written')
