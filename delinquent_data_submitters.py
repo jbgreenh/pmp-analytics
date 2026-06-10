@@ -434,6 +434,15 @@ def pharm_clean(dds: pl.LazyFrame) -> None:
             drive.lazyframe_from_id_and_sheetname(os.environ['DDS_DEADLINES_FILE'], 'dds_deadlines', infer_schema_length=0)  # read_excel does not have infer_schema
             .cast({pl.Null: pl.String})
         )
+
+        new_complaints = missed_deadlines_to_complaint(deadlines)
+        if new_complaints is not None:
+            generate_complaint_docs(new_complaints)
+            deadlines = (
+                drive.lazyframe_from_id_and_sheetname(os.environ['DDS_DEADLINES_FILE'], 'dds_deadlines', infer_schema_length=0)  # read_excel does not have infer_schema
+                .cast({pl.Null: pl.String})
+            )
+
         new_deadlines = (
             dds
             .filter(
@@ -457,10 +466,6 @@ def pharm_clean(dds: pl.LazyFrame) -> None:
         deadlines.collect().write_csv(deadlines_path)
         drive.update_sheet(deadlines_path, os.environ['DDS_DEADLINES_FILE'], 'dds_deadlines')
         deadlines_path.unlink()
-
-        new_complaints = missed_deadlines_to_complaint(deadlines)
-        if new_complaints is not None:
-            generate_complaint_docs(new_complaints)
 
         send_notices(deadlines, 'friday')
     else:
