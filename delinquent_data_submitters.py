@@ -244,6 +244,157 @@ If you have any questions or concerns about the data submission process, please 
     fl_path.unlink()
 
 
+def missed_deadlines_to_complaint(deadlines: pl.LazyFrame) -> pl.DataFrame | None:
+    """
+    moves pharmacies who have missed their deadline to the complaints sheet and generates required documents
+
+    args:
+        deadlines: a lazyframe of the deadlines sheet
+
+    returns:
+        a dataframe with the pharmacies that have been added to the complaint sheet,
+        or None if no pharmacies were added
+    """
+    today = datetime.now(tz=PHX_TZ).date()
+    missed_dl = (
+        deadlines
+        .filter(
+            pl.col('deadline').str.to_date('%Y-%m-%d') < today
+        )
+        .collect()
+    )
+
+    not_missed = (
+        deadlines
+        .filter(
+            pl.col('deadline').str.to_date('%Y-%m-%d') >= today
+        )
+        .collect()
+    )
+
+    if missed_dl.height > 0:
+        print('missed deadlines:')
+        print(missed_dl)
+        print('moving to dds_complaints...')
+
+        folder_ids = []
+        dds_compaints_sheet_id = os.environ['DDS_COMPLAINTS_FILE']
+        for row in missed_dl.iter_rows(named=True):
+            complaint_folder_id = drive.folder_id_from_name(folder_name=row['Business Name'] + '-' + row['Pharmacy License Number'], parent_folder_id=os.environ['PHARMACY_REPORTING_COMPLAINTS_FOLDER'], create=True)
+            folder_ids.append(complaint_folder_id)
+            complaint_folder_link = f'https://drive.google.com/drive/folders/{complaint_folder_id}'
+            print(f'{complaint_folder_link = }')
+
+            service = build('sheets', 'v4', credentials=auth.auth())
+            result = service.spreadsheets().values().get(spreadsheetId=dds_compaints_sheet_id, range='complaints!A:A').execute()
+            values = result.get('values', [])
+
+            last_row = len(values) if values else 1
+
+            data = [complaint_folder_link, '', '', '', '', '']
+            data.extend(list(row.values()))
+            data_range = f'complaints!A{last_row + 1}'
+
+            service.spreadsheets().values().update(
+                spreadsheetId=dds_compaints_sheet_id,
+                range=data_range,
+                valueInputOption='RAW',
+                body={'values': [data]}
+            ).execute()
+
+            print(f'updated dds_complaints: https://docs.google.com/spreadsheets/d/{dds_compaints_sheet_id}')
+
+        fl_path = Path('temp_csv.csv')
+        not_missed.write_csv(fl_path)
+        drive.update_sheet(fl_path, os.environ['DDS_DEADLINES_FILE'], sheet_name='dds_deadlines')
+        fl_path.unlink()
+        return missed_dl.with_columns(pl.Series('folder_id', folder_ids))
+
+    print('no missed deadlines')
+    return None
+
+
+def generate_complaint_docs(new_complaints: pl.DataFrame) -> None:
+    """
+    adds the complaint docs to the folder created in `missed_deadlines_to_complaint`
+
+    args:
+        new_complaints: the df returned by `missed_deadlines_to_complaint`
+    """
+    print('generating complaint docs...')
+    creds = auth.auth()
+    docs_service = build('docs', 'v1', credentials=creds)
+    drive_service = build('drive', 'v3', credentials=creds)
+
+    for row in new_complaints.iter_rows(named=True):
+        res = 'resident' if row['State'] == 'AZ' else 'non-resident'
+        address = f'{row['Street Address']}\n{row['Apt/Suite #']}' if row['Apt/Suite #'] else row['Street Address']
+
+        complaint_summary_id = drive_service.files().copy(
+            fileId=os.environ['DDS_COMPLAINT_SUMMARY_FILE'],
+            body={
+                'name': f'{row['Business Name']} Complaint Summary',
+                'parents': [row['folder_id']]
+            }, supportsAllDrives=True
+         ).execute()['id']
+
+        notice_of_complaint_id = drive_service.files().copy(
+            fileId=os.environ['DDS_NOTICE_OF_COMPLAINT_FILE'],
+            body={
+                'name': f'{row['Business Name']} Notice of Complaint',
+                'parents': [row['folder_id']]
+            }, supportsAllDrives=True
+         ).execute()['id']
+
+        requests = [
+            {
+                'replaceAllText': {
+                    'containsText': {'text': '{{bus_name}}', 'matchCase': True},
+                    'replaceText': f'{row['Business Name']}'
+                }
+            },
+            {
+                'replaceAllText': {
+                    'containsText': {'text': '{{address}}', 'matchCase': True},
+                    'replaceText': f'{address}'
+                }
+            },
+            {
+                'replaceAllText': {
+                    'containsText': {'text': '{{city}}', 'matchCase': True},
+                    'replaceText': f'{row['City']}'
+                }
+            },
+            {
+                'replaceAllText': {
+                    'containsText': {'text': '{{state}}', 'matchCase': True},
+                    'replaceText': f'{row['State']}'
+                }
+            },
+            {
+                'replaceAllText': {
+                    'containsText': {'text': '{{zip}}', 'matchCase': True},
+                    'replaceText': f'{row['Zip']}'
+                }
+            },
+            {
+                'replaceAllText': {
+                    'containsText': {'text': '{{liNo}}', 'matchCase': True},
+                    'replaceText': f'{row['Pharmacy License Number']}'
+                }
+            },
+            {
+                'replaceAllText': {
+                    'containsText': {'text': '{{res}}', 'matchCase': True},
+                    'replaceText': f'{res}'
+                }
+            },
+        ]
+
+        docs_service.documents().batchUpdate(documentId=complaint_summary_id, body={'requests': requests}).execute()
+        docs_service.documents().batchUpdate(documentId=notice_of_complaint_id, body={'requests': requests}).execute()
+
+
 def pharm_clean(dds: pl.LazyFrame) -> None:
     """
     takes the proper action for the delinquent data submitters process based on the day of the week
@@ -258,6 +409,11 @@ def pharm_clean(dds: pl.LazyFrame) -> None:
             drive.lazyframe_from_id_and_sheetname(os.environ['DDS_DEADLINES_FILE'], 'dds_deadlines', infer_schema_length=0)  # read_excel does not have infer_schema
             .cast({pl.Null: pl.String})
         )
+
+        new_complaints = missed_deadlines_to_complaint(deadlines)
+        if new_complaints is not None:
+            generate_complaint_docs(new_complaints)
+
         due_next_week = date_in_next_week(deadlines).collect()
         if due_next_week.height > 0:
             msg = f'the following pharmacies have deadlines next week:\n{'\n'.join(f'permit: {item[0]} deadline: {item[1]}' for item in zip(due_next_week['Pharmacy License Number'].to_list(), due_next_week['deadline'].to_list(), strict=True))}\ncomplaints should be opened if the deadlines are missed\n\nthank you!'
@@ -301,6 +457,10 @@ def pharm_clean(dds: pl.LazyFrame) -> None:
         deadlines.collect().write_csv(deadlines_path)
         drive.update_sheet(deadlines_path, os.environ['DDS_DEADLINES_FILE'], 'dds_deadlines')
         deadlines_path.unlink()
+
+        new_complaints = missed_deadlines_to_complaint(deadlines)
+        if new_complaints is not None:
+            generate_complaint_docs(new_complaints)
 
         send_notices(deadlines, 'friday')
     else:
