@@ -163,7 +163,7 @@ def send_notices(lf: pl.LazyFrame, email_type: EmailType) -> None:
 {row['Pharmacy License Number']}
 {row['DEA']}
 
-According to our records, your pharmacy is not submitting daily reports to the Arizona Controlled Substance Prescription Monitoring Program clearinghouse.
+According to our records, your pharmacy is <b>not submitting daily</b> reports to the Arizona Controlled Substance Prescription Monitoring Program clearinghouse.
 
 Dispensation data is missing for: <b>{last_compliant}</b>
 
