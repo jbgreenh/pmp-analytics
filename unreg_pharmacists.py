@@ -122,7 +122,9 @@ def check_registration(service) -> pl.LazyFrame:    # noqa: ANN001 | service is 
         )
     )
 
-    unreg_pharmacists = (
+    print(inspect_pharmacists.collect()['awarxe'].value_counts().sort('awarxe'))
+
+    return (
         inspect_pharmacists
         .filter(pl.col('awarxe') == 'NO')
         .join(list_request_bus, on='permit_number', how='left')
@@ -148,10 +150,6 @@ def check_registration(service) -> pl.LazyFrame:    # noqa: ANN001 | service is 
         )
         .sort('submit_date', 'permit_number')
     )
-
-    print(unreg_pharmacists.collect()['awarxe'].value_counts().sort('awarxe'))
-
-    return unreg_pharmacists
 
 
 def update_unreg_sheet(creds: google.oauth2.credentials.Credentials | google.auth.external_account_authorized_user.Credentials, unregistered_pharmacists: pl.DataFrame) -> None:
