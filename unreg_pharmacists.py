@@ -105,7 +105,7 @@ def check_registration(service) -> pl.LazyFrame:    # noqa: ANN001 | service is 
 
     license_tracker_file_id = os.environ['PI_LICENSE_TRACKER_FILE']
 
-    return (
+    inspect_pharmacists = (
         drive.lazyframe_from_id_and_sheetname(file_id=license_tracker_file_id, sheet_name='Form Responses 1', service=service, infer_schema_length=0)  # read_excel() does not have infer_schema
         .select(
             pl.col('Timestamp').str.to_date('%Y-%m-%d %H:%M:%S%.f').alias('submit_date'),
@@ -120,6 +120,10 @@ def check_registration(service) -> pl.LazyFrame:    # noqa: ANN001 | service is 
             pl.col('license_number').is_in(awarxe_license_numbers).replace_strict({True: 'YES', False: 'NO'}).alias('awarxe'),
             pl.col('dea_number').is_in(mp_deas).replace_strict({True: 'YES', False: 'NO'}).alias('dea_in_mp?'),
         )
+    )
+
+    unreg_pharmacists = (
+        inspect_pharmacists
         .filter(pl.col('awarxe') == 'NO')
         .join(list_request_bus, on='permit_number', how='left')
         .join(list_request_per, on='license_number', how='left')
@@ -144,6 +148,10 @@ def check_registration(service) -> pl.LazyFrame:    # noqa: ANN001 | service is 
         )
         .sort('submit_date', 'permit_number')
     )
+
+    print(unreg_pharmacists.collect()['awarxe'].value_counts().sort('awarxe'))
+
+    return unreg_pharmacists
 
 
 def update_unreg_sheet(creds: google.oauth2.credentials.Credentials | google.auth.external_account_authorized_user.Credentials, unregistered_pharmacists: pl.DataFrame) -> None:
