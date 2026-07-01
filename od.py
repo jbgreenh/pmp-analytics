@@ -10,8 +10,7 @@ def process_ods(input_file: str, days_before: int, ratio: float) -> None:
     """
     process overdose data by checking dispensation data for matching date of birth and fuzzy matched on name. writes a disp and an odt file to the `data/od/` folder. the input file should be in the following format:
 
-    | column     | description                        |
-    |------------|------------------------------------|
+    | column     | description                        | |------------|------------------------------------|
     | LAST NAME  |                                    |
     | FIRST NAME |                                    |
     | DOD        | date of overdose MM/DD/YYYY format |
@@ -106,7 +105,7 @@ def process_ods(input_file: str, days_before: int, ratio: float) -> None:
         )
 
         print(ods_disp)
-        disp_fn = f'data/od/{input_file}_disp.csv'
+        disp_fn = f'data/od/{input_file}_dispensations_within_{days_before}_days_before_DOD.csv'
         ods_disp.write_csv(disp_fn)
         print(f'wrote {disp_fn}')
 
@@ -138,7 +137,7 @@ def process_ods(input_file: str, days_before: int, ratio: float) -> None:
             )
         )
         print(ods_odt)
-        odt_fn = f'data/od/{input_file}_odt.csv'
+        odt_fn = f'data/od/{input_file}_last_7_yrs_dispensations.csv'
         ods_odt.write_csv(odt_fn)
         print(f'wrote {odt_fn}')
 
