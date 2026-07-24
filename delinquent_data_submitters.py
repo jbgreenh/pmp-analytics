@@ -82,7 +82,7 @@ def process_input_files(mp_path: Path, dds_path: Path, lr_path: Path) -> pl.Lazy
         pl.scan_csv(dds_path, infer_schema=False)
         .filter(
             (pl.col('Days Delinquent').str.to_integer() >= DAILY_DAYS_DELINQUENT_THRESHOLD) |  # account for bamboo's mishandling of time zones
-            (pl.col('Days Delinquent') == '') |                                                # noqa: PLC1901 | empty string is not falsey in polars
+            (pl.col('Days Delinquent') == '') |                                                # ruff:ignore[compare-to-empty-string] | empty string is not falsey in polars
             (pl.col('Days Delinquent').is_null())
         )
         .join(mp, on='DEA', how='left')
@@ -171,7 +171,7 @@ At this time, you are in violation of <a href="https://www.azleg.gov/ars/36/0260
 
 <b>Zero reports should be submitted for any days there are no controlled substance dispensations. For days you are not operational, you should report zero for those days on your next open business day.</b>
 
-<b style='color: red;'>Please ensure you upload your missed submissions by {row['deadline'][1:]} or a complaint will be opened against the pharmacy permit. </b>
+<b style='color: red;'>Please ensure you upload your missed submissions by {row['deadline']} or a complaint will be opened against the pharmacy permit. </b>
 
 If your pharmacy has an active DEA number, an active AZ pharmacy permit, and is not limited to veterinary dispensing, <em><b>it is required to submit a daily report, including zero reports, for controlled substances II-V.</b></em>
 
@@ -447,7 +447,7 @@ def pharm_clean(dds: pl.LazyFrame) -> None:
             dds
             .filter(
                 (pl.col('Days Delinquent').str.to_integer() >= WEEKLY_DAYS_DELINQUENT_THRESHOLD) |
-                (pl.col('Days Delinquent') == '') |  # noqa: PLC1901 | empty string is not falsey in polars
+                (pl.col('Days Delinquent') == '') |  # ruff:ignore[compare-to-empty-string] | empty string is not falsey in polars
                 (pl.col('Days Delinquent').is_null())
             )
             .join(deadlines, on='Pharmacy License Number', how='anti')
