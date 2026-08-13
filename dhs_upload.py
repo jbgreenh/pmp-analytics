@@ -74,8 +74,8 @@ if __name__ == '__main__':
 
     sftp_host = os.environ['SERVU_HOST']
     sftp_port = os.environ['SERVU_PORT']
-    sftp_user = os.environ['SERVU_USERNAME']
-    sftp_password = os.environ['SERVU_PASSWORD']
+    sftp_user = os.environ['GCLOUD_SERVU_USERNAME']
+    sftp_password = os.environ['GCLOUD_SERVU_PASSWORD']
 
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
