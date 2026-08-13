@@ -194,10 +194,9 @@ this script adds a new tab to the superseded to techs sheet for the previous mon
 
 ### required files
 
-| file             | description                                                                                |
-| ---------------- | ------------------------------------------------------------------------------------------ |
-| `techs.xls`      | iGov>Person Search>Pharmacy Technician>License Status:any status with OPEN>Search>Download |
-| `superseded.xls` | iGov>Person Search>Pharmacy Technician Trainee>License Status:SUPERSEDED>Search>Download   |
+| file                | description                                                   |
+| ------------------- | ------------------------------------------------------------- |
+| `List Request.csv`  | iGov>Reports>Snapshot Reports>List Request>Generator>Download |
 
 ## unregistered_pharmacists
 

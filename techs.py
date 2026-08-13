@@ -2,7 +2,6 @@ import os
 from datetime import datetime, timedelta
 from pathlib import Path
 
-import pandas as pd
 import polars as pl
 from az_pmp_utils import auth, email, files
 from dotenv import load_dotenv
@@ -12,26 +11,39 @@ from constants import PHX_TZ
 
 last_mo = datetime.now(tz=PHX_TZ).date().replace(day=1) - timedelta(days=1)
 
-t_fp = Path('data/techs.xls')
-files.warn_file_age(t_fp)
-techs = (
-    pl.from_pandas(pd.read_html(t_fp, header=1)[0])
-    .with_columns(
-        pl.col(['Expiration Date', 'Application Date', 'Issue Date']).str.to_date('%m/%d/%Y')
+lr_fp = Path('data/List Request.csv')
+files.warn_file_age(lr_fp)
+lr = (
+    pl.scan_csv(lr_fp, infer_schema=False)
+    .select(
+        'License/Permit #', 'Type', 'Status', 'SSN',
+        'First Name', 'Middle Name', 'Last Name', 'Issue Date', 'Expiration Date'
     )
     .filter(
-        (pl.col('Status').str.to_lowercase().str.starts_with('open')) &
-        ((pl.col('Issue Date').dt.year() == last_mo.year) & (pl.col('Issue Date').dt.month() == last_mo.month))
+        (pl.col('Type') == 'Pharmacy Technician Trainee') |
+        (pl.col('Type') == 'Pharmacy Technician')
+    )
+    .with_columns(
+        pl.col(['Expiration Date', 'Issue Date']).str.to_date('%m/%d/%Y')
     )
 )
 
-s_fp = Path('data/superseded.xls')
-files.warn_file_age(s_fp)
-superseded = (
-    pl.from_pandas(pd.read_html(s_fp, header=1)[0])
-    .with_columns(
-        pl.col(['Expiration Date', 'Application Date', 'Issue Date']).str.to_date('%m/%d/%Y')
+techs = (
+    lr
+    .filter(
+        pl.col('Type') == 'Pharmacy Technician',
+        pl.col('Status').str.to_lowercase().str.starts_with('open'),
+        pl.col('Issue Date').dt.year() == last_mo.year,
+        pl.col('Issue Date').dt.month() == last_mo.month,
     )
+)
+
+superseded = (
+    lr
+    .filter(
+        pl.col('Type') == 'Pharmacy Technician Trainee',
+        pl.col('Status') == 'SUPERSEDED',
+     )
 )
 
 s_to_t = (
@@ -45,7 +57,7 @@ s_to_t = (
         pl.col('time_delta2').dt.total_days().alias('days_to_tech_from_exp'),
     )
     .select(
-        'License #', 'Type', 'Type_sup', 'Status', 'Status_sup',
+        'License/Permit #', 'Type', 'Type_sup', 'Status', 'Status_sup',
         'First Name', 'Middle Name', 'Last Name', 'Issue Date',
         'Issue Date_sup', 'Expiration Date_sup', 'days_to_tech', 'days_to_tech_from_exp'
     )
@@ -67,6 +79,7 @@ s_to_t = (
     .with_columns(
         pl.col(['Issue Date', 'Issue Date_sup', 'Expiration Date_sup']).dt.to_string('%Y-%m-%d')
     )
+    .collect()
 )
 data = [list(row) for row in s_to_t.rows()]
 data.insert(0, s_to_t.columns)
