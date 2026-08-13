@@ -194,9 +194,14 @@ this script adds a new tab to the superseded to techs sheet for the previous mon
 
 ### required files
 
+<<<<<<< HEAD
+
 | file                | description                                                   |
 | ------------------- | ------------------------------------------------------------- |
-| `List Request.csv`  | iGov>Reports>Snapshot Reports>List Request>Generator>Download |
+| `List Request.csv`  | iGo>Reports>Snapshot Reports>List Request>Generator>Download |
+
+=======
+>>>>>>> 588b0585a08905cac537a28de9843c2bb2452b75
 
 ## unregistered_pharmacists
 

@@ -42,7 +42,7 @@ def parse_daterange(date_range: list) -> tuple[date, date]:
     returns:
         start_date, end_date
     """
-    if len(date_range[0][0].split('/')[2]) == 2:    # noqa: PLR2004 | checking if year is 2 or 4 chars
+    if len(date_range[0][0].split('/')[2]) == 2:    # ruff: ignore[magic-value-comparison] | checking if year is 2 or 4 chars
         start_date = datetime.strptime(date_range[0][0], '%m/%d/%y').astimezone(tz=PHX_TZ).date()
     else:
         start_date = datetime.strptime(date_range[0][0], '%m/%d/%Y').astimezone(tz=PHX_TZ).date()
@@ -51,7 +51,7 @@ def parse_daterange(date_range: list) -> tuple[date, date]:
     seven_years_ago = today.replace(year=today.year - 7, day=1)
     start_date = max(start_date, seven_years_ago)
 
-    if len(date_range[0][1].split('/')[2]) == 2:    # noqa: PLR2004
+    if len(date_range[0][1].split('/')[2]) == 2:    # ruff: ignore[magic-value-comparison]
         end_date = datetime.strptime(date_range[0][1], '%m/%d/%y').astimezone(tz=PHX_TZ).date()
     else:
         end_date = datetime.strptime(date_range[0][1], '%m/%d/%Y').astimezone(tz=PHX_TZ).date()
@@ -201,7 +201,7 @@ def audit_trail(params: SearchParameters) -> None:
             searches_lf = (
                 searches_lf
                 .select('Searched First Name', 'Searched Last Name', 'Searched DOB', 'User Full Name', 'Search Creation Date')
-                .sort(['Searched First Name', 'Searched Last Name', 'Search Creation Date'])
+                .sort(['Searched Last Name', 'Searched First Name', 'Search Creation Date'])
             )
 
         fn = f'data/{request_type}/{user_name}_audit_trail_{params.start_date}_-_{params.end_date}.csv'
