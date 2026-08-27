@@ -7,3 +7,4 @@ TOP_PRESCRIBERS = 40                                        # number of prescrib
 DAILY_DAYS_DELINQUENT_THRESHOLD = 2                         # min days delinquent to receive daily notices
 WEEKLY_DAYS_DELINQUENT_THRESHOLD = 7                        # min days delinquent to receive weekly notices
 MAX_DAYS_EXCUSED = 6                                        # max number of days that can be excused for data submitters
+MAX_MISSING_AGE = 5                                         # max age of the oldest missing day to receive weekly notices
