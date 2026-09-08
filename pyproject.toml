@@ -84,8 +84,8 @@ convention = "google"
 "xx_*.py" = [
   "ERA001", # commented out code ok in scratch files
 ]
-"naloxone.py" = [
-  'ALL', # archived
+"archive/*.py" = [
+  "ALL", # archived
 ]
 
 [tool.rumdl.MD033]
