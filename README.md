@@ -57,18 +57,6 @@ checks data submitters for missing dates (zero, filled, sold) and sends the prop
 | `List Request.csv`               | iGov>Reports>Snapshot Reports>List Request>Generator>Download |
 | `pharmacies.csv`                 | AWARxE>Admin>Manage Pharmacies>Download CSV                   |
 
-## delinquent_data_submitters (archived)
-
-this script performs the daily delinquent data submitters cleanup based on the day of the week, and sends the proper daily or friday notices
-
-### required files
-
-| file                             | description                                                   |
-| -------------------------------- | ------------------------------------------------------------- |
-| `DelinquentDispenserRequest.csv` | AWARxE>Admin>Delinquent Pharmacies>Dowload CSV                |
-| `List Request.csv`               | iGov>Reports>Snapshot Reports>List Request>Generator>Download |
-| `pharmacies.csv`                 | AWARxE>Admin>Manage Pharmacies>Download CSV                   |
-
 ## dhs_upload
 
 takes the latest standard extract from the google drive and uploads it to the dhs sftp, after the upload, it also deletes the oldest file in the sftp folder for maintenance
@@ -128,12 +116,6 @@ the date at the beginning should be entered as an argument when running the scri
 ```shell
 python mu_extras.py january2024
 ```
-
-## naloxone (archived)
-
-note: this script is no longer in use and will not be updated due to statute changes removing the requirement to report naloxone dispensations to the pmp  
-this script sends the weekly naloxone report to ADHS in an email  
-it also saves the weekly file at `data/naloxone_{today}.xlsx`.
 
 ## od
 
@@ -226,3 +208,24 @@ this script checks the dea list for prescriber registration and emails unregiste
 ### required files
 
 updated `data/cs_active.txt`
+
+## archived scripts
+
+### delinquent_data_submitters (archived)
+
+note: this script has been replaced with `dds.py`  
+this script performs the daily delinquent data submitters cleanup based on the day of the week, and sends the proper daily or friday notices
+
+#### required files
+
+| file                             | description                                                   |
+| -------------------------------- | ------------------------------------------------------------- |
+| `DelinquentDispenserRequest.csv` | AWARxE>Admin>Delinquent Pharmacies>Dowload CSV                |
+| `List Request.csv`               | iGov>Reports>Snapshot Reports>List Request>Generator>Download |
+| `pharmacies.csv`                 | AWARxE>Admin>Manage Pharmacies>Download CSV                   |
+
+### naloxone (archived)
+
+note: this script is no longer in use and will not be updated due to statute changes removing the requirement to report naloxone dispensations to the pmp  
+this script sends the weekly naloxone report to ADHS in an email  
+it also saves the weekly file at `data/naloxone_{today}.xlsx`.
