@@ -213,7 +213,7 @@ updated `data/cs_active.txt`
 
 ### delinquent_data_submitters (archived)
 
-note: this script has been replaced with `dds.py`  
+note: this script has been replaced with [dds](#dds)  
 this script performs the daily delinquent data submitters cleanup based on the day of the week, and sends the proper daily or friday notices
 
 #### required files
