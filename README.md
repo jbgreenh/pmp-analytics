@@ -47,7 +47,17 @@ checks the newest masked file and compares it to the preceding file
 contains constants for use in the other scripts  
 the use of each constant is described in the comments
 
-## delinquent_data_submitters
+## dds
+
+checks data submitters for missing dates (zero, filled, sold) and sends the proper notices
+
+| file                             | description                                                   |
+| -------------------------------- | ------------------------------------------------------------- |
+| `cs_active.txt`                  | from the DEA                                                  |
+| `List Request.csv`               | iGov>Reports>Snapshot Reports>List Request>Generator>Download |
+| `pharmacies.csv`                 | AWARxE>Admin>Manage Pharmacies>Download CSV                   |
+
+## delinquent_data_submitters (archived)
 
 this script performs the daily delinquent data submitters cleanup based on the day of the week, and sends the proper daily or friday notices
 
