@@ -1,3 +1,6 @@
+# pyrefly: ignore-errors
+# this script is archived and no longer used
+
 import argparse
 import os
 import sys
