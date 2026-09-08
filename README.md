@@ -30,16 +30,6 @@ writes a variety of files for awarxe cleanup
 
 an updated `data/cs_active.txt`
 
-### 3x3 Threshold Report
-
-this script takes the number of patients provided by bamboo, updates the file to the google drive, and updates the 3x3 Threshold sheet in the google drive
-
-#### required files
-
-| file         | description                                                  |
-| ------------ | ------------------------------------------------------------ |
-| `AZ 3x3.csv` | the AZ 3x3 recipient list csv emailed to us montly by bamboo |
-
 ### check_masked
 
 checks the newest masked file and compares it to the preceding file
@@ -231,3 +221,13 @@ this script performs the daily delinquent data submitters cleanup based on the d
 note: this script is no longer in use and will not be updated due to statute changes removing the requirement to report naloxone dispensations to the pmp  
 this script sends the weekly naloxone report to ADHS in an email  
 it also saves the weekly file at `data/naloxone_{today}.xlsx`.
+
+### 3x3 Threshold Report (archived)
+
+this script takes the number of patients provided by bamboo, updates the file to the google drive, and updates the 3x3 Threshold sheet in the google drive
+
+#### required files
+
+| file         | description                                                  |
+| ------------ | ------------------------------------------------------------ |
+| `AZ 3x3.csv` | the AZ 3x3 recipient list csv emailed to us montly by bamboo |
