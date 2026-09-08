@@ -1,16 +1,13 @@
-# ruff: noqa: PGH004
-# ruff: noqa
-# type: ignore
+# pyrefly: ignore-errors
 # this script is archived and no longer used
 
 import datetime
 import os
 
 import polars as pl
+from az_pmp_utils import auth, email, tableau
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
-
-from az_pmp_utils import auth, email, tableau
 
 
 def naloxone_file():
