@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     import google.oauth2.credentials
 
 
-def check_registration(service) -> pl.LazyFrame:    # noqa: ANN001 | service is dynamically typed
+def check_registration(service) -> pl.LazyFrame:    # ruff: ignore[missing-type-function-argument] | service is dynamically typed
     """
     checks pharmacist license numbers from inspections submissions during the last month for awarxe registrations
 
