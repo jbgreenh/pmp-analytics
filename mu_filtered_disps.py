@@ -83,7 +83,7 @@ if __name__ == '__main__':
                     archive.write(path, arcname=path.name)
                     path.unlink()
             buff.seek(0)
-            remote_path = f'/{board}/filtered_dispensations/'
+            remote_path = f'licensing_boards/{board}/filtered_dispensations/'
             remote_file_path = remote_path + f'{board}_{last_forty.item(1, 'MM/YYYY').replace('/', '-')}.zip'
             sftp.putfo(buff, remote_file_path)
             print(f'{remote_file_path} uploaded to servu')
