@@ -48,7 +48,6 @@ if __name__ == '__main__':
         last_forty = (
             drive.lazyframe_from_id_and_sheetname(os.environ['MU_REPORTS_FILE'], 'Data')
             .tail(40)
-            .filter(pl.col('board') == 'Medical')
             .select(
                 'board',
                 'MM/YYYY',

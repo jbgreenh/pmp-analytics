@@ -121,7 +121,7 @@ python mu_extras.py january2024
 
 ## mu_filtered_disps
 
-upload the filtered disps for mu prescribers for boards that have opted in
+upload the filtered disps for mu prescribers for each respective board
 
 ### required files
 
