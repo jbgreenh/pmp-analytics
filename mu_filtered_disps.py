@@ -60,9 +60,11 @@ if __name__ == '__main__':
         for board in last_forty['board'].value_counts()['board'].to_list():
             all_files = []
             luid = tableau.find_view_luid('with filters (auto)', 'mu recheck')
-            for row in last_forty.iter_rows(named=True):
+            print(f'checking {board}...')
+            for row in last_forty.filter(pl.col('board') == board).iter_rows(named=True):
                 presc_df = pl.DataFrame()
                 for dea in row['dea_number(s)']:
+                    print(f'checking {row['prescriber_name']}...')
                     mo, yr = row['MM/YYYY'].split('/')
                     filters = {
                         'prescriber_dea': dea,
@@ -83,11 +85,11 @@ if __name__ == '__main__':
                     archive.write(path, arcname=path.name)
                     path.unlink()
             buff.seek(0)
-            remote_path = f'licensing_boards/{board}/filtered_dispensations/'
+            remote_path = f'/licensing_boards/{board}/filtered_dispensations/'
             remote_file_path = remote_path + f'{board}_{last_forty.item(1, 'MM/YYYY').replace('/', '-')}.zip'
             sftp.putfo(buff, remote_file_path)
             print(f'{remote_file_path} uploaded to servu')
-        remove_oldest_file(sftp, remote_path)
+            remove_oldest_file(sftp, remote_path)
     finally:
         print()
         if sftp:
