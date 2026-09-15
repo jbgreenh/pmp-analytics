@@ -119,6 +119,14 @@ the date at the beginning should be entered as an argument when running the scri
 python mu_extras.py january2024
 ```
 
+## mu_filtered_disps
+
+upload the filtered disps for mu prescribers for boards that have opted in
+
+### required files
+
+updated `Mandatory Use Reports` sheet on the google drive with `board` selected for all prescribers
+
 ## naloxone (archived)
 
 note: this script is no longer in use and will not be updated due to statute changes removing the requirement to report naloxone dispensations to the pmp  
