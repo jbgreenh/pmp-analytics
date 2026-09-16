@@ -654,6 +654,7 @@ If you have any questions or concerns about the data submission process, please 
             'permit_number',
             'dea',
             'missing_dates',
+            'count_missing',
             'zip',
             pl.lit(email_type).alias('email_type')
         )
