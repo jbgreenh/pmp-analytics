@@ -13,7 +13,7 @@ from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseUpload
 
 
-def del_prev(delete_prev_line: bool) -> None:  # noqa: FBT001 | only one arg
+def del_prev(delete_prev_line: bool) -> None:  # ruff: ignore[boolean-type-hint-positional-argument] | only one arg
     """
     delete the previous printed line
 
@@ -26,7 +26,7 @@ def del_prev(delete_prev_line: bool) -> None:  # noqa: FBT001 | only one arg
         print(line_up, end=line_clear)
 
 
-def upload_file(service, sftp: paramiko.SFTPClient, remote_file_path: str, drive_folder_id: str) -> None:  # noqa: ANN001 | service is dynamically typed
+def upload_file(service, sftp: paramiko.SFTPClient, remote_file_path: str, drive_folder_id: str) -> None:  # ruff: ignore[missing-type-function-argument] | service is dynamically typed
     """
     uploads a file to the google drive if it is new or has been modified
     only checks files with an mtime younger than 24 hours
@@ -37,7 +37,7 @@ def upload_file(service, sftp: paramiko.SFTPClient, remote_file_path: str, drive
        remote_file_path: the remote file path to the file for potential uploading
        drive_folder_id: the id of the target folder on the google drive
     """
-    remote_file = os.path.basename(remote_file_path)  # noqa: PTH119 | paramiko is not compatible with Path
+    remote_file = os.path.basename(remote_file_path)  # ruff: ignore[os-path-basename] | paramiko is not compatible with Path
 
     st_mtime = sftp.lstat(remote_file_path).st_mtime
     remote_file_mtime = datetime.fromtimestamp(float(st_mtime)).astimezone(tz=ZoneInfo('UTC')) if isinstance(st_mtime, int) else datetime(year=2001, month=1, day=1, tzinfo=ZoneInfo('UTC'))
@@ -98,7 +98,7 @@ def upload_file(service, sftp: paramiko.SFTPClient, remote_file_path: str, drive
     del_prev(delete_prev_line)
 
 
-def find_or_create_folder(service, folder_name: str, parent_folder_id: str) -> str:  # noqa: ANN001 | service is dynamically typed
+def find_or_create_folder(service, folder_name: str, parent_folder_id: str) -> str:  # ruff: ignore[missing-type-function-argument] | service is dynamically typed
     """
     finds or creates the specified folder on the google drive
 
@@ -128,7 +128,7 @@ def find_or_create_folder(service, folder_name: str, parent_folder_id: str) -> s
         sys.exit(f'error checking google drive: {error}')
 
 
-def upload_directory(service, sftp: paramiko.SFTPClient, remote_path: str, drive_folder_id: str) -> None:  # noqa: ANN001 | service is dynamically typed
+def upload_directory(service, sftp: paramiko.SFTPClient, remote_path: str, drive_folder_id: str) -> None:  # ruff: ignore[missing-type-function-argument] | service is dynamically typed
     """
     upload an entire directory from an sftp to the google drive as needed
 

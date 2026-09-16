@@ -171,7 +171,7 @@ def process_mu(appearance_month: date, input_file: str) -> None:
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2:  # noqa: PLR2004 | checking for arg
+    if len(sys.argv) != 2:  # ruff: ignore[magic-value-comparison] | checking for arg
         print('please provide an argument')
         print('python mu_extras.py january2024')
         sys.exit(1)
@@ -182,7 +182,7 @@ if __name__ == '__main__':
             month_name += c
         if c.isnumeric():
             year_str += c
-    if (month_name.title() not in calendar.month_name) or (len(year_str) != 4):  # noqa: PLR2004 | checking for YYYY year format
+    if (month_name.title() not in calendar.month_name) or (len(year_str) != 4):  # ruff: ignore[magic-value-comparison] | checking for YYYY year format
         print('please follow the below format')
         sys.exit('python mu_extras.py january2024')
 

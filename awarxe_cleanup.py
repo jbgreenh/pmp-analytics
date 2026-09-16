@@ -168,7 +168,7 @@ def bad_npis(awarxe: pl.DataFrame) -> None:
     npi_pattern_match = (
         awarxe
         .with_columns(
-            pl.col('npi number').str.replace_all(r'[‭|‬]', '')  # noqa: PLE2502
+            pl.col('npi number').str.replace_all(r'[\u{202D}|\u{202C}]', '')
         )
         .filter(
             pl.col('npi number').str.contains(pattern).not_() & pl.col('npi number').is_not_null()
@@ -253,7 +253,7 @@ def multiple_deas(awarxe: pl.DataFrame, dea_list: pl.LazyFrame) -> None:
     names = (
         prescribers
         .filter(
-            pl.col('SSN') != ''  # noqa: PLC1901
+            pl.col('SSN') != ''  # ruff: ignore[compare-to-empty-string]
         )
         .with_columns(
             pl.col('Name').str.split(' ').list.get(1).alias('fname'),

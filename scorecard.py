@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     import google.oauth2.credentials
 
 
-def pull_files(service) -> pl.DataFrame:  # noqa: ANN001 | service is dynamically typed
+def pull_files(service) -> pl.DataFrame:  # ruff: ignore[missing-type-function-argument] | service is dynamically typed
     """
     pull the dispensations, ob dispensations, and requests files from the google drive
 

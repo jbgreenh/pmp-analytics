@@ -3,7 +3,7 @@ from pathlib import Path
 import polars as pl
 from az_pmp_utils import deas, files
 
-# ruff: noqa: PLC1901
+# ruff: file-ignore[compare-to-empty-string]
 # polars cols with empty string are not falsey
 
 mp_fp = Path('data/pharmacies.csv')

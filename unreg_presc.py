@@ -21,13 +21,13 @@ if TYPE_CHECKING:
     import google.oauth2.credentials
 
 
-# ruff: noqa: PLC1901
+# ruff: file-ignore[compare-to-empty-string]
 # polars cols with empty string are not falsey
 
 type UploadFileType = Literal['sheet', 'csv', 'none']
 
 
-def ft_default_factory() -> UploadFileType:  # noqa: D103
+def ft_default_factory() -> UploadFileType:  # ruff: ignore[undocumented-public-function]
     return 'none'
 
 
@@ -58,7 +58,7 @@ class BoardInfo:
     board_df: pl.DataFrame = field(default_factory=pl.DataFrame)
 
 
-def get_board_contacts(service) -> dict:    # noqa: ANN001 | service is dynamically typed
+def get_board_contacts(service) -> dict:    # ruff: ignore[missing-type-function-argument] | service is dynamically typed
     """
     pulls board names and emails from the `BOARD_CONTACTS_FILE`
 
@@ -83,7 +83,7 @@ def get_board_contacts(service) -> dict:    # noqa: ANN001 | service is dynamica
     return boards_dict
 
 
-def check_deas_for_registration(service) -> pl.LazyFrame:   # noqa: ANN001 | service is dynamically typed
+def check_deas_for_registration(service) -> pl.LazyFrame:   # ruff: ignore[missing-type-function-argument] | service is dynamically typed
     """
     return a lazyframe with DEA registrations that are not also registered in awarxe
 
@@ -124,7 +124,7 @@ def check_deas_for_registration(service) -> pl.LazyFrame:   # noqa: ANN001 | ser
     )
 
 
-def infer_board(service, unreg_deas: pl.LazyFrame) -> pl.LazyFrame:  # noqa: ANN001 | service is dynamically typed
+def infer_board(service, unreg_deas: pl.LazyFrame) -> pl.LazyFrame:  # ruff: ignore[missing-type-function-argument] | service is dynamically typed
     """
     infer degrees and then board, prints the number of deas for which a board was unable to be inferred
 
@@ -205,7 +205,7 @@ def update_board_info_with_uploaders(board_contacts: dict) -> dict:
     # board_contacts['Optometry'].upload_filter_expr = opto_filter
     # board_contacts['Optometry'].cleaned_license_expr = opto_clean
 
-    # ruff: noqa: ERA001
+    # ruff: file-ignore[ERA001]
     # osteopath code commented out until file extract is set up
 
     # osteo_folder = os.environ['OSTEOPATHIC_UPLOADS_FOLDER']
@@ -234,7 +234,7 @@ def update_board_info_with_uploaders(board_contacts: dict) -> dict:
     return board_contacts
 
 
-def add_dfs_to_board_info(service, unreg_presc: pl.LazyFrame, board_info: dict) -> dict:    # noqa: ANN001 | service is dynamically typed
+def add_dfs_to_board_info(service, unreg_presc: pl.LazyFrame, board_info: dict) -> dict:    # ruff: ignore[missing-type-function-argument] | service is dynamically typed
     """
     adds the dataframes of unregistered prescribers to the boardinfo and prepares them for emailing
     also writes the dataframes for double checking at `data/unreg_presc/`
@@ -330,7 +330,7 @@ def add_dfs_to_board_info(service, unreg_presc: pl.LazyFrame, board_info: dict) 
     return board_info
 
 
-def send_emails(board_dict: dict[str, BoardInfo], creds: google.oauth2.credentials.Credentials | google.auth.external_account_authorized_user.Credentials, drive_service) -> None:    # noqa: ANN001 | service is dynamically typed
+def send_emails(board_dict: dict[str, BoardInfo], creds: google.oauth2.credentials.Credentials | google.auth.external_account_authorized_user.Credentials, drive_service) -> None:    # ruff: ignore[missing-type-function-argument] | service is dynamically typed
     """
     sends emails to each board with their unregistered prescribers
 
