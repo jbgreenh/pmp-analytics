@@ -21,6 +21,9 @@ if TYPE_CHECKING:
     import google.oauth2.credentials
 
 
+# ruff: file-ignore[commented-out-code]
+# board code is commented out while they prepare for integration
+
 # ruff: file-ignore[compare-to-empty-string]
 # polars cols with empty string are not falsey
 
@@ -205,31 +208,35 @@ def update_board_info_with_uploaders(board_contacts: dict) -> dict:
     # board_contacts['Optometry'].upload_filter_expr = opto_filter
     # board_contacts['Optometry'].cleaned_license_expr = opto_clean
 
-    # ruff: file-ignore[ERA001]
-    # osteopath code commented out until file extract is set up
+    osteo_folder = os.environ['OSTEOPATHIC_UPLOADS_FOLDER']
+    osteo_ft = 'csv'
+    osteo_select = (
+        pl.col('First Name').str.to_uppercase().alias('first_name'),
+        pl.col('Last Name').str.to_uppercase().alias('last_name'),
+        pl.col('Date of Birth').str.to_date('%m/%d/%Y').alias('dob'),
+        # pl.col('License Number').str.to_uppercase().alias('license_number'),
+        pl.when(pl.col('License Number').str.to_uppercase().str.starts_with('R'))
+        .then(pl.col('License Number').str.to_uppercase())
+        .otherwise(pl.col('License Number').str.zfill(6))
+        .alias('license_number'),
+        # TODO: replace above when then otherwise with the commented version when we get official file with leading zeros
+        pl.col('Status').str.to_uppercase().alias('status'),
+        pl.col('Email').alias('board_email'),
+    )
+    osteo_filter = (pl.col('status') == 'ACTIVE')
+    osteo_clean = (
+        # TODO: check if this works properly once we get the real upload with leading 0s (sample doesn't have them)
+        pl.when(pl.col('State License Number').str.to_uppercase().str.starts_with('R'))
+        .then(pl.col('State License Number').str.to_uppercase())
+        .otherwise(pl.col('State License Number').str.replace_all('[^0-9]', '').str.zfill(6)).alias('cleaned_lino')
+    )
 
-    # osteo_folder = os.environ['OSTEOPATHIC_UPLOADS_FOLDER']
-    # osteo_ft = 'csv'
-    # osteo_select = (
-    #     pl.col('registrant_first_name').str.to_uppercase().alias('first_name'),
-    #     pl.col('registrant_last_name').str.to_uppercase().alias('last_name'),
-    #     pl.col('registrant_date_of_birth').str.to_date('%m/%d/%Y').alias('dob'),
-    #     pl.col('registrant_license_number').str.to_uppercase().alias('license_number'),
-    #     pl.col('license_status').str.to_uppercase().alias('status'),
-    # )
-    # osteo_filter = (pl.col('status') == 'ACTIVE')
-    # osteo_clean = (
-    #     pl.when(pl.col('State License Number').str.to_uppercase().str.starts_with('R'))
-    #     .then(pl.col('State License Number').str.to_uppercase())
-    #     .otherwise(pl.col('State License Number').str.replace_all('[^0-9]', '').str.zfill(6)).alias('cleaned_lino')
-    # )
-    # # TODO: check if this works properly once we get the real upload with leading 0s (sample doesn't have them)
-    #
-    # board_contacts['Osteopathic'].uploads_folder = osteo_folder
-    # board_contacts['Osteopathic'].upload_file_type = osteo_ft
-    # board_contacts['Osteopathic'].upload_select_expr = osteo_select
-    # board_contacts['Osteopathic'].upload_filter_expr = osteo_filter
-    # board_contacts['Osteopathic'].cleaned_license_expr = osteo_clean
+    board_contacts['Osteopathic'].uploads_folder = osteo_folder
+    board_contacts['Osteopathic'].upload_skip_rows = 2
+    board_contacts['Osteopathic'].upload_file_type = osteo_ft
+    board_contacts['Osteopathic'].upload_select_expr = osteo_select
+    board_contacts['Osteopathic'].upload_filter_expr = osteo_filter
+    board_contacts['Osteopathic'].cleaned_license_expr = osteo_clean
 
     return board_contacts
 
@@ -422,8 +429,3 @@ if __name__ == '__main__':
     board_info = update_board_info_with_uploaders(board_contacts)
     full_board_info = add_dfs_to_board_info(service, unregistered_w_boards, board_info)
     send_emails(full_board_info, creds, service)
-
-    # board_counts = full_board_info.board_df.collect()['board'].value_counts(sort=True)
-    # print('board unregistered counts (written to clipboard):')
-    # print(board_counts)
-    # board_counts.write_clipboard()
