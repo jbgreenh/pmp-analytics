@@ -726,7 +726,8 @@ def pharm_clean(dds: pl.LazyFrame) -> None:
             new_deadlines = (
                 new_deadlines
                 .with_columns(
-                    pl.lit(due_date).dt.to_string('%Y-%m-%d').alias('deadline')
+                    pl.lit(due_date).dt.to_string('%Y-%m-%d').alias('deadline'),
+                    pl.col('max_issue_date').dt.to_string('%Y-%m-%d')
                 )
             )
             deadlines = pl.concat([deadlines, new_deadlines])
