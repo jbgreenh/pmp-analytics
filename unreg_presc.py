@@ -208,35 +208,35 @@ def update_board_info_with_uploaders(board_contacts: dict) -> dict:
     # board_contacts['Optometry'].upload_filter_expr = opto_filter
     # board_contacts['Optometry'].cleaned_license_expr = opto_clean
 
-    osteo_folder = os.environ['OSTEOPATHIC_UPLOADS_FOLDER']
-    osteo_ft = 'csv'
-    osteo_select = (
-        pl.col('First Name').str.to_uppercase().alias('first_name'),
-        pl.col('Last Name').str.to_uppercase().alias('last_name'),
-        pl.col('Date of Birth').str.to_date('%m/%d/%Y').alias('dob'),
-        # pl.col('License Number').str.to_uppercase().alias('license_number'),
-        pl.when(pl.col('License Number').str.to_uppercase().str.starts_with('R'))
-        .then(pl.col('License Number').str.to_uppercase())
-        .otherwise(pl.col('License Number').str.zfill(6))
-        .alias('license_number'),
-        # TODO: replace above when then otherwise with the commented version when we get official file with leading zeros
-        pl.col('Status').str.to_uppercase().alias('status'),
-        pl.col('Email').alias('board_email'),
-    )
-    osteo_filter = (pl.col('status') == 'ACTIVE')
-    osteo_clean = (
-        # TODO: check if this works properly once we get the real upload with leading 0s (sample doesn't have them)
-        pl.when(pl.col('State License Number').str.to_uppercase().str.starts_with('R'))
-        .then(pl.col('State License Number').str.to_uppercase())
-        .otherwise(pl.col('State License Number').str.replace_all('[^0-9]', '').str.zfill(6)).alias('cleaned_lino')
-    )
-
-    board_contacts['Osteopathic'].uploads_folder = osteo_folder
-    board_contacts['Osteopathic'].upload_skip_rows = 2
-    board_contacts['Osteopathic'].upload_file_type = osteo_ft
-    board_contacts['Osteopathic'].upload_select_expr = osteo_select
-    board_contacts['Osteopathic'].upload_filter_expr = osteo_filter
-    board_contacts['Osteopathic'].cleaned_license_expr = osteo_clean
+    # osteo_folder = os.environ['OSTEOPATHIC_UPLOADS_FOLDER']
+    # osteo_ft = 'csv'
+    # osteo_select = (
+    #     pl.col('First Name').str.to_uppercase().alias('first_name'),
+    #     pl.col('Last Name').str.to_uppercase().alias('last_name'),
+    #     pl.col('Date of Birth').str.to_date('%m/%d/%Y').alias('dob'),
+    #     # pl.col('License Number').str.to_uppercase().alias('license_number'),
+    #     pl.when(pl.col('License Number').str.to_uppercase().str.starts_with('R'))
+    #     .then(pl.col('License Number').str.to_uppercase())
+    #     .otherwise(pl.col('License Number').str.zfill(6))
+    #     .alias('license_number'),
+    #     # TODO: replace above when then otherwise with the commented version when we get official file with leading zeros
+    #     pl.col('Status').str.to_uppercase().alias('status'),
+    #     pl.col('Email').alias('board_email'),
+    # )
+    # osteo_filter = (pl.col('status') == 'ACTIVE')
+    # osteo_clean = (
+    #     # TODO: check if this works properly once we get the real upload with leading 0s (sample doesn't have them)
+    #     pl.when(pl.col('State License Number').str.to_uppercase().str.starts_with('R'))
+    #     .then(pl.col('State License Number').str.to_uppercase())
+    #     .otherwise(pl.col('State License Number').str.replace_all('[^0-9]', '').str.zfill(6)).alias('cleaned_lino')
+    # )
+    #
+    # board_contacts['Osteopathic'].uploads_folder = osteo_folder
+    # board_contacts['Osteopathic'].upload_skip_rows = 2
+    # board_contacts['Osteopathic'].upload_file_type = osteo_ft
+    # board_contacts['Osteopathic'].upload_select_expr = osteo_select
+    # board_contacts['Osteopathic'].upload_filter_expr = osteo_filter
+    # board_contacts['Osteopathic'].cleaned_license_expr = osteo_clean
 
     return board_contacts
 
