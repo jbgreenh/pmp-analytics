@@ -10,6 +10,7 @@ from typing import Literal
 import polars as pl
 from az_pmp_utils import auth, deas, drive, email, files, num_and_dt, tableau
 from dotenv import load_dotenv
+from email_validator import EmailNotValidError, validate_email
 from googleapiclient import errors
 from googleapiclient.discovery import build
 
@@ -551,6 +552,26 @@ def remove_pharmacies_with_active_complaints(dds: pl.LazyFrame) -> pl.LazyFrame:
     return dds.join(complaints, left_on='permit_number', right_on='Pharmacy License Number', how='anti')
 
 
+def check_email(email_addr: str) -> tuple[bool, str]:
+    """
+    validates the given email str
+
+    args:
+        email_addr: the email address to validate
+
+    returns:
+        a tuple with:
+            is_valid: a bool that indicates if the email passed validation
+            result: a string with the validated email, or the reason the email was not valid
+    """
+    try:
+        email_info = validate_email(email_addr)
+    except EmailNotValidError as e:
+        return False, str(e)
+    else:
+        return True, email_info.normalized
+
+
 def send_notices(lf: pl.LazyFrame, email_type: EmailType) -> None:
     """
     send dds email notices (or create drafts)
@@ -574,6 +595,16 @@ def send_notices(lf: pl.LazyFrame, email_type: EmailType) -> None:
             missing_dates = 'no data has ever been received'
         else:
             missing_dates = row['missing_dates']
+
+        to = []
+        for email_address in row['to'].split(','):
+            is_valid, result = check_email(email_address)
+            if is_valid:
+                to.append(result)
+            else:
+                print(f'{row['permit_number']} | {row['dea']} had an invalid email: {email_address}')
+                print(f'reason: {result}')
+                print('removing from `to` list...')
 
         if email_type == 'friday':
             subject = f'CSPMP Action Required: Possible Complaint Against {row['permit_number']}'
@@ -622,7 +653,7 @@ If you have any questions or concerns about the data submission process, please 
             """
         msg = email.EmailMessage(
             sender=os.environ['EMAIL_COMPLIANCE'],
-            to=row['to'],
+            to=','.join(to),
             bcc=os.environ['EMAIL_COMPLIANCE'],
             subject=subject,
             message_text=body,

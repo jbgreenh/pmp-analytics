@@ -7,6 +7,7 @@ requires-python = ">=3.14"
 dependencies = [
   "az-pmp-utils",
   "df-compare-pl>=0.1.3.2",
+  "email-validator>=2.3.0",
   "fastexcel>=0.12.1",
   "google-api-python-client>=2.157.0",
   "google-auth-oauthlib>=1.2.1",
