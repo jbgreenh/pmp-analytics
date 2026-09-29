@@ -247,13 +247,8 @@ def bad_user_age(tab_awarxe: pl.DataFrame) -> None:
             pl.col('Day of DOB').str.to_date('%B %d, %Y')
         )
         .with_columns(
-            (today.year - pl.col("Day of DOB").dt.year()
-            - (
-                (today.month < pl.col("Day of DOB").dt.month()) |
-                (
-                    (today.month == pl.col("Day of DOB").dt.month()) &
-                    (today.day < pl.col("Day of DOB").dt.day())
-                )
+            (today.year - pl.col("Day of DOB").dt.year() - (
+                (today.month < pl.col("Day of DOB").dt.month()) | ((today.month == pl.col("Day of DOB").dt.month()) & (today.day < pl.col("Day of DOB").dt.day()))
             )).cast(pl.Int32).alias('age')
         )
         .filter(
