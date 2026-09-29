@@ -232,7 +232,7 @@ def multiple_roles(awarxe: pl.DataFrame) -> None:
 
 def bad_user_age(tab_awarxe: pl.DataFrame) -> None:
     """
-    writes a csv with awarxe registrations that are younger than 18 or older than 120
+    writes a csv with awarxe registrations that are younger than 18 (14 for delegates) or older than 120
 
     args:
         tab_awarxe: a dataframe with active awarxe registrations
