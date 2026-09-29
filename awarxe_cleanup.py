@@ -239,27 +239,29 @@ def bad_user_age(tab_awarxe: pl.DataFrame) -> None:
     """
     today = datetime.now(tz=PHX_TZ).date()
     oldest_age = 120
-    youngest_age = 14
+    delegate_youngest_age = 14
+    user_youngest_age = 18
     bad_age = (
         tab_awarxe
         .with_columns(
             pl.col('Day of DOB').str.to_date('%B %d, %Y')
         )
         .with_columns(
-            (pl.date(today.year, today.month, today.day).dt.year()
-            - pl.col("Day of DOB").dt.year()
+            (today.year - pl.col("Day of DOB").dt.year()
             - (
-                (pl.date(today.year, today.month, today.day).dt.month() < pl.col("Day of DOB").dt.month()) |
+                (today.month < pl.col("Day of DOB").dt.month()) |
                 (
-                    (pl.date(today.year, today.month, today.day).dt.month() == pl.col("Day of DOB").dt.month()) &
-                    (pl.date(today.year, today.month, today.day).dt.day() < pl.col("Day of DOB").dt.day())
+                    (today.month == pl.col("Day of DOB").dt.month()) &
+                    (today.day < pl.col("Day of DOB").dt.day())
                 )
             )).cast(pl.Int32).alias('age')
         )
         .filter(
             (pl.col('age') > oldest_age) |
-            (pl.col('age') < youngest_age)
+            ((pl.col('age') < delegate_youngest_age) & (pl.col('User Role').str.to_uppercase().str.contains('DELEGATE'))) |
+            ((pl.col('age') < user_youngest_age) & (pl.col('User Role').str.to_uppercase().str.contains('DELEGATE').not_()))
         )
+        .sort('User Role', 'age')
         .collect()
     )
     bad_age_fp = 'data/awarxe_cleanup/bad_ages.csv'
