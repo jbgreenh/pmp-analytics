@@ -1,7 +1,10 @@
+from datetime import datetime
 from pathlib import Path
 
 import polars as pl
 from az_pmp_utils import deas, drive, files, tableau
+
+from constants import PHX_TZ
 
 
 def pull_awarxe() -> pl.DataFrame:
@@ -97,16 +100,17 @@ def suffix_not_res(awarxe: pl.DataFrame) -> None:
     print(f'wrote {bs_fn}')
 
 
-def inactive_deas(dea_list: pl.LazyFrame) -> None:
+def inactive_deas(dea_list: pl.LazyFrame, tab_awarxe: pl.LazyFrame) -> None:
     """
     writes csvs with all inactive deas associated to active awarxe registrations (one file with some but not all deas inactive and one file with all deas inactive)
 
     args:
         dea_list: lazyframe of all dea registrants
+        tab_awarxe: lazyframe with tableau version of awarxe registrations
     """
     dea_nums = dea_list.collect()['DEA Number'].to_list()
     inactive = (
-        tab_awarxe()
+        tab_awarxe
         .drop_nulls('Associated DEA Number(s)')
         .filter(
             pl.col('User Role').str.to_lowercase().str.contains('resident').not_() &
@@ -226,6 +230,43 @@ def multiple_roles(awarxe: pl.DataFrame) -> None:
     print(f'wrote {mult_fp}')
 
 
+def bad_user_age(tab_awarxe: pl.DataFrame) -> None:
+    """
+    writes a csv with awarxe registrations that are younger than 18 or older than 120
+
+    args:
+        tab_awarxe: a dataframe with active awarxe registrations
+    """
+    today = datetime.now(tz=PHX_TZ).date()
+    oldest_age = 120
+    youngest_age = 14
+    bad_age = (
+        tab_awarxe
+        .with_columns(
+            pl.col('Day of DOB').str.to_date('%B %d, %Y')
+        )
+        .with_columns(
+            (pl.date(today.year, today.month, today.day).dt.year()
+            - pl.col("Day of DOB").dt.year()
+            - (
+                (pl.date(today.year, today.month, today.day).dt.month() < pl.col("Day of DOB").dt.month()) |
+                (
+                    (pl.date(today.year, today.month, today.day).dt.month() == pl.col("Day of DOB").dt.month()) &
+                    (pl.date(today.year, today.month, today.day).dt.day() < pl.col("Day of DOB").dt.day())
+                )
+            )).cast(pl.Int32).alias('age')
+        )
+        .filter(
+            (pl.col('age') > oldest_age) |
+            (pl.col('age') < youngest_age)
+        )
+        .collect()
+    )
+    bad_age_fp = 'data/awarxe_cleanup/bad_ages.csv'
+    bad_age.write_csv(bad_age_fp)
+    print(f'wrote {bad_age_fp}')
+
+
 def multiple_deas(awarxe: pl.DataFrame, dea_list: pl.LazyFrame) -> None:
     """
     writes a csv with az prescribers with multiple dea numbers and at least one of those dea numbers not registered in awarxe
@@ -337,11 +378,13 @@ def closed_pharmacies_in_mp() -> None:
 if __name__ == '__main__':
     Path('data/awarxe_cleanup').mkdir(parents=True, exist_ok=True)
     awarxe = pull_awarxe()
+    tab_awarxe = tab_awarxe()
     dea_list = read_all_deas()
     bad_deas(awarxe)
     multiple_deas(awarxe, dea_list)
     suffix_not_res(awarxe)
-    inactive_deas(dea_list)
+    inactive_deas(dea_list, tab_awarxe)
     bad_npis(awarxe)
     multiple_roles(awarxe)
     closed_pharmacies_in_mp()
+    bad_user_age(tab_awarxe)
