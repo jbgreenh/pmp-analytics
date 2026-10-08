@@ -572,22 +572,19 @@ def check_email(email_addr: str) -> tuple[bool, str]:
         return True, email_info.normalized
 
 
-def send_notices(lf: pl.LazyFrame, email_type: EmailType) -> None:
+def send_notices(notices: pl.LazyFrame, email_type: EmailType) -> None:
     """
     send dds email notices (or create drafts)
 
     args:
-        lf: a lazyframe with the dds recipients
+        notices: a lazyframe with the dds recipients
         email_type: daily or friday notices
     """
-    service = build('gmail', 'v1', credentials=auth.auth())
     timestamps = []
-    notices = lf.collect()
+    notices = notices.collect()
 
-    if args.send_emails:
-        sanity_check = input(f'{notices.height} notices to be sent, does this make sense? (y/n): ')
-        if sanity_check != 'y':
-            sys.exit('no notices sent, verify data with vendor')
+    if args.send_emails and (input(f'{notices.height} notices to be sent, does this make sense? (y/n): ') != 'y'):
+        sys.exit('no notices sent, verify data with vendor')
 
     for row in notices.iter_rows(named=True):
         pharmacy_address = f'{row['street_address']}, {row['add2']}\n{row['city']}, {row['state']} {row['zip']}' if row['add2'] else f'{row['street_address']}\n{row['city']}, {row['state']} {row['zip']}'
@@ -617,9 +614,11 @@ According to our records, your pharmacy is <b>not submitting daily</b> reports t
 
 Dispensation data is missing for: <b>{missing_dates}</b>
 
-At this time, you are in violation of <a href="https://www.azleg.gov/ars/36/02608.htm" target="_blank">ARS § 36-2608</a> reporting requirements. <em><b>Failure to upload your delinquent schedule II-V dispensations will result in a complaint being opened against the pharmacy.</b></em>
+These dates do not reflect submission dates, but rather filled, sold, or zero report dates. If your pharmacy did not dispense on these dates, zero reports should be submitted. If your pharmacy did dispense on these dates, all controlled substances filled or sold on these dates must be submitted.
 
-<b>Zero reports should be submitted for any days there are no controlled substance dispensations. For days you are not operational, you should report zero for those days on your next open business day.</b>
+<b>For days you are not operational, you should report for those days on your next open business day.</b>
+
+At this time, you are in violation of <a href="https://www.azleg.gov/ars/36/02608.htm" target="_blank">ARS § 36-2608</a> reporting requirements. <em><b>Failure to upload your delinquent schedule II-V dispensations will result in a complaint being opened against the pharmacy.</b></em>
 
 <b style='color: red;'>Please ensure you upload your missed submissions by {row['deadline']} or a complaint will be opened against the pharmacy permit. </b>
 
@@ -642,6 +641,8 @@ You are receiving this email because you are listed as the party responsible for
 
 Controlled substance dispensing information is missing for: <b>{missing_dates}</b>.
 
+These dates do not reflect submission dates, but rather filled, sold, or zero report dates. If your pharmacy did not dispense on these dates, zero reports should be submitted. If your pharmacy did dispense on these dates, all controlled substances filled or sold on these dates must be submitted.
+
 Please upload your schedule II-V dispensations DAILY, including zero reports, to avoid being noncompliant, and make sure to upload any days that were missed.
 
 *Businesses closed for the weekend will still need to report on the following business day (Ex. on Monday report zero reports for Saturday and Sunday).
@@ -660,7 +661,7 @@ If you have any questions or concerns about the data submission process, please 
             monospace=True,
         )
         try:
-            email.send_email(msg, service=service, draft=(not args.send_emails))
+            email.send_email(msg, service=build('gmail', 'v1', credentials=auth.auth()), draft=(not args.send_emails))
             ts = datetime.now(tz=PHX_TZ)
         except errors.HttpError as error:
             print(f'failed to send message for {row['permit_number']} | {row['dea']}:')
@@ -690,9 +691,8 @@ If you have any questions or concerns about the data submission process, please 
             pl.lit(email_type).alias('email_type')
         )
     )
-    full_logs = pl.concat([logs, new_dds_log])
     fl_path = Path('full_logs.csv')
-    full_logs.write_csv(fl_path)
+    pl.concat([logs, new_dds_log]).write_csv(fl_path)
     drive.update_sheet(fl_path, os.environ['DDS_EMAIL_LOGS_FILE'], sheet_name='dds_email_logs')
     fl_path.unlink()
 
