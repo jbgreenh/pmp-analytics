@@ -814,7 +814,7 @@ if __name__ == '__main__':
     today = datetime.now(tz=PHX_TZ).date()
     twenty_nine_days_ago = today - timedelta(days=29)
     thirty_days_ago = today - timedelta(days=30)
-    tab_start_date = max(args.tableau_start_date, thirty_days_ago)
+    tab_start_date = max(args.tableau_start_date, thirty_days_ago)  # TODO: adjust these dates when we receive expanded zero reports data
     req_start_date = max(args.required_start_date, twenty_nine_days_ago)
 
     if args.pull_files:
