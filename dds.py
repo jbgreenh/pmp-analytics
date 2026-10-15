@@ -697,12 +697,13 @@ If you have any questions or concerns about the data submission process, please 
     fl_path.unlink()
 
 
-def pharm_clean(dds: pl.LazyFrame) -> None:
+def pharm_clean(dds: pl.LazyFrame, req_start_date: date) -> None:
     """
     takes the proper action for the delinquent data submitters process based on the day of the week
 
     args:
         dds: the dds lazyframe returned by `process_input_files()`
+        req_start_date: the required start date
     """
     today = datetime.now(tz=PHX_TZ).date()
 
@@ -745,11 +746,10 @@ def pharm_clean(dds: pl.LazyFrame) -> None:
                 .cast({pl.Null: pl.String})
             )
 
-        thirty_one_days_ago = today - timedelta(days=31)
         deadlines = (
             deadlines
             .with_columns(
-                pl.col('missing_dates').str.split(',').list.filter(pl.element().str.to_date('%Y-%m-%d') < thirty_one_days_ago).alias('old_missing_dates')
+                pl.col('missing_dates').str.split(',').list.filter(pl.element().str.to_date('%Y-%m-%d') < req_start_date).alias('old_missing_dates')
             )
             .drop('missing_dates')
             .join(dds, on='permit_number', how='left')
@@ -762,7 +762,7 @@ def pharm_clean(dds: pl.LazyFrame) -> None:
             .drop('old_missing_dates')
         )
         print('==================================================================================================')
-        print(f'    please manually check and update all missed_dates older than {thirty_one_days_ago}')
+        print(f'    please manually check and update all missed_dates older than {req_start_date}')
         print('     in `dds_deadlines` and `dds_email logs` as well as the email drafts themselves')
         print('==================================================================================================')
 
@@ -805,16 +805,17 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='delinquent data submitters')
     parser.add_argument('-ts', '--tableau-start-date', type=date.fromisoformat, default=date(2006, 6, 9), help='start date for tableau in YYYY-MM-DD format (default: 30 days ago)')
-    parser.add_argument('-rs', '--required-start-date', type=date.fromisoformat, default=date(2006, 6, 9), help='start date for data submission requirement in YYYY-MM-DD format (default: 30 days ago)')
+    parser.add_argument('-rs', '--required-start-date', type=date.fromisoformat, default=date(2006, 6, 9), help='start date for data submission requirement in YYYY-MM-DD format (default: 29 days ago)')
     parser.add_argument('-p', '--pull-files', action='store_true', help='pull files from tableau and exit')
     parser.add_argument('-r', '--run', action='store_true', help='run and write data/missing_sold_and_zero.csv')
     parser.add_argument('-s', '--send-emails', action='store_true', help='send emails instead of creating drafts when using --run')
     args = parser.parse_args()
 
     today = datetime.now(tz=PHX_TZ).date()
-    thirty_one_days_ago = today - timedelta(days=31)
-    tab_start_date = max(args.tableau_start_date, thirty_one_days_ago)
-    req_start_date = max(args.required_start_date, thirty_one_days_ago)
+    twenty_nine_days_ago = today - timedelta(days=29)
+    thirty_days_ago = today - timedelta(days=30)
+    tab_start_date = max(args.tableau_start_date, thirty_days_ago)
+    req_start_date = max(args.required_start_date, twenty_nine_days_ago)
 
     if args.pull_files:
         pull_files(tab_start_date)
@@ -842,4 +843,4 @@ if __name__ == '__main__':
         missing = check_missing_zero_sold_for_missing_filled(missing, report_dates)  # TODO: remove when sold date is required
         dds = final_missing(missing, req_start_date)
         dds = remove_pharmacies_with_active_complaints(dds)
-        pharm_clean(dds)
+        pharm_clean(dds, req_start_date)
