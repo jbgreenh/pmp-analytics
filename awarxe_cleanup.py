@@ -224,7 +224,7 @@ def multiple_roles(awarxe: pl.DataFrame) -> None:
         .filter(
             (pl.col('role totals') > 1) & (pl.col('dea suffix').is_null()) & (pl.col('dea number').is_not_null())
         )
-        .sort('email address', 'dea number')
+        .sort('dea number', 'email address')
     )
     mult_fp = 'data/awarxe_cleanup/multiple_roles.csv'
     mult.write_csv(mult_fp)
