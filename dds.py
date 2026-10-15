@@ -745,6 +745,24 @@ def pharm_clean(dds: pl.LazyFrame) -> None:
                 .cast({pl.Null: pl.String})
             )
 
+        thirty_one_days_ago = today - timedelta(days=31)
+        deadlines = (
+            deadlines
+            .with_columns(
+                pl.col('missing_dates').str.split(',').list.filter(pl.element().str.to_date('%Y-%m-%d') < thirty_one_days_ago).alias('old_missing_dates')
+            )
+            .drop('missing_dates')
+            .join(dds, on='permit_number', how='left')
+            .with_columns(
+                pl.col('old_missing_dates').list.concat('missing_dates').alias('missing_dates')
+            )
+            .drop('old_missing_dates')
+        )
+        print('==================================================================================================')
+        print(f'    please manually check and update all missed_dates older than {thirty_one_days_ago}')
+        print('     in `dds_deadlines` and `dds_email logs` as well as the email drafts themselves')
+        print('==================================================================================================')
+
         new_deadlines = (
             dds
             .filter(
