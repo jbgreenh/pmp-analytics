@@ -211,7 +211,7 @@ def pull_files(start_date: date) -> None:
         StaleVendorDataError : an error for when the data on the tableau has not been updated recently enough
     """
     today = datetime.now(tz=PHX_TZ).date()
-    two_days_ago = today - timedelta(days=2)
+    two_days_ago = today - timedelta(days=2)  # reporting after ~11:30pm may lead to rare false positives
 
     print('getting luids...')
     sh_luid = tableau.find_view_luid('Submission History', 'Pharmacy Compliance')
@@ -338,16 +338,6 @@ def check_for_missing_zeros(start_date: date) -> pl.LazyFrame:
     weekday_map = {"monday": 1, "tuesday": 2, "wednesday": 3, "thursday": 4, "friday": 5, "saturday": 6, "sunday": 7}
     today = datetime.now(tz=PHX_TZ).date()
     two_days_ago = today - timedelta(days=2)
-
-    # two_days_ago is actually 3 days ago until bamboo fixes their timing
-    # remove this block if that ever happens
-    # also note that exempt_days is not accounted for by this change
-    # if a dispenser was not exempt yesterday,
-    # they are still expected to have reported 3 days ago
-    # which leads to very rare false positives:
-    # if that dispenser reported late evening yesterday
-    # but were exempt two_days_ago and 3 days ago
-    two_days_ago -= timedelta(days=1)
 
     required_days = [start_date + timedelta(days=i) for i in range((two_days_ago - start_date).days + 1)]
 
