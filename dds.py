@@ -362,14 +362,14 @@ def check_for_missing_zeros(start_date: date) -> pl.LazyFrame:
         )
         .with_columns(pl.all().str.strip_chars())
         .select(
-            pl.col('DEA Number').str.strip_chars().str.to_uppercase().alias('dea'),
-            pl.col('Exempt Weekdays').str.strip_chars().str.to_lowercase().str.split(', ').alias('exempt_days'),
-            pl.col('Submission Date').str.strip_chars().str.to_datetime('%m/%d/%Y %I:%M:%S %p').dt.replace_time_zone('America/Phoenix').alias('submission_date'),
-            pl.col('Zero Report Start Date').str.strip_chars().str.to_date('%m/%d/%Y', strict=False).alias('zero_start_date'),
-            pl.col('Zero Report End Date').str.strip_chars().str.to_date('%m/%d/%Y', strict=False).alias('zero_end_date'),
-            pl.col('submitter').str.strip_chars(),
-            pl.col('submitter_email').str.strip_chars(),
-            pl.col('submitter_phone_number').str.strip_chars(),
+            pl.col('DEA Number').str.to_uppercase().alias('dea'),
+            pl.col('Exempt Weekdays').str.to_lowercase().str.split(', ').alias('exempt_days'),
+            pl.col('Submission Date').str.to_datetime('%m/%d/%Y %I:%M:%S %p').dt.replace_time_zone('America/Phoenix').alias('submission_date'),
+            pl.col('Zero Report Start Date').str.to_date('%m/%d/%Y', strict=False).alias('zero_start_date'),
+            pl.col('Zero Report End Date').str.to_date('%m/%d/%Y', strict=False).alias('zero_end_date'),
+            'submitter',
+            'submitter_email',
+            'submitter_phone_number',
         )
         .filter(pl.col('submission_date') >= datetime(day_before_start_date.year, day_before_start_date.month, day_before_start_date.day, tzinfo=PHX_TZ))  # submission dates are in PHX_TZ but zero report dates do not have a timezone
         .join(manage_pharmacies, on='dea', how='right')                                                                                                    # meaning sometimes out of state submitters might have "submitted" zeros for today, yesterday
