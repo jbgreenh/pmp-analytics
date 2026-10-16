@@ -752,7 +752,7 @@ def pharm_clean(dds: pl.LazyFrame, req_start_date: date) -> None:
                 pl.col('missing_dates').str.split(',').list.filter(pl.element().str.to_date('%Y-%m-%d') < req_start_date).alias('old_missing_dates')
             )
             .drop('missing_dates')
-            .join(dds, on='permit_number', how='left')
+            .join(dds.select('permit_number', 'missing_dates'), on='permit_number', how='left')
             .with_columns(
                 pl.col('old_missing_dates').str.split(',').list.concat(pl.col('missing_dates').str.split(',')).alias('missing_dates')
             )
