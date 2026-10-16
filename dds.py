@@ -782,11 +782,6 @@ def pharm_clean(dds: pl.LazyFrame, req_start_date: date) -> None:
                     pl.col('max_issue_date').dt.to_string('%Y-%m-%d')
                 )
             )
-            print('deadlines schema:')
-            print(deadlines.collect_schema())
-            print('new_deadlines schema:')
-            print(new_deadlines.collect_schema())
-            deadlines = pl.concat([deadlines, new_deadlines])
 
         deadlines_path = Path('deadlines.csv')
         deadlines.collect().write_csv(deadlines_path)
