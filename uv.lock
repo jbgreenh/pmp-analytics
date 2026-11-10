@@ -18,8 +18,8 @@ wheels = [
 
 [[package]]
 name = "az-pmp-utils"
-version = "0.2.5"
-source = { git = "https://github.com/jbgreenh/az-pmp-utils#7ede15f51dfc8b5b2428c85ec2f58a25caccb4d0" }
+version = "0.2.6"
+source = { git = "https://github.com/jbgreenh/az-pmp-utils#6fb9aa9c7f97e4e77032669f7013bbf9dde4a04e" }
 dependencies = [
     { name = "fastexcel" },
     { name = "google-api-python-client" },
