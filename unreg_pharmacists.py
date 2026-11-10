@@ -1,18 +1,15 @@
 import os
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import polars as pl
 from az_pmp_utils import auth, drive, files
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
+lazy import google.auth.external_account_authorized_user
+lazy import google.oauth2.credentials
 
 from constants import PHX_TZ
-
-if TYPE_CHECKING:
-    import google.auth.external_account_authorized_user
-    import google.oauth2.credentials
 
 
 def check_registration(service) -> pl.LazyFrame:    # ruff: ignore[missing-type-function-argument] | service is dynamically typed

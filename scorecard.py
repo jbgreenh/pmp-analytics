@@ -1,17 +1,14 @@
 import datetime
 import os
-from typing import TYPE_CHECKING
 
 import polars as pl
 from az_pmp_utils import auth, drive
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
+lazy import google.auth.external_account_authorized_user
+lazy import google.oauth2.credentials
 
 from constants import PHX_TZ
-
-if TYPE_CHECKING:
-    import google.auth.external_account_authorized_user
-    import google.oauth2.credentials
 
 
 def pull_files(service) -> pl.DataFrame:  # ruff: ignore[missing-type-function-argument] | service is dynamically typed
