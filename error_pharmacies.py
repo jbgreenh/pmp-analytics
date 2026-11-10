@@ -1,15 +1,13 @@
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import polars as pl
 from az_pmp_utils import auth, drive, tableau
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
-
-if TYPE_CHECKING:
-    import google.auth.external_account_authorized_user
-    import google.oauth2.credentials
+lazy import google.auth.external_account_authorized_user
+lazy import google.oauth2.credentials
 
 
 def pull_file() -> pl.LazyFrame:

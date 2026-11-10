@@ -2,18 +2,15 @@ import calendar
 import os
 import sys
 from datetime import date, datetime
-from typing import TYPE_CHECKING
 
 import polars as pl
 from az_pmp_utils import auth, deas, drive, num_and_dt
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
+lazy import google.auth.external_account_authorized_user
+lazy import google.oauth2.credentials
 
 from constants import PHX_TZ, TOP_PRESCRIBERS
-
-if TYPE_CHECKING:
-    import google.auth.external_account_authorized_user
-    import google.oauth2.credentials
 
 
 def input_str_to_date(month_name: str, year_str: str) -> date:

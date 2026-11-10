@@ -4,22 +4,18 @@ import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import Literal
+lazy from io import BytesIO
 
 import polars as pl
 import pymupdf
 from az_pmp_utils import auth, deas, drive, email
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
+lazy import google.auth.external_account_authorized_user
+lazy import google.oauth2.credentials
 
 from constants import PHX_TZ
-
-if TYPE_CHECKING:
-    from io import BytesIO
-
-    import google.auth.external_account_authorized_user
-    import google.oauth2.credentials
-
 
 # ruff: file-ignore[commented-out-code]
 # board code is commented out while they prepare for integration
