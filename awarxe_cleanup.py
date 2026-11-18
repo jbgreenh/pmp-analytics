@@ -368,7 +368,7 @@ def closed_pharmacies_in_mp() -> None:
         )
     )
 
-    closedfname = 'data/awarxe_cleanup/multiple_deas.csv'
+    closedfname = 'data/awarxe_cleanup/closed_pharmacies_in_mp.csv'
     closed.collect().write_csv(closedfname)
     print(f'wrote {closedfname}')
 
