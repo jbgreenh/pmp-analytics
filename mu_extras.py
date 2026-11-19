@@ -157,7 +157,7 @@ def process_mu(appearance_month: date, input_file: str) -> None:
             pl.col('license_number').fill_null(pl.col('State License Number'))
         )
         .drop('State License Number')
-        .sort(['searches', 'dispensations'], descending=[True, True])
+        .sort(['searches', 'dispensations'], descending=[False, True])
         .collect()
         .head(TOP_PRESCRIBERS)
         .write_csv(filepath)
