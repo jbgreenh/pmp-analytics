@@ -1,5 +1,6 @@
 import argparse
 import os
+import posixpath
 import stat
 import sys
 from datetime import datetime, timedelta
@@ -11,6 +12,8 @@ from dotenv import load_dotenv
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseUpload
+
+from constants import MAX_SERVU_FILE_COUNT
 
 
 def del_prev(delete_prev_line: bool) -> None:  # ruff: ignore[boolean-type-hint-positional-argument] | only one arg
@@ -153,6 +156,54 @@ def upload_directory(service, sftp: paramiko.SFTPClient, remote_path: str, drive
             upload_directory(service, sftp, remote_item_path + '/', subfolder_drive_folder_id)
 
 
+def remove_oldest_file(sftp: paramiko.SFTPClient) -> None:
+    """
+    removes the oldest file from the current folder in the sftp; maintains the `MAX_SERVU_FILE_COUNT` on the server
+
+    args:
+        sftp: paramiko SFTPClient
+    """
+    files = sftp.listdir_attr()
+    if len(files) > MAX_SERVU_FILE_COUNT:
+        while len(files) > MAX_SERVU_FILE_COUNT:
+            oldest_file = min(files, key=lambda f: f.st_mtime)  # type: ignore[reportArgumentType] | these files will have st_mtime
+            print(f'removing oldest file: {oldest_file.filename}...')
+            sftp.remove(oldest_file.filename)
+            print('file removed')
+    else:
+        print(f'{len(files)} files in folder, none removed')
+
+
+def clean_sftp(sftp: paramiko.SFTPClient, current_dir: str | None = None) -> None:
+    """
+    runs through all folders in `current_dir` and runs `remove_oldest_file` in any folders named 'uploads'
+
+    args:
+        sftp: paramiko SFTPClient
+        current_dir: the directory to search for updates folders
+    """
+    if current_dir is None:
+        sftp.chdir('.')
+        cwd = sftp.getcwd()
+        current_dir = cwd if cwd is not None else '.'
+    try:
+        entries = sftp.listdir_attr(current_dir)
+    except OSError:
+        return
+
+    for entry in entries:
+        full_path = posixpath.join(current_dir, entry.filename)
+
+        if stat.S_ISDIR(entry.st_mode):  # type: ignore[reportArgumentType] | these files will have st_mode
+            if entry.filename == 'uploads':
+                print(f'cleaning {full_path}...')
+                sftp.chdir(full_path)
+                remove_oldest_file(sftp)
+                sftp.chdir(current_dir)
+            else:
+                clean_sftp(sftp, full_path)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='backup either the vendor or pmp sftp')
     group = parser.add_mutually_exclusive_group(required=True)
@@ -192,6 +243,9 @@ if __name__ == '__main__':
         vendor = "vendor" if args.vendor else "pmp"
         print(f'updating {vendor} sftp backup...\n')
         upload_directory(service, sftp, remote_path, drive_folder_id)
+        if args.pmp:
+            print()
+            clean_sftp(sftp, '~')
     finally:
         print()
         if sftp:
